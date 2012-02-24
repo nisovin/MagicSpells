@@ -2,7 +2,6 @@ package com.nisovin.magicspells.spells.command;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -79,27 +78,7 @@ public class ScrollSpell extends CommandSpell {
 		
 		// prevent paper stacking
 		if (setUnstackable) {
-			try {
-				boolean ok = false;
-				try {
-					// attempt to make books with different data values stack separately
-					Field field1 = net.minecraft.server.Item.class.getDeclaredField(stackByDataVar);
-					if (field1.getType() == boolean.class) {
-						field1.setAccessible(true);
-						field1.setBoolean(net.minecraft.server.Item.byId[itemId], true);
-						ok = true;
-					} 
-				} catch (Exception e) {
-				}
-				if (!ok) {
-					// otherwise limit stack size to 1
-					Field field2 = net.minecraft.server.Item.class.getDeclaredField("maxStackSize");
-					field2.setAccessible(true);
-					field2.setInt(net.minecraft.server.Item.byId[itemId], 1);
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			MagicSpells.craftbukkit.stackByData(itemId, stackByDataVar);
 		}
 	}
 	

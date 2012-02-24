@@ -17,6 +17,8 @@ public class TemporaryBlockSet implements Runnable {
 	
 	private ArrayList<Block> blocks;
 	
+	private BlockSetRemovalCallback callback;
+	
 	public TemporaryBlockSet(Material original, Material replaceWith) {
 		this.original = original;
 		this.replaceWith = replaceWith;
@@ -33,18 +35,31 @@ public class TemporaryBlockSet implements Runnable {
 		}
 	}
 	
+	public boolean contains(Block block) {
+		return blocks.contains(block);
+	}
+	
 	public void removeAfter(int seconds) {
+		removeAfter(seconds, null);
+	}
+	
+	public void removeAfter(int seconds, BlockSetRemovalCallback callback) {
 		if (blocks.size() > 0) {
+			this.callback = callback;
 			MagicSpells.plugin.getServer().getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, this, seconds*20);
 		}
 	}
 	
 	public void run() {
+		if (callback != null) {
+			callback.run(this);
+		}
 		for (Block block : blocks) {
 			if (block.getType() == replaceWith) {
 				block.setType(original);
 			}
 		}
+		
 		blockSets.remove(this);
 	}
 	
@@ -61,6 +76,10 @@ public class TemporaryBlockSet implements Runnable {
 			}
 			return false;
 		}
+	}
+	
+	public interface BlockSetRemovalCallback {
+		public void run(TemporaryBlockSet set);
 	}
 
 }

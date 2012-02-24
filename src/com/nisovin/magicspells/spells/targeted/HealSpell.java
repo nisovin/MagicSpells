@@ -1,11 +1,12 @@
 package com.nisovin.magicspells.spells.targeted;
 
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 
-import com.nisovin.magicspells.spells.TargetedSpell;
+import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class HealSpell extends TargetedSpell {
+public class HealSpell extends TargetedEntitySpell {
 	
 	private int healAmount;
 	private boolean cancelIfFull;
@@ -36,15 +37,8 @@ public class HealSpell extends TargetedSpell {
 				fizzle(player);
 			} else if (cancelIfFull && target.getHealth() == 20) {
 				sendMessage(player, formatMessage(strMaxHealth, "%t", target.getName()));
-			} else {				
-				int health = target.getHealth();
-				health += Math.round(healAmount*power);
-				if (health > 20) health = 20;
-				target.setHealth(health);
-				
-				if (showSpellEffect) {
-					playPotionEffect(player, target, 0xFF0000, 40);
-				}
+			} else {
+				heal(player, target, power);
 				
 				sendMessage(player, formatMessage(strCastSelf, "%t", target.getDisplayName()));
 				sendMessage(target, formatMessage(strCastTarget, "%a", player.getDisplayName()));
@@ -56,6 +50,27 @@ public class HealSpell extends TargetedSpell {
 			return PostCastAction.ALREADY_HANDLED;
 		}
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+	
+	private void heal(Player player, Player target, float power) {			
+		int health = target.getHealth();
+		health += Math.round(healAmount*power);
+		if (health > 20) health = 20;
+		target.setHealth(health);
+		
+		if (showSpellEffect) {
+			playPotionEffect(player, target, 0xFF0000, 40);
+		}
+	}
+
+	@Override
+	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
+		if (target instanceof Player) {
+			heal(caster, (Player)target, power);
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 }

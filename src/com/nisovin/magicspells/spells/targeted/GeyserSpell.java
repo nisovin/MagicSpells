@@ -14,11 +14,11 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.util.Vector;
 
-import com.nisovin.magicspells.spells.TargetedSpell;
+import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.SpellAnimation;
 
-public class GeyserSpell extends TargetedSpell {
+public class GeyserSpell extends TargetedEntitySpell {
 	
 	private int damage;
 	private double velocity;
@@ -84,23 +84,40 @@ public class GeyserSpell extends TargetedSpell {
 					target.damage(dam);
 				}
 			}
-			if (velocity > 0) {
-				target.setVelocity(new Vector(0, velocity*power, 0));
-			}
 			
-			// create animation
-			if (geyserHeight > 0) {
-				List<Entity> allNearby = target.getNearbyEntities(50, 50, 50);
-				List<Player> playersNearby = new ArrayList<Player>();
-				for (Entity e : allNearby) {
-					if (e instanceof Player) {
-						playersNearby.add((Player)e);
-					}
-				}
-				new GeyserAnimation(target.getLocation(), playersNearby);
-			}
+			// do geyser action + animation
+			geyser(target, power);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+	
+	private void geyser(LivingEntity target, float power) {
+		// launch target into air
+		if (velocity > 0) {
+			target.setVelocity(new Vector(0, velocity*power, 0));
+		}
+		
+		// create animation
+		if (geyserHeight > 0) {
+			List<Entity> allNearby = target.getNearbyEntities(50, 50, 50);
+			List<Player> playersNearby = new ArrayList<Player>();
+			for (Entity e : allNearby) {
+				if (e instanceof Player) {
+					playersNearby.add((Player)e);
+				}
+			}
+			new GeyserAnimation(target.getLocation(), playersNearby);
+		}
+	}
+
+	@Override
+	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
+		if (target instanceof Player && !targetPlayers) {
+			return false;
+		} else {
+			geyser(target, power);
+			return true;
+		}
 	}
 	
 	private class GeyserAnimation extends SpellAnimation {

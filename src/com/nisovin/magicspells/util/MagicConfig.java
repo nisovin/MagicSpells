@@ -130,4 +130,13 @@ public class MagicConfig {
 		return mainConfig.getConfigurationSection("spells");
 	}
 	
+	public Set<String> getSpellKeys() {
+		Set<String> keys = mainConfig.getConfigurationSection("spells").getKeys(false);
+		if (altConfig != null && altConfig.contains("spells") && altConfig.isConfigurationSection("spells")) {
+			Set<String> altkeys = altConfig.getConfigurationSection("spells").getKeys(false);
+			keys.addAll(altkeys);
+		}
+		return keys;
+	}
+	
 }

@@ -25,7 +25,7 @@ public abstract class TargetedSpell extends InstantSpell {
 	public TargetedSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		range = config.getInt("spells." + spellName + ".range", -1);
+		range = config.getInt("spells." + spellName + ".range", 20);
 		playFizzleSound = getConfigBoolean("play-fizzle-sound", false);
 		strCastTarget = getConfigString("str-cast-target", "");
 	}
@@ -96,7 +96,12 @@ public abstract class TargetedSpell extends InstantSpell {
 		
 		// find target
 		LivingEntity target = null;
-		BlockIterator bi = new BlockIterator(player, range);
+		BlockIterator bi;
+		try {
+			bi = new BlockIterator(player, range);
+		} catch (IllegalStateException e) {
+			return null;
+		}
 		Block b;
 		Location l;
 		int bx, by, bz;

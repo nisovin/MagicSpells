@@ -20,7 +20,7 @@ import com.nisovin.magicspells.util.MagicConfig;
 
 public class CarpetSpell extends BuffSpell {
 	
-	private Material platformBlock;
+	private int platformBlock;
 	private int size;
 	private boolean cancelOnLogout;
 	private boolean cancelOnTeleport;
@@ -31,7 +31,7 @@ public class CarpetSpell extends BuffSpell {
 	public CarpetSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		platformBlock = Material.getMaterial(config.getInt("spells." + spellName + ".platform-block", Material.GLASS.getId()));
+		platformBlock = config.getInt("spells." + spellName + ".platform-block", Material.GLASS.getId());
 		size = config.getInt("spells." + spellName + ".size", 2);
 		cancelOnLogout = config.getBoolean("spells." + spellName + ".cancel-on-logout", true);
 		cancelOnTeleport = config.getBoolean("spells." + spellName + ".cancel-on-teleport", true);
@@ -46,7 +46,7 @@ public class CarpetSpell extends BuffSpell {
 			turnOff(player);
 			return PostCastAction.ALREADY_HANDLED;
 		} else if (state == SpellCastState.NORMAL) {
-			windwalkers.put(player.getName(), new BlockPlatform(platformBlock, Material.AIR, player.getLocation().getBlock().getRelative(0,-1,0), size, true, "square"));
+			windwalkers.put(player.getName(), new BlockPlatform(platformBlock, Material.AIR.getId(), player.getLocation().getBlock().getRelative(0,-1,0), size, true, "square"));
 			startSpellDuration(player);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
@@ -101,7 +101,7 @@ public class CarpetSpell extends BuffSpell {
 	@EventHandler(priority=EventPriority.NORMAL)
 	public void onBlockBreak(BlockBreakEvent event) {
 		if (event.isCancelled()) return;
-		if (windwalkers.size() > 0 && event.getBlock().getType() == platformBlock) {
+		if (windwalkers.size() > 0 && event.getBlock().getTypeId() == platformBlock) {
 			for (BlockPlatform platform : windwalkers.values()) {
 				if (platform.blockInPlatform(event.getBlock())) {
 					event.setCancelled(true);

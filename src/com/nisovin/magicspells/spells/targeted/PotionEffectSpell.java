@@ -2,11 +2,13 @@ package com.nisovin.magicspells.spells.targeted;
 
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
-import com.nisovin.magicspells.spells.TargetedSpell;
+import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class PotionEffectSpell extends TargetedSpell {
+public class PotionEffectSpell extends TargetedEntitySpell {
 
 	@SuppressWarnings("unused")
 	private static final String SPELL_NAME = "potion";
@@ -49,9 +51,21 @@ public class PotionEffectSpell extends TargetedSpell {
 				return PostCastAction.ALREADY_HANDLED;
 			}
 			
-			setMobEffect(target, type, duration, amplifier);
+			target.addPotionEffect(new PotionEffect(PotionEffectType.getById(type), Math.round(duration*power), amplifier));
 		}		
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+
+	@Override
+	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
+		if (target instanceof Player && !targetPlayers) {
+			return false;
+		} else if (!(target instanceof Player) && !targetNonPlayers) {
+			return false;
+		} else {
+			target.addPotionEffect(new PotionEffect(PotionEffectType.getById(type), Math.round(duration*power), amplifier));
+			return true;
+		}
 	}
 
 }

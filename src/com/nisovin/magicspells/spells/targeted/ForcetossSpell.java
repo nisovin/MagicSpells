@@ -7,10 +7,10 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.util.Vector;
 
-import com.nisovin.magicspells.spells.TargetedSpell;
+import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class ForcetossSpell extends TargetedSpell {
+public class ForcetossSpell extends TargetedEntitySpell {
 
 	private int damage;
 	private float hForce;
@@ -60,14 +60,28 @@ public class ForcetossSpell extends TargetedSpell {
 			}
 			
 			// throw target
-			Vector v = target.getLocation().toVector().subtract(player.getLocation().toVector())
-					.setY(0)
-					.normalize()
-					.multiply(hForce*power)
-					.setY(vForce*power);
-			target.setVelocity(v);			
+			toss(player, target, power);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+	
+	private void toss(Player player, LivingEntity target, float power) {
+		Vector v = target.getLocation().toVector().subtract(player.getLocation().toVector())
+				.setY(0)
+				.normalize()
+				.multiply(hForce*power)
+				.setY(vForce*power);
+		target.setVelocity(v);
+	}
+
+	@Override
+	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
+		if (target instanceof Player && !targetPlayers) {
+			return false;
+		} else {
+			toss(caster, target, power);
+			return true;
+		}
 	}
 	
 	

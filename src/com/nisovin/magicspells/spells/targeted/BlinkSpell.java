@@ -9,11 +9,11 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BlockIterator;
 
-import com.nisovin.magicspells.spells.TargetedSpell;
+import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.util.BlockUtils;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class BlinkSpell extends TargetedSpell {
+public class BlinkSpell extends TargetedLocationSpell {
 	
 	private boolean passThroughCeiling;
 	private boolean smokeTrail;
@@ -77,16 +77,7 @@ public class BlinkSpell extends TargetedSpell {
 					loc.setZ(loc.getZ()+.5);
 					loc.setPitch(player.getLocation().getPitch());
 					loc.setYaw(player.getLocation().getYaw());
-					if (portalAnimation) {
-						loc.getWorld().playEffect(player.getLocation(), Effect.ENDER_SIGNAL, 0);
-						loc.getWorld().playEffect(loc, Effect.ENDER_SIGNAL, 0);
-					}
-					player.teleport(loc);
-					if (smokeTrail) {
-						for (Location l : smokes) {
-							l.getWorld().playEffect(l, Effect.SMOKE, 4);
-						}
-					}
+					teleport(player, loc, smokes);
 				} else {
 					sendMessage(player, strCantBlink);
 					fizzle(player);
@@ -99,6 +90,27 @@ public class BlinkSpell extends TargetedSpell {
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+
+	private void teleport(Player player, Location location, HashSet<Location> smokeLocs) {
+		if (portalAnimation) {
+			location.getWorld().playEffect(player.getLocation(), Effect.ENDER_SIGNAL, 0);
+			location.getWorld().playEffect(location, Effect.ENDER_SIGNAL, 0);
+		}
+		player.teleport(location);
+		if (smokeTrail && smokeLocs != null) {
+			for (Location l : smokeLocs) {
+				l.getWorld().playEffect(l, Effect.SMOKE, 4);
+			}
+		}
+	}
+	
+	@Override
+	public boolean castAtLocation(Player caster, Location target, float power) {
+		target.setYaw(caster.getLocation().getYaw());
+		target.setPitch(caster.getLocation().getPitch());
+		teleport(caster, target, null);
+		return true;
 	}
 
 }

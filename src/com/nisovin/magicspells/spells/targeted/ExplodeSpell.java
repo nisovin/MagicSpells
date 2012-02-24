@@ -1,54 +1,44 @@
 package com.nisovin.magicspells.spells.targeted;
 
-import java.util.HashMap;
 import java.util.Random;
-
-import net.minecraft.server.EntityTNTPrimed;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.CraftServer;
-import org.bukkit.craftbukkit.CraftWorld;
-import org.bukkit.craftbukkit.entity.CraftPlayer;
-import org.bukkit.craftbukkit.entity.CraftTNTPrimed;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageByBlockEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 
-import com.nisovin.magicspells.spells.TargetedSpell;
+import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class ExplodeSpell extends TargetedSpell {
+public class ExplodeSpell extends TargetedLocationSpell {
 	
-	private boolean checkPlugins;
 	private int explosionSize;
 	private int backfireChance;
 	private boolean preventBlockDamage;
 	private float damageMultiplier;
+	private boolean ignoreCanceled;
 	private String strNoTarget;
 	
-	private HashMap<Player,Float> recentlyExploded;
+	private long currentTick = 0;
+	private float currentPower = 0;
 	
 	public ExplodeSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		checkPlugins = getConfigBoolean("check-plugins", true);
 		explosionSize = getConfigInt("explosion-size", 4);
 		backfireChance = getConfigInt("backfire-chance", 0);
 		preventBlockDamage = getConfigBoolean("prevent-block-damage", false);
 		damageMultiplier = getConfigFloat("damage-multiplier", 0);
+		ignoreCanceled = getConfigBoolean("ignore-canceled", false);
 		strNoTarget = getConfigString("str-no-target", "Cannot explode there.");
 		
-		if (preventBlockDamage || damageMultiplier > 0) {
-			recentlyExploded = new HashMap<Player,Float>();
-		}
 	}
 	
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
@@ -60,60 +50,56 @@ public class ExplodeSpell extends TargetedSpell {
 				fizzle(player);
 				return PostCastAction.ALREADY_HANDLED;
 			} else {
-				// backfire chance
-				if (backfireChance > 0) {
-					Random rand = new Random();
-					if (rand.nextInt(10000) < backfireChance) {
-						target = player.getLocation().getBlock();
-					}					
+				boolean exploded = explode(player, target.getLocation(), power);
+				if (!exploded && !ignoreCanceled) {
+					sendMessage(player, strNoTarget);
+					fizzle(player);
+					return PostCastAction.ALREADY_HANDLED;
 				}
-				if (checkPlugins) {
-					// check plugins
-					EntityTNTPrimed e = new EntityTNTPrimed(((CraftWorld)target.getWorld()).getHandle(), target.getX(), target.getY(), target.getZ());
-					CraftTNTPrimed c = new CraftTNTPrimed((CraftServer)Bukkit.getServer(), e);
-					ExplosionPrimeEvent event = new ExplosionPrimeEvent(c, explosionSize*power, false);
-					Bukkit.getServer().getPluginManager().callEvent(event);
-					if (event.isCancelled()) {
-						sendMessage(player, strNoTarget);
-						fizzle(player);
-						return PostCastAction.ALREADY_HANDLED;
-					}
-				}
-				if (preventBlockDamage || damageMultiplier > 0) {
-					recentlyExploded.put(player, power);
-				}
-				createExplosion(player, target.getLocation(), explosionSize*power);
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}
 	
-	public void createExplosion(Player player, Location location, float size) {
-		((CraftWorld)location.getWorld()).getHandle().createExplosion(((CraftPlayer)player).getHandle(), location.getX(), location.getY(), location.getZ(), size, false);
+	private boolean explode(Player player, Location target, float power) {
+		// backfire chance
+		if (backfireChance > 0) {
+			Random rand = new Random();
+			if (rand.nextInt(10000) < backfireChance) {
+				target = player.getLocation();
+			}					
+		}
+		currentTick = Bukkit.getWorlds().get(0).getFullTime();
+		currentPower = power;
+		return target.getWorld().createExplosion(target, explosionSize * power);
+	}
+
+	@Override
+	public boolean castAtLocation(Player caster, Location target, float power) {
+		return explode(caster, target, power);
 	}
 
 	@EventHandler(priority=EventPriority.HIGH)
 	public void onEntityDamage(EntityDamageEvent event) {
-		if (damageMultiplier > 0 && !event.isCancelled() && event instanceof EntityDamageByEntityEvent && event.getCause() == DamageCause.ENTITY_EXPLOSION) {
-			EntityDamageByEntityEvent evt = (EntityDamageByEntityEvent)event;
-			if (evt.getDamager() instanceof Player && recentlyExploded.containsKey(evt.getDamager())) {
-				float power = recentlyExploded.get(evt.getDamager());
-				event.setDamage(Math.round(event.getDamage() * damageMultiplier * power));
-			}
+		if (damageMultiplier > 0 
+				&& !event.isCancelled() 
+				&& event.getCause() == DamageCause.BLOCK_EXPLOSION
+				&& event instanceof EntityDamageByBlockEvent
+				&& ((EntityDamageByBlockEvent)event).getDamager() == null
+				&& currentTick == Bukkit.getWorlds().get(0).getFullTime()) {
+			event.setDamage(Math.round(event.getDamage() * damageMultiplier * currentPower));
 		}
 	}
 	
 	@EventHandler
 	public void onExplode(EntityExplodeEvent event) {
 		if (event.isCancelled() || !preventBlockDamage) {
-			recentlyExploded.remove(event.getEntity());
 			return;
 		}
 		
-		if (event.getEntity() instanceof Player && recentlyExploded.containsKey(event.getEntity())) {
+		if (event.getEntity() == null && currentTick == Bukkit.getWorlds().get(0).getFullTime()) {
 			event.blockList().clear();
 			event.setYield(0);
-			recentlyExploded.remove(event.getEntity());
 		}
 	}
 	

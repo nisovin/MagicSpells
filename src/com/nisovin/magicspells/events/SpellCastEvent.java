@@ -7,7 +7,6 @@ import org.bukkit.event.HandlerList;
 import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.util.SpellReagents;
 
-@SuppressWarnings("serial")
 public class SpellCastEvent extends SpellEvent implements Cancellable {
 
     private static final HandlerList handlers = new HandlerList();
@@ -19,7 +18,7 @@ public class SpellCastEvent extends SpellEvent implements Cancellable {
 	private boolean cancelled = false;
 	
 	public SpellCastEvent(Spell spell, Player caster, Spell.SpellCastState state, float power, String[] args, int cooldown, SpellReagents reagents) {
-		super("MAGIC_SPELLS_SPELL_CAST", spell, caster);
+		super(spell, caster);
 		this.cooldown = cooldown;
 		this.reagents = reagents;
 		this.power = power;

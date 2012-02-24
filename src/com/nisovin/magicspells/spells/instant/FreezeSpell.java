@@ -10,6 +10,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.spells.InstantSpell;
@@ -78,7 +80,7 @@ public class FreezeSpell extends InstantSpell {
 		if (!(evt.getDamager() instanceof Snowball) || evt.getDamager().getFallDistance() != 10.2F) return;
 		
 		if (event.getDamage() == damage) {
-			setMobEffect((LivingEntity)event.getEntity(), 2, slowDuration, slowAmount);
+			((LivingEntity)event.getEntity()).addPotionEffect(new PotionEffect(PotionEffectType.SLOW, slowDuration, slowAmount), true);
 		}
 	}
 

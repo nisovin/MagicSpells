@@ -5,19 +5,20 @@ import java.util.List;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 
 public class BlockPlatform {
 
-	private Material platformType;
-	private Material replaceType;
+	private int platformType;
+	private int replaceType;
 	private Block center;
 	private int size;
 	private boolean moving;
 	private String type;
 	private List<Block> blocks;
 		
-	public BlockPlatform(Material platformType, Material replaceType, Block center, int size, boolean moving, String type) {
+	public BlockPlatform(int platformType, int replaceType, Block center, int size, boolean moving, String type) {
 		this.platformType = platformType;
 		this.replaceType = replaceType;
 		this.center = center;
@@ -38,12 +39,16 @@ public class BlockPlatform {
 		// get platform blocks
 		if (type.equals("square")) {
 			Block block, above;
-			for (int x = center.getX()-size; x <= center.getX()+size; x++) {
-				for (int z = center.getZ()-size; z <= center.getZ()+size; z++) {
-					int y = center.getY();
-					block = center.getWorld().getBlockAt(x,y,z);
+			int cx = center.getX();
+			int cy = center.getY();
+			int cz = center.getZ();
+			World world = center.getWorld();
+			int max = world.getMaxHeight();
+			for (int x = cx-size; x <= cx+size; x++) {
+				for (int z = cz-size; z <= cz+size; z++) {
+					block = world.getBlockAt(x,cy,z);
 					above = block.getRelative(0,1,0);
-					if ((block.getType() == replaceType && (block.getY() == 127 || blocks.contains(above) || above.getType() == Material.AIR)) || (blocks != null && blocks.contains(block))) {
+					if ((block.getTypeId() == replaceType && (cy >= max-1 || blocks.contains(above) || above.getType() == Material.AIR)) || (blocks != null && blocks.contains(block))) {
 						// only add if it's a replaceable block and has air above, or if it is already part of the platform
 						platform.add(block);
 					}
@@ -55,7 +60,7 @@ public class BlockPlatform {
 				for (int y = center.getY()-size; y <= center.getY()+size; y++) {
 					for (int z = center.getZ()-size; z <= center.getZ()+size; z++) {
 						block = center.getWorld().getBlockAt(x,y,z);
-						if (block.getType() == replaceType || (blocks != null && blocks.contains(block))) {
+						if (block.getTypeId() == replaceType || (blocks != null && blocks.contains(block))) {
 							// only add if it's a replaceable block or if it is already part of the block set
 							platform.add(block);
 						}
@@ -67,17 +72,17 @@ public class BlockPlatform {
 		// remove old platform blocks
 		if (moving) {
 			for (Block block : blocks) {
-				if (!platform.contains(block) && block.getType() == platformType) {
-					block.setType(replaceType);
+				if (!platform.contains(block) && block.getTypeId() == platformType) {
+					block.setTypeIdAndData(replaceType, (byte) 0, false);
 				}
 			}
 		}
 		
 		// add new platform blocks
 		for (Block block : platform) {
-			//if (blocks == null || !blocks.contains(block)) {
-				block.setType(platformType);
-			//}
+			if (blocks == null || !blocks.contains(block)) {
+				block.setTypeIdAndData(platformType, (byte) 0, false);
+			}
 		}
 		
 		// update platform block set
@@ -126,8 +131,8 @@ public class BlockPlatform {
 		// remove platform blocks
 		if (moving) {
 			for (Block block : blocks) {
-				if (block.getType() == platformType) {
-					block.setType(replaceType);
+				if (block.getTypeId() == platformType) {
+					block.setTypeIdAndData(replaceType, (byte)0, false);
 				}
 			}
 		}

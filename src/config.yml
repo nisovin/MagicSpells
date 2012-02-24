@@ -1,5 +1,6 @@
 general:
     debug: false
+    enable-volatile-features: true
     use-new-spell-loading: true
     alt-config: altConfig.yml
     str-cast-usage: |
@@ -95,6 +96,7 @@ spells:
         description: Create a spellbook that teaches a spell.
         default-uses: -1
         destroy-when-used-up: false
+        spellbook-block: 47
         str-use: "Usage: /cast spellbook <spell> [uses]"
         str-cast-self: You have created a spellbook with the %s spell.
         str-no-spell: You do not know a spell by that name.
@@ -196,6 +198,8 @@ spells:
         range: 20
         obey-los: true
         fire-ticks: 100
+        fire-tick-damage: 1
+        prevent-immunity: true
         target-players: false
         check-plugins: true
         cost:
@@ -333,7 +337,7 @@ spells:
         backfire-chance: 3
         prevent-block-damage: false
         damage-multiplier: 10
-        check-plugins: true
+        ignore-canceled: false
         cost:
             - 331 5
             - 289 1
@@ -341,6 +345,25 @@ spells:
         str-no-target: You cannot create an explosion there.
         str-cast-self: Boom!
         str-cast-others: Boom!
+    explosivearrow:
+        spell-class: ".instant.ProjectileSpell"
+        name: explosivearrow
+        description: Cause an explosion where an arrow lands
+        cast-item: 283
+        cooldown: 30
+        projectile: arrow
+        velocity: 0
+        require-hit-entity: false
+        cancel-damage: true
+        remove-projectile: true
+        max-distance: 25
+        spells: [explode]
+        cost:
+            - 331 4
+            - 289 2
+            - 262 1
+        str-cost: 4 redstone, 2 gunpowder, 1 arrow
+        str-cast-self: You fire an explosive arrow.
     fireball:
         spell-class: ".targeted.FireballSpell"
         name: fireball
@@ -589,6 +612,26 @@ spells:
         str-cast-target: "%a has healed you."
         str-no-target: No target to heal.
         str-max-health: "%t is already at max health."
+    invisibility:
+        spell-class: ".buff.InvisibilitySpell"
+        name: invisibility
+        description: Makes you invisible to players and monsters.
+        cast-item: 280
+        cooldown: 60
+        show-spell-effect: true
+        toggle: true
+        prevent-pickups: true
+        cancel-on-attack: true
+        duration: 15
+        cost:
+            - 331 2
+        use-cost:
+            - 331 1
+        use-cost-interval: 3
+        str-cost: 2 redstone dust, plus 1 every 3 seconds
+        str-cast-self: You vanish!
+        str-cast-others: "%a vanishes!"
+        str-fade: You are visible again.
     invulnerability:
         spell-class: ".buff.InvulnerabilitySpell"
         name: invulnerability
@@ -609,6 +652,7 @@ spells:
             - suffocation
             - void
         duration: 60
+        cooldown: 300
         cost: 
             - 331 5
         use-cost: 
@@ -926,6 +970,19 @@ spells:
         str-cast-self: You have created a spell scroll for %s.
         str-on-use: "Spell Scroll: %s used. %u uses remaining."
         str-use-fail: Unable to use this scroll right now.
+    shadowstep:
+        spell-class: ".targeted.ShadowstepSpell"
+        name: shadowstep
+        cast-item: 280
+        use-spell-effect: true
+        target-players: false
+        obey-los: true
+        range: 15
+        cost:
+            - 331 2
+        str-cost: 2 redstone dust
+        str-no-target: No target.
+        str-no-landing-spot: Cannot shadowstep there.
     stealth:
         spell-class: ".buff.StealthSpell"
         name: stealth
@@ -1074,6 +1131,21 @@ spells:
             - 1 2
         str-cost: 2 redstone dust and 2 stone
         str-no-target: Unable to create a wall.
+    water:
+        spell-class: ".targeted.MaterializeSpell"
+        name: water
+        description: Summons a water spring into existence.
+        cast-item: 280
+        cooldown: 120
+        range: 8
+        block-type: 8
+        apply-physics: true
+        check-plugins: true
+        cost:
+            - 331 2
+        str-cost: 2 redstone dust
+        str-no-target: No target.
+        str-failed: ""
     windwalk:
         spell-class: ".buff.WindwalkSpell"
         name: windwalk
@@ -1151,3 +1223,17 @@ spells:
             - 50 1
         str-cost: 2 redstone dust and 1 torch
         str-cast-self: You can now fire torch arrows.
+        
+    zeus:
+        spell-class: ".MultiSpell"
+        name: zeus
+        cooldown: 30
+        check-individual-cooldowns: false
+        cost:
+            - 331 5
+        str-cost: 5 redstone dust
+        spells:
+            - lightning
+            - DELAY 5
+            - explode
+            

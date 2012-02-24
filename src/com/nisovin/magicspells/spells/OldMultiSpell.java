@@ -10,7 +10,7 @@ import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public final class MultiSpell extends Spell {
+public final class OldMultiSpell extends Spell {
 
 	private boolean castWithItem;
 	private boolean castByCommand;
@@ -18,15 +18,18 @@ public final class MultiSpell extends Spell {
 	
 	private ArrayList<Action> actions;
 	
-	public MultiSpell(MagicConfig config, String spellName) {
+	public OldMultiSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
+
+		// reload config stuff, but from multispells section instead
+		loadConfigData(config, spellName, "multispells");
 		
-		castWithItem = getConfigBoolean("can-cast-with-item", true);
-		castByCommand = getConfigBoolean("can-cast-by-command", true);
-		checkIndividualCooldowns = getConfigBoolean("check-individual-cooldowns", false);
+		castWithItem = config.getBoolean("multispells." + spellName + ".can-cast-with-item", true);
+		castByCommand = config.getBoolean("multispells." + spellName + ".can-cast-by-command", true);
+		checkIndividualCooldowns = config.getBoolean("multispells." + spellName + ".check-individual-cooldowns", false);
 
 		actions = new ArrayList<Action>();
-		List<String> spellList = getConfigStringList("spells", null);
+		List<String> spellList = config.getStringList("multispells." + spellName + ".spells", null);
 		if (spellList != null) {
 			for (String s : spellList) {
 				if (s.matches("DELAY [0-9]+")) {
@@ -53,7 +56,7 @@ public final class MultiSpell extends Spell {
 					if (action.isSpell()) {
 						if (action.getSpell().onCooldown(player)) {
 							// a spell is on cooldown
-							sendMessage(player, strOnCooldown);
+							sendMessage(player, MagicSpells.strOnCooldown);
 							return PostCastAction.ALREADY_HANDLED;
 						}
 					}

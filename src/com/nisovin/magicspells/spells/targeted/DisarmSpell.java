@@ -4,13 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.entity.Item;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import com.nisovin.magicspells.spells.TargetedSpell;
+import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class DisarmSpell extends TargetedSpell {
+public class DisarmSpell extends TargetedEntitySpell {
 
 	private List<Integer> disarmable;
 	private int disarmDuration;
@@ -46,12 +47,8 @@ public class DisarmSpell extends TargetedSpell {
 				return PostCastAction.ALREADY_HANDLED;
 			}
 			
-			ItemStack inHand = target.getItemInHand();
-			if (disarmable.contains(inHand.getTypeId())) {
-				// drop item
-				target.setItemInHand(null);
-				Item item = target.getWorld().dropItemNaturally(target.getLocation(), inHand.clone());
-				item.setPickupDelay(disarmDuration);
+			boolean disarmed = disarm(target);
+			if (disarmed) {
 				// send messages
 				sendMessage(player, strCastSelf, "%t", target.getDisplayName());
 				sendMessage(target, strCastTarget, "%a", player.getDisplayName());
@@ -64,6 +61,28 @@ public class DisarmSpell extends TargetedSpell {
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+	
+	private boolean disarm(Player target) {
+		ItemStack inHand = target.getItemInHand();
+		if (disarmable.contains(inHand.getTypeId())) {
+			// drop item
+			target.setItemInHand(null);
+			Item item = target.getWorld().dropItemNaturally(target.getLocation(), inHand.clone());
+			item.setPickupDelay(disarmDuration);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
+		if (target instanceof Player) {
+			return disarm((Player)target);
+		} else {
+			return false;
+		}
 	}
 
 }

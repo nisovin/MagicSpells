@@ -4,7 +4,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
-@SuppressWarnings("serial")
 public class ManaChangeEvent extends Event {
 
     private static final HandlerList handlers = new HandlerList();
@@ -13,9 +12,7 @@ public class ManaChangeEvent extends Event {
 	private int newAmt;
 	private int maxMana;
 	
-	public ManaChangeEvent(Player player, int newAmt, int maxMana) {
-		super("MAGIC_SPELLS_MANA_CHANGE");
-		
+	public ManaChangeEvent(Player player, int newAmt, int maxMana) {		
 		this.player = player;
 		this.newAmt = newAmt;
 		this.maxMana = maxMana;

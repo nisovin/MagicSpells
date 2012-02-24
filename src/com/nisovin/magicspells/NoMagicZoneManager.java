@@ -16,7 +16,7 @@ import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
-public class NoMagicZoneManager {
+public class NoMagicZoneManager implements NoMagicZoneHandler {
 	
 	private HashSet<NoMagicZone> zones;
 
@@ -71,10 +71,12 @@ public class NoMagicZoneManager {
 		}
 	}
 	
+	@Override
 	public boolean willFizzle(Player player, Spell spell) {
 		return willFizzle(player.getLocation(), spell);
 	}
 	
+	@Override
 	public boolean willFizzle(Location location, Spell spell) {
 		for (NoMagicZone zone : zones) {
 			if (zone.willFizzle(location, spell)) {
@@ -84,6 +86,7 @@ public class NoMagicZoneManager {
 		return false;
 	}
 	
+	@Override
 	public void sendNoMagicMessage(Player player, Spell spell) {
 		for (NoMagicZone zone : zones) {
 			if (zone.willFizzle(player, spell)) {
@@ -93,6 +96,7 @@ public class NoMagicZoneManager {
 		}
 	}
 	
+	@Override
 	public int zoneCount() {
 		return zones.size();
 	}

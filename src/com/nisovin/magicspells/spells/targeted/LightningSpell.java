@@ -1,16 +1,17 @@
 package com.nisovin.magicspells.spells.targeted;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 
-import com.nisovin.magicspells.spells.TargetedSpell;
+import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class LightningSpell extends TargetedSpell {
+public class LightningSpell extends TargetedLocationSpell {
 	
 	private boolean requireEntityTarget;
 	private boolean obeyLos;
@@ -64,16 +65,26 @@ public class LightningSpell extends TargetedSpell {
 				}
 			}
 			if (target != null) {
-				if (noDamage) {
-					target.getWorld().strikeLightningEffect(target.getLocation());
-				} else {				
-					target.getWorld().strikeLightning(target.getLocation());
-				}
+				lightning(target.getLocation());
 			} else {
 				sendMessage(player, strCastFail);
 				return PostCastAction.ALREADY_HANDLED;
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+	
+	private void lightning(Location target) {
+		if (noDamage) {
+			target.getWorld().strikeLightningEffect(target);
+		} else {				
+			target.getWorld().strikeLightning(target);
+		}
+	}
+
+	@Override
+	public boolean castAtLocation(Player caster, Location target, float power) {
+		lightning(target);
+		return true;
 	}
 }

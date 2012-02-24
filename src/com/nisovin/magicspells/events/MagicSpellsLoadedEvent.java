@@ -5,7 +5,6 @@ import org.bukkit.event.HandlerList;
 
 import com.nisovin.magicspells.MagicSpells;
 
-@SuppressWarnings("serial")
 public class MagicSpellsLoadedEvent extends Event {
 
     private static final HandlerList handlers = new HandlerList();

@@ -20,7 +20,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
@@ -55,12 +54,17 @@ import com.nisovin.magicspells.spells.targeted.PotionEffectSpell;
 import com.nisovin.magicspells.spells.targeted.TelekinesisSpell;
 import com.nisovin.magicspells.spells.targeted.VolleySpell;
 import com.nisovin.magicspells.spells.targeted.ZapSpell;
+import com.nisovin.magicspells.util.CraftBukkitHandle;
+import com.nisovin.magicspells.util.CraftBukkitHandleDisabled;
+import com.nisovin.magicspells.util.CraftBukkitHandleEnabled;
 import com.nisovin.magicspells.util.MagicConfig;
 
 public class MagicSpells extends JavaPlugin {
 
 	public static MagicSpells plugin;
 
+	public static CraftBukkitHandle craftbukkit;
+	
 	protected static boolean debug;
 	protected static ChatColor textColor;
 	protected static int broadcastRange;
@@ -99,7 +103,7 @@ public class MagicSpells extends JavaPlugin {
 	
 	protected static ManaHandler mana;
 	protected static HashMap<Player,Long> manaPotionCooldowns;
-	public static NoMagicZoneManager noMagicZones;
+	public static NoMagicZoneHandler noMagicZones;
 	
 	@Override
 	public void onEnable() {
@@ -126,6 +130,13 @@ public class MagicSpells extends JavaPlugin {
 		File configFile = new File(getDataFolder(), "config.yml");
 		if (!configFile.exists()) saveDefaultConfig();
 		MagicConfig config = new MagicConfig(configFile);
+		
+		if (config.getBoolean("general.enable-volatile-features", true)) {
+			craftbukkit = new CraftBukkitHandleEnabled();
+		} else {
+			craftbukkit = new CraftBukkitHandleDisabled();
+		}
+		
 		debug = config.getBoolean("general.debug", false);
 		textColor = ChatColor.getByChar(config.getString("general.text-color", ChatColor.DARK_AQUA.getChar() + ""));
 		broadcastRange = config.getInt("general.broadcast-range", 20);
@@ -208,12 +219,9 @@ public class MagicSpells extends JavaPlugin {
 		}
 		
 		// load permissions
-		Set<Permission> perms = pm.getPermissions();
-		if (perms != null && perms.size() > 0) {
-			//for (Permission perm : perms) {
-				//pm.removePermission(perm);
-			//}
-		}
+		addPermission(pm, "noreagents", defaultAllPermsFalse? PermissionDefault.FALSE : PermissionDefault.OP);
+		addPermission(pm, "nocooldown", defaultAllPermsFalse? PermissionDefault.FALSE : PermissionDefault.OP);
+		addPermission(pm, "notarget", defaultAllPermsFalse? PermissionDefault.FALSE : PermissionDefault.OP);
 		HashMap<String, Boolean> permGrantChildren = new HashMap<String,Boolean>();
 		HashMap<String, Boolean> permLearnChildren = new HashMap<String,Boolean>();
 		HashMap<String, Boolean> permCastChildren = new HashMap<String,Boolean>();
@@ -282,14 +290,16 @@ public class MagicSpells extends JavaPlugin {
 		}
 		
 		// get spells from config
-		ConfigurationSection configSection = config.getSpellSection();
-		Set<String> spellKeys = configSection.getKeys(false);
+		Set<String> spellKeys = config.getSpellKeys();
 		for (String spellName : spellKeys) {
 			String className = "";
-			if (configSection.contains(spellName + ".spell-class")) {
-				className = configSection.getString(spellName + ".spell-class");
+			if (config.contains("spells." + spellName + ".spell-class")) {
+				className = config.getString("spells." + spellName + ".spell-class", "");
 			}
-			if (className.startsWith(".")) {
+			if (className == null || className.isEmpty()) {
+				getLogger().warning("Spell '" + spellName + "' does not have a spell-class property");
+				continue;
+			} else if (className.startsWith(".")) {
 				className = "com.nisovin.magicspells.spells" + className;
 			}
 			if (config.getBoolean("spells." + spellName + ".enabled", true)) {
@@ -557,7 +567,7 @@ public class MagicSpells extends JavaPlugin {
 			for (String spellName : multiSpells) {
 				if (config.getBoolean("multispells." + spellName + ".enabled", true)) {
 					// initialize spell
-					MultiSpell multiSpell = new MultiSpell(config, spellName);
+					OldMultiSpell multiSpell = new OldMultiSpell(config, spellName);
 					spells.put(spellName, multiSpell);
 					// add permissions
 					addPermission(pm, "grant." + spellName, PermissionDefault.FALSE);

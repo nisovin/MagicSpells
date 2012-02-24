@@ -5,11 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
-import net.minecraft.server.EntityCreature;
-
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.entity.CraftCreature;
-import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Creature;
 import org.bukkit.entity.CreatureType;
 import org.bukkit.entity.LivingEntity;
@@ -23,6 +19,7 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.entity.EntityTargetEvent.TargetReason;
 
+import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.spells.BuffSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
@@ -144,8 +141,7 @@ public class MinionSpell extends BuffSpell {
 						double distSq = minion.getLocation().toVector().distanceSquared(player.getLocation().toVector());
 						if (distSq > 3*3) {
 							// minion is too far, tell him to move closer
-							EntityCreature entity = ((CraftCreature)minion).getHandle();
-							entity.pathEntity = entity.world.findPath(entity, ((CraftPlayer)player).getHandle(), 16.0F);
+							MagicSpells.craftbukkit.entityPathTo(minion, player);
 						} 
 					}
 				} else if (!targetPlayers && minions.containsValue(event.getEntity())) {

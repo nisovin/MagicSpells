@@ -7,7 +7,6 @@ import org.bukkit.event.HandlerList;
 
 import com.nisovin.magicspells.Spell;
 
-@SuppressWarnings("serial")
 public class SpellTargetEvent extends SpellEvent implements Cancellable {
 
     private static final HandlerList handlers = new HandlerList();
@@ -16,7 +15,7 @@ public class SpellTargetEvent extends SpellEvent implements Cancellable {
 	private boolean cancelled = false;
 	
 	public SpellTargetEvent(Spell spell, Player caster, LivingEntity target) {
-		super("MAGIC_SPELLS_SPELL_TARGET", spell, caster);
+		super(spell, caster);
 		this.target = target;
 	}
 	

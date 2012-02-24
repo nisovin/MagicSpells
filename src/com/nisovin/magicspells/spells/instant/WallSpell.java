@@ -1,5 +1,7 @@
 package com.nisovin.magicspells.spells.instant;
 
+import java.util.ArrayList;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -9,6 +11,7 @@ import org.bukkit.util.Vector;
 import com.nisovin.magicspells.spells.InstantSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.TemporaryBlockSet;
+import com.nisovin.magicspells.util.TemporaryBlockSet.BlockSetRemovalCallback;
 
 public class WallSpell extends InstantSpell {
 
@@ -17,7 +20,10 @@ public class WallSpell extends InstantSpell {
 	private int wallHeight;
 	private Material wallType;
 	private int wallDuration;
+	private boolean preventBreaking;
 	private String strNoTarget;
+	
+	private ArrayList<TemporaryBlockSet> blockSets;
 	
 	public WallSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -27,7 +33,12 @@ public class WallSpell extends InstantSpell {
 		wallHeight = config.getInt("spells." + spellName + ".wall-height", 3);
 		wallType = Material.getMaterial(config.getInt("spells." + spellName + ".wall-type", Material.BRICK.getId()));
 		wallDuration = config.getInt("spells." + spellName + ".wall-duration", 15);
+		preventBreaking = getConfigBoolean("prevent-breaking", true);
 		strNoTarget = config.getString("spells." + spellName + ".str-no-target", "Unable to create a wall.");
+		
+		if (preventBreaking) {
+			blockSets = new ArrayList<TemporaryBlockSet>();
+		}
 	}
 	
 	@Override
@@ -57,7 +68,17 @@ public class WallSpell extends InstantSpell {
 						}
 					}
 				}
-				blockSet.removeAfter(Math.round(wallDuration*power));
+				if (preventBreaking) {
+					blockSets.add(blockSet);
+					blockSet.removeAfter(Math.round(wallDuration*power), new BlockSetRemovalCallback() {
+						@Override
+						public void run(TemporaryBlockSet set) {
+							blockSets.remove(set);
+						}
+					});
+				} else {
+					blockSet.removeAfter(Math.round(wallDuration*power));
+				}
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;

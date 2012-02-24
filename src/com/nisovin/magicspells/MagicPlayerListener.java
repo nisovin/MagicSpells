@@ -122,7 +122,7 @@ public class MagicPlayerListener implements Listener {
 
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPlayerAnimation(PlayerAnimationEvent event) {		
-		if (!MagicSpells.castOnAnimate) return;
+		if (event.isCancelled() || !MagicSpells.castOnAnimate) return;
 		
 		Player p = event.getPlayer();
 		if (noCast.contains(p)) {

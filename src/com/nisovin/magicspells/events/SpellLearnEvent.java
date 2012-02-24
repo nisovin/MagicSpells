@@ -7,7 +7,6 @@ import org.bukkit.event.HandlerList;
 
 import com.nisovin.magicspells.Spell;
 
-@SuppressWarnings("serial")
 public class SpellLearnEvent extends Event implements Cancellable {
 
     private static final HandlerList handlers = new HandlerList();
@@ -19,8 +18,6 @@ public class SpellLearnEvent extends Event implements Cancellable {
 	private boolean cancelled;
 	
 	public SpellLearnEvent(Spell spell, Player learner, LearnSource source, Object teacher) {
-		super("MAGIC_SPELLS_SPELL_LEARN");
-		
 		this.spell = spell;
 		this.learner = learner;
 		this.source = source;

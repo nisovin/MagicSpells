@@ -3,13 +3,14 @@ package com.nisovin.magicspells.spells;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class ExternalCommandSpell extends TargetedSpell {
+public class ExternalCommandSpell extends TargetedEntitySpell {
 	
 	@SuppressWarnings("unused")
 	private static final String SPELL_NAME = "external";
@@ -22,6 +23,7 @@ public class ExternalCommandSpell extends TargetedSpell {
 	private List<String> commandToBlock;
 	private List<String> temporaryPermissions;
 	private boolean requirePlayerTarget;
+	private boolean executeAsTargetInstead;
 	private boolean obeyLos;
 	private String strCantUseCommand;
 	private String strNoTarget;
@@ -37,6 +39,7 @@ public class ExternalCommandSpell extends TargetedSpell {
 		commandToBlock = getConfigStringList("command-to-block", null);
 		temporaryPermissions = getConfigStringList("temporary-permissions", null);
 		requirePlayerTarget = getConfigBoolean("require-player-target", false);
+		executeAsTargetInstead = getConfigBoolean("execute-as-target-instead", false);
 		obeyLos = getConfigBoolean("obey-los", true);
 		strCantUseCommand = config.getString("spells." + spellName + ".str-cant-use-command", "&4You don't have permission to do that.");
 		strNoTarget = getConfigString("str-no-target", "No target found.");
@@ -57,32 +60,58 @@ public class ExternalCommandSpell extends TargetedSpell {
 					return PostCastAction.ALREADY_HANDLED;
 				}
 			}
-			// grant permissions
-			if (temporaryPermissions != null) {
-				for (String perm : temporaryPermissions) {
+			process(player, target, args);
+		}
+		return PostCastAction.HANDLE_NORMALLY;
+	}
+	
+	private void process(Player player, Player target, String[] args) {
+		// grant permissions
+		if (temporaryPermissions != null) {
+			for (String perm : temporaryPermissions) {
+				if (!executeAsTargetInstead) {
 					if (!player.hasPermission(perm)) {
 						player.addAttachment(MagicSpells.plugin, perm, true, 5);
 					}
-				}
-			}
-			// perform commands
-			for (String comm : commandToExecute) {
-				if (args != null && args.length > 0) {
-					for (int i = 0; i < args.length; i++) {
-						comm = comm.replace("%"+(i+1), args[i]);
+				} else {
+					System.out.println("adding perm " + perm + " to " + target.getName());
+					if (!target.hasPermission(perm)) {
+						System.out.println("yup");
+						target.addAttachment(MagicSpells.plugin, perm, true, 5);
 					}
 				}
-				comm = comm.replace("%a", player.getName());
-				if (target != null) {
-					comm = comm.replace("%t", target.getName());
-				}
-				player.performCommand(comm);
-			}
-			if (commandToExecuteLater != null && commandToExecuteLater.size() > 0 && !commandToExecuteLater.get(0).isEmpty()) {
-				Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new DelayedCommand(player, target), commandDelay);
 			}
 		}
-		return PostCastAction.HANDLE_NORMALLY;
+		// perform commands
+		for (String comm : commandToExecute) {
+			if (args != null && args.length > 0) {
+				for (int i = 0; i < args.length; i++) {
+					comm = comm.replace("%"+(i+1), args[i]);
+				}
+			}
+			comm = comm.replace("%a", player.getName());
+			if (target != null) {
+				comm = comm.replace("%t", target.getName());
+			}
+			if (!executeAsTargetInstead) {
+				player.performCommand(comm);
+			} else {
+				target.performCommand(comm);
+			}
+		}
+		if (commandToExecuteLater != null && commandToExecuteLater.size() > 0 && !commandToExecuteLater.get(0).isEmpty()) {
+			Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new DelayedCommand(player, target), commandDelay);
+		}
+	}
+
+	@Override
+	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
+		if (requirePlayerTarget && target instanceof Player) {
+			process(caster, (Player)target, null);
+			return true;
+		} else {
+			return false;
+		}
 	}
 	
 	@EventHandler
@@ -125,8 +154,14 @@ public class ExternalCommandSpell extends TargetedSpell {
 			// grant permissions
 			if (temporaryPermissions != null) {
 				for (String perm : temporaryPermissions) {
-					if (!player.hasPermission(perm)) {
-						player.addAttachment(MagicSpells.plugin, perm, true, 5);
+					if (!executeAsTargetInstead) {
+						if (!player.hasPermission(perm)) {
+							player.addAttachment(MagicSpells.plugin, perm, true, 5);
+						}
+					} else {
+						if (!target.hasPermission(perm)) {
+							target.addAttachment(MagicSpells.plugin, perm, true, 5);
+						}
 					}
 				}
 			}
@@ -137,7 +172,11 @@ public class ExternalCommandSpell extends TargetedSpell {
 					if (target != null) {
 						comm = comm.replace("%t", target.getName());
 					}
-					player.performCommand(comm);
+					if (!executeAsTargetInstead) {
+						player.performCommand(comm);
+					} else {
+						target.performCommand(comm);
+					}
 				}
 			}			
 		}

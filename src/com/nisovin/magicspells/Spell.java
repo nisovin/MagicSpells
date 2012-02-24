@@ -1,23 +1,13 @@
 package com.nisovin.magicspells;
 
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
-import net.minecraft.server.DataWatcher;
-import net.minecraft.server.EntityLiving;
-import net.minecraft.server.EntityPlayer;
-import net.minecraft.server.MobEffect;
-import net.minecraft.server.Packet40EntityMetadata;
-import net.minecraft.server.Packet42RemoveMobEffect;
-
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.entity.CraftLivingEntity;
-import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -42,7 +32,9 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	protected CastItem castItem;
 	protected boolean bindable;
 	protected HashSet<CastItem> bindableItems;
+	protected ItemStack spellIcon;
 	protected int broadcastRange;
+	protected int experience;
 	
 	protected ItemStack[] cost;
 	protected int healthCost = 0;
@@ -91,7 +83,17 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 				bindableItems.add(new CastItem(s));
 			}
 		}
+		String icontemp = config.getString(section + "." + spellName + ".spell-icon", null);
+		if (icontemp == null) {
+			spellIcon = null;
+		} else if (icontemp.contains(":")) {
+			String[] icondata = icontemp.split(":");
+			spellIcon = new ItemStack(Integer.parseInt(icondata[0]), 0, Short.parseShort(icondata[1]));
+		} else {
+			spellIcon = new ItemStack(Integer.parseInt(icontemp), 0, (short)0);
+		}
 		this.broadcastRange = config.getInt(section + "." + spellName + ".broadcast-range", MagicSpells.broadcastRange);
+		this.experience = config.getInt(section + "." + spellName + ".experience", 0);
 		
 		List<String> costList = config.getStringList(section + "." + spellName + ".cost", null);
 		if (costList != null && costList.size() > 0) {
@@ -276,6 +278,9 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 			} else if (state == SpellCastState.NO_MAGIC_ZONE) {
 				MagicSpells.noMagicZones.sendNoMagicMessage(player, this);
 			}
+			if (experience > 0) {
+				player.giveExp(experience);
+			}
 		}
 		
 		return new SpellCastResult(state, action);
@@ -313,6 +318,10 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		} else {
 			return bindableItems.contains(item);
 		}
+	}
+	
+	public ItemStack getSpellIcon() {
+		return spellIcon;
 	}
 	
 	public String getCostStr() {
@@ -417,7 +426,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		if (reagents == null && healthCost <= 0 && manaCost <= 0 && hungerCost <= 0) {
 			return true;
 		}
-		if (healthCost > 0 && player.getHealth() <= healthCost) { // TODO: add option to allow death from health cost
+		if (healthCost > 0 && player.getHealth() <= healthCost) {
 			return false;
 		}
 		if (manaCost > 0 && !MagicSpells.mana.hasMana(player, manaCost)) {
@@ -531,6 +540,22 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		inventory.setContents(items);
 	}
 	
+	protected void registerEvents() {
+		registerEvents(this);
+	}
+	
+	protected void registerEvents(Listener listener) {
+		Bukkit.getPluginManager().registerEvents(listener, MagicSpells.plugin);
+	}
+	
+	protected void unregisterEvents() {
+		unregisterEvents(this);
+	}
+	
+	protected void unregisterEvents(Listener listener) {
+		//HandlerList.unregisterAll(listener);
+	}
+	
 	/**
 	 * Formats a string by performing the specified replacements.
 	 * @param message the string to format
@@ -599,45 +624,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	 * @param duration how long the effect will last, in ticks
 	 */
 	protected void playPotionEffect(final Player player, final LivingEntity entity, int color, int duration) {
-		final DataWatcher dw = new DataWatcher();
-		dw.a(8, Integer.valueOf(0));
-		dw.watch(8, Integer.valueOf(color));
-		
-		Packet40EntityMetadata packet = new Packet40EntityMetadata(entity.getEntityId(), dw);
-		((CraftPlayer)player).getHandle().netServerHandler.sendPacket(packet);
-		
-		Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new Runnable() {
-			public void run() {
-				DataWatcher dwReal = ((CraftLivingEntity)entity).getHandle().getDataWatcher();
-				dw.watch(8, dwReal.getInt(8));
-				Packet40EntityMetadata packet = new Packet40EntityMetadata(entity.getEntityId(), dw);
-				((CraftPlayer)player).getHandle().netServerHandler.sendPacket(packet);
-			}
-		}, duration);
-	}
-	
-	public void setMobEffect(LivingEntity entity, int type, int duration, int amplifier) {		
-		((CraftLivingEntity)entity).getHandle().addEffect(new MobEffect(type, duration, amplifier));
-	}
-	
-	@SuppressWarnings("rawtypes")
-	public static void removeMobEffect(LivingEntity entity, int type) {
-		try {
-			// remove effect
-			Field field = EntityLiving.class.getDeclaredField("effects");
-			field.setAccessible(true);
-			HashMap effects = (HashMap)field.get(((CraftLivingEntity)entity).getHandle());
-			effects.remove(type);
-			// alert player that effect is gone
-			if (entity instanceof Player) {
-				EntityPlayer player = ((CraftPlayer)entity).getHandle();
-				player.netServerHandler.sendPacket(new Packet42RemoveMobEffect(player.id, new MobEffect(type, 0, 0)));
-			}
-			// remove graphical effect
-			((CraftLivingEntity)entity).getHandle().getDataWatcher().watch(8, Integer.valueOf(0));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		MagicSpells.craftbukkit.playPotionEffect(player, entity, color, duration);
 	}
 	
 	public String getInternalName() {

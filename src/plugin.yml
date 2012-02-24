@@ -1,6 +1,6 @@
 name: MagicSpells
 main: com.nisovin.magicspells.MagicSpells
-version: 2.3
+version: 2.4.2
 author: nisovin
 softdepend: [BookWorm,WorldGuard]
 commands:
@@ -13,15 +13,6 @@ commands:
         usage: /<command>
         aliases: [mana]
 permissions:
-    magicspells.noreagents:
-        description: Cast without needing reagents
-        default: op
-    magicspells.nocooldown:
-        description: Spells do not cause cooldowns
-        default: op
-    magicspells.notarget:
-        description: Cannot be targeted by spells
-        default: false
     magicspells.silent:
         description: Cast spells without spell text messages
         default: false

@@ -3,22 +3,25 @@ package com.nisovin.magicspells.spells.targeted;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockPlaceEvent;
 
-import com.nisovin.magicspells.spells.TargetedSpell;
+import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class MaterializeSpell extends TargetedSpell {
+public class MaterializeSpell extends TargetedLocationSpell {
 
 	private int type;
 	private byte data;
 	private boolean applyPhysics;
 	private boolean checkPlugins;
 	private String strNoTarget;
+	private String strFailed;
 	
 	public MaterializeSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -35,6 +38,7 @@ public class MaterializeSpell extends TargetedSpell {
 		applyPhysics = getConfigBoolean("apply-physics", true);
 		checkPlugins = getConfigBoolean("check-plugins", true);
 		strNoTarget = getConfigString("str-no-target", "No target.");
+		strFailed = getConfigString("str-failed", "");
 	}
 
 	@Override
@@ -42,16 +46,11 @@ public class MaterializeSpell extends TargetedSpell {
 		if (state == SpellCastState.NORMAL) {
 			List<Block> lastTwo = player.getLastTwoTargetBlocks(null, range);
 			if (lastTwo.size() == 2 && lastTwo.get(1).getType() != Material.AIR && lastTwo.get(0).getType() == Material.AIR) {
-				Block b = lastTwo.get(0);
-				BlockState blockState = b.getState();
-				b.setTypeIdAndData(type, data, applyPhysics);
-				
-				if (checkPlugins) {
-					BlockPlaceEvent event = new BlockPlaceEvent(b, blockState, lastTwo.get(1), player.getItemInHand(), player, true);
-					Bukkit.getPluginManager().callEvent(event);
-					if (event.isCancelled()) {
-						blockState.update();
-					}
+				boolean done = materialize(player, lastTwo.get(0), lastTwo.get(1));
+				if (!done) {
+					sendMessage(player, strFailed);
+					fizzle(player);
+					return PostCastAction.ALREADY_HANDLED;
 				}
 			} else {
 				// fail no target
@@ -61,6 +60,32 @@ public class MaterializeSpell extends TargetedSpell {
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+
+	private boolean materialize(Player player, Block block, Block against) {
+		BlockState blockState = block.getState();
+		
+		if (checkPlugins) {
+			block.setTypeIdAndData(type, data, false);
+			BlockPlaceEvent event = new BlockPlaceEvent(block, blockState, against, player.getItemInHand(), player, true);
+			Bukkit.getPluginManager().callEvent(event);
+			blockState.update();
+			if (event.isCancelled()) {
+				return false;
+			} else {
+				block.setTypeIdAndData(type, data, applyPhysics);
+			}
+		} else {
+			block.setTypeIdAndData(type, data, applyPhysics);
+		}
+		
+		return true;
+	}
+	
+	@Override
+	public boolean castAtLocation(Player caster, Location target, float power) {
+		Block b = target.getBlock();
+		return materialize(caster, b, b.getRelative(BlockFace.DOWN));
 	}
 
 }

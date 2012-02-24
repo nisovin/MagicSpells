@@ -14,6 +14,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
@@ -52,19 +53,19 @@ public class SpellbookSpell extends CommandSpell {
 	public SpellbookSpell(MagicConfig config, String spellName) {
 		super(config,spellName);
 		
-		defaultUses = config.getInt("spells." + spellName + ".default-uses", -1);
-		destroyBookcase = config.getBoolean("spells." + spellName + ".destroy-when-used-up", false);
-		spellbookBlock = Material.getMaterial(config.getInt("spell." + spellName + ".spellbook-block", Material.BOOKSHELF.getId()));
-		strUsage = config.getString("spells." + spellName + ".str-usage", "Usage: /cast spellbook <spell> [uses]");
-		strNoSpell = config.getString("spells." + spellName + ".str-no-spell", "You do not know a spell by that name.");
-		strCantTeach = config.getString("spells." + spellName + ".str-cant-teach", "You can't create a spellbook with that spell.");
-		strNoTarget = config.getString("spells." + spellName + ".str-no-target", "You must target a bookcase to create a spellbook.");
-		strHasSpellbook = config.getString("spells." + spellName + ".str-has-spellbook", "That bookcase already has a spellbook.");
-		strCantDestroy = config.getString("spells." + spellName + ".str-cant-destroy", "You cannot destroy a bookcase with a spellbook.");
-		strLearnError = config.getString("spells." + spellName + ".str-learn-error", "");
-		strCantLearn = config.getString("spells." + spellName + ".str-cant-learn", "You cannot learn the spell in this spellbook.");
-		strAlreadyKnown = config.getString("spells." + spellName + ".str-already-known", "You already know the %s spell.");
-		strLearned = config.getString("spells." + spellName + ".str-learned", "You have learned the %s spell!");
+		defaultUses = getConfigInt("default-uses", -1);
+		destroyBookcase = getConfigBoolean("destroy-when-used-up", false);
+		spellbookBlock = Material.getMaterial(getConfigInt("spellbook-block", Material.BOOKSHELF.getId()));
+		strUsage = getConfigString("str-usage", "Usage: /cast spellbook <spell> [uses]");
+		strNoSpell = getConfigString("str-no-spell", "You do not know a spell by that name.");
+		strCantTeach = getConfigString("str-cant-teach", "You can't create a spellbook with that spell.");
+		strNoTarget = getConfigString("str-no-target", "You must target a bookcase to create a spellbook.");
+		strHasSpellbook = getConfigString("str-has-spellbook", "That bookcase already has a spellbook.");
+		strCantDestroy = getConfigString("str-cant-destroy", "You cannot destroy a bookcase with a spellbook.");
+		strLearnError = getConfigString("str-learn-error", "");
+		strCantLearn = getConfigString("str-cant-learn", "You cannot learn the spell in this spellbook.");
+		strAlreadyKnown = getConfigString("str-already-known", "You already know the %s spell.");
+		strLearned = getConfigString("str-learned", "You have learned the %s spell!");
 		
 		bookLocations = new ArrayList<MagicLocation>();
 		bookSpells = new ArrayList<String>();
@@ -132,12 +133,13 @@ public class SpellbookSpell extends CommandSpell {
 		saveSpellbooks();
 	}
 	
-	@EventHandler(priority=EventPriority.MONITOR)
+	@EventHandler(priority=EventPriority.HIGH)
 	public void onPlayerInteract(PlayerInteractEvent event) {
 		if (event.isCancelled()) return;
-		if (event.hasBlock() && event.getClickedBlock().getType() == spellbookBlock) {
+		if (event.hasBlock() && event.getClickedBlock().getType() == spellbookBlock && event.getAction() == Action.RIGHT_CLICK_BLOCK) {
 			MagicLocation loc = new MagicLocation(event.getClickedBlock().getLocation());
 			if (bookLocations.contains(loc)) {
+				event.setCancelled(true);
 				Player player = event.getPlayer();
 				int i = bookLocations.indexOf(loc);
 				Spellbook spellbook = MagicSpells.getSpellbook(player);

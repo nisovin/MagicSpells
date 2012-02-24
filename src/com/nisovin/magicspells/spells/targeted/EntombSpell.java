@@ -12,10 +12,10 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.BlockBreakEvent;
 
 import com.nisovin.magicspells.MagicSpells;
-import com.nisovin.magicspells.spells.TargetedSpell;
+import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class EntombSpell extends TargetedSpell {
+public class EntombSpell extends TargetedEntitySpell {
 
 	private boolean targetPlayers;
 	private boolean obeyLos;
@@ -53,66 +53,7 @@ public class EntombSpell extends TargetedSpell {
 				Location loc = new Location(target.getLocation().getWorld(), x+.5, y+.5, z+.5, target.getLocation().getYaw(), target.getLocation().getPitch());
 				target.teleport(loc);
 				
-				ArrayList<Block> tombBlocks = new ArrayList<Block>();
-				Block feet = target.getLocation().getBlock();
-				
-				Block temp = feet.getRelative(1,0,0);
-				if (temp.getType() == Material.AIR) {
-					temp.setTypeId(tombBlockType);
-					tombBlocks.add(temp);
-				}
-				temp = feet.getRelative(1,1,0);
-				if (temp.getType() == Material.AIR) {
-					temp.setTypeId(tombBlockType);
-					tombBlocks.add(temp);
-				}
-				temp = feet.getRelative(-1,0,0);
-				if (temp.getType() == Material.AIR) {
-					temp.setTypeId(tombBlockType);
-					tombBlocks.add(temp);
-				}
-				temp = feet.getRelative(-1,1,0);
-				if (temp.getType() == Material.AIR) {
-					temp.setTypeId(tombBlockType);
-					tombBlocks.add(temp);
-				}
-				temp = feet.getRelative(0,0,1);
-				if (temp.getType() == Material.AIR) {
-					temp.setTypeId(tombBlockType);
-					tombBlocks.add(temp);
-				}
-				temp = feet.getRelative(0,1,1);
-				if (temp.getType() == Material.AIR) {
-					temp.setTypeId(tombBlockType);
-					tombBlocks.add(temp);
-				}
-				temp = feet.getRelative(0,0,-1);
-				if (temp.getType() == Material.AIR) {
-					temp.setTypeId(tombBlockType);
-					tombBlocks.add(temp);
-				}
-				temp = feet.getRelative(0,1,-1);
-				if (temp.getType() == Material.AIR) {
-					temp.setTypeId(tombBlockType);
-					tombBlocks.add(temp);
-				}
-				if (closeTopAndBottom) {
-					temp = feet.getRelative(0,-1,0);
-					if (temp.getType() == Material.AIR) {
-						temp.setTypeId(tombBlockType);
-						tombBlocks.add(temp);
-					}
-					temp = feet.getRelative(0,2,0);
-					if (temp.getType() == Material.AIR) {
-						temp.setTypeId(tombBlockType);
-						tombBlocks.add(temp);
-					}
-				}				
-				
-				if (tombDuration > 0 && tombBlocks.size() > 0) {
-					blocks.addAll(tombBlocks);
-					MagicSpells.plugin.getServer().getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new TombRemover(tombBlocks), Math.round(tombDuration*20*power));
-				}
+				createTomb(target, power);
 			} else {
 				sendMessage(player, strNoTarget);
 				fizzle(player);
@@ -120,7 +61,80 @@ public class EntombSpell extends TargetedSpell {
 			}
 		}		
 		return PostCastAction.HANDLE_NORMALLY;
-	}	
+	}
+	
+	private void createTomb(LivingEntity target, float power) {		
+		ArrayList<Block> tombBlocks = new ArrayList<Block>();
+		Block feet = target.getLocation().getBlock();
+		
+		Block temp = feet.getRelative(1,0,0);
+		if (temp.getType() == Material.AIR) {
+			temp.setTypeId(tombBlockType);
+			tombBlocks.add(temp);
+		}
+		temp = feet.getRelative(1,1,0);
+		if (temp.getType() == Material.AIR) {
+			temp.setTypeId(tombBlockType);
+			tombBlocks.add(temp);
+		}
+		temp = feet.getRelative(-1,0,0);
+		if (temp.getType() == Material.AIR) {
+			temp.setTypeId(tombBlockType);
+			tombBlocks.add(temp);
+		}
+		temp = feet.getRelative(-1,1,0);
+		if (temp.getType() == Material.AIR) {
+			temp.setTypeId(tombBlockType);
+			tombBlocks.add(temp);
+		}
+		temp = feet.getRelative(0,0,1);
+		if (temp.getType() == Material.AIR) {
+			temp.setTypeId(tombBlockType);
+			tombBlocks.add(temp);
+		}
+		temp = feet.getRelative(0,1,1);
+		if (temp.getType() == Material.AIR) {
+			temp.setTypeId(tombBlockType);
+			tombBlocks.add(temp);
+		}
+		temp = feet.getRelative(0,0,-1);
+		if (temp.getType() == Material.AIR) {
+			temp.setTypeId(tombBlockType);
+			tombBlocks.add(temp);
+		}
+		temp = feet.getRelative(0,1,-1);
+		if (temp.getType() == Material.AIR) {
+			temp.setTypeId(tombBlockType);
+			tombBlocks.add(temp);
+		}
+		if (closeTopAndBottom) {
+			temp = feet.getRelative(0,-1,0);
+			if (temp.getType() == Material.AIR) {
+				temp.setTypeId(tombBlockType);
+				tombBlocks.add(temp);
+			}
+			temp = feet.getRelative(0,2,0);
+			if (temp.getType() == Material.AIR) {
+				temp.setTypeId(tombBlockType);
+				tombBlocks.add(temp);
+			}
+		}				
+		
+		if (tombDuration > 0 && tombBlocks.size() > 0) {
+			blocks.addAll(tombBlocks);
+			MagicSpells.plugin.getServer().getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new TombRemover(tombBlocks), Math.round(tombDuration*20*power));
+		}
+	}
+
+	@Override
+	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
+		if (target instanceof Player && !targetPlayers) {
+			return false;
+		} else {
+			createTomb(target, power);
+			return true;
+		}
+	}
 	
 	@EventHandler
 	public void onBlockBreak(BlockBreakEvent event) {

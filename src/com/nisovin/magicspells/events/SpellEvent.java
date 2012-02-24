@@ -5,14 +5,12 @@ import org.bukkit.event.Event;
 
 import com.nisovin.magicspells.Spell;
 
-@SuppressWarnings("serial")
 public class SpellEvent extends Event {
 
 	private Spell spell;
 	private Player caster;
 	
-	public SpellEvent(String type, Spell spell, Player caster) {
-		super(type);
+	public SpellEvent(Spell spell, Player caster) {
 		this.spell = spell;
 		this.caster = caster;
 	}

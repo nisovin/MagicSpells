@@ -6,19 +6,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import net.minecraft.server.ChunkCoordIntPair;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerMoveEvent;
 
+import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.spells.BuffSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
@@ -92,7 +90,7 @@ public class StonevisionSpell extends BuffSpell {
 		int range;
 		int type;
 		List<Block> blocks;
-		Set<ChunkCoordIntPair> chunks;
+		Set<Chunk> chunks;
 		
 		public TransparentBlockSet(Player player, int range, int type) {
 			this.player = player;
@@ -102,7 +100,7 @@ public class StonevisionSpell extends BuffSpell {
 			
 			blocks = new ArrayList<Block>();
 			if (unobfuscate) {
-				chunks = new HashSet<ChunkCoordIntPair>();
+				chunks = new HashSet<Chunk>();
 			}
 			
 			setTransparency();
@@ -148,7 +146,7 @@ public class StonevisionSpell extends BuffSpell {
 							
 							// save chunk for resending after spell ends
 							Chunk c = block.getChunk();
-							chunks.add(new ChunkCoordIntPair(c.getX(), c.getZ()));
+							chunks.add(c);
 						}
 					}
 				}
@@ -179,7 +177,6 @@ public class StonevisionSpell extends BuffSpell {
 			return false;
 		}
 		
-		@SuppressWarnings("unchecked")
 		public void removeTransparency() {
 			for (Block b : blocks) {
 				player.sendBlockChange(b.getLocation(), b.getType(), b.getData());
@@ -188,9 +185,7 @@ public class StonevisionSpell extends BuffSpell {
 			
 			// queue up chunks for resending
 			if (unobfuscate) {
-				for (ChunkCoordIntPair chunk : chunks) {
-					((CraftPlayer)player).getHandle().chunkCoordIntPairQueue.add(chunk);
-				}
+				MagicSpells.craftbukkit.queueChunksForUpdate(player, chunks);
 			}
 		}
 	}
