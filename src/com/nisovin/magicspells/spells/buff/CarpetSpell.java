@@ -10,6 +10,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
@@ -31,10 +32,10 @@ public class CarpetSpell extends BuffSpell {
 	public CarpetSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		platformBlock = config.getInt("spells." + spellName + ".platform-block", Material.GLASS.getId());
-		size = config.getInt("spells." + spellName + ".size", 2);
-		cancelOnLogout = config.getBoolean("spells." + spellName + ".cancel-on-logout", true);
-		cancelOnTeleport = config.getBoolean("spells." + spellName + ".cancel-on-teleport", true);
+		platformBlock = getConfigInt("platform-block", Material.GLASS.getId());
+		size = getConfigInt("size", 2);
+		cancelOnLogout = getConfigBoolean("cancel-on-logout", true);
+		cancelOnTeleport = getConfigBoolean("cancel-on-teleport", true);
 		
 		windwalkers = new HashMap<String,BlockPlatform>();
 		falling = new HashSet<Player>();
@@ -118,13 +119,19 @@ public class CarpetSpell extends BuffSpell {
 		}
 	}
 
-	@EventHandler(priority=EventPriority.MONITOR)
+	@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
 	public void onPlayerTeleport(PlayerTeleportEvent event) {
-		if (event.isCancelled()) return;
 		if (cancelOnTeleport && windwalkers.containsKey(event.getPlayer().getName())) {
 			if (!event.getFrom().getWorld().getName().equals(event.getTo().getWorld().getName()) || event.getFrom().toVector().distanceSquared(event.getTo().toVector()) > 50*50) {
 				turnOff(event.getPlayer());
 			}
+		}
+	}
+	
+	@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
+	public void onPlayerPortal(PlayerPortalEvent event) {
+		if (cancelOnTeleport && windwalkers.containsKey(event.getPlayer().getName())) {
+			turnOff(event.getPlayer());
 		}
 	}
 	

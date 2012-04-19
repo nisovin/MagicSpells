@@ -1,7 +1,7 @@
 general:
     debug: false
+    debug-level: 3
     enable-volatile-features: true
-    use-new-spell-loading: true
     alt-config: altConfig.yml
     str-cast-usage: |
         Usage: /cast <spell>. 
@@ -12,18 +12,46 @@ general:
     str-on-cooldown: That spell is on cooldown (%c seconds remaining).
     str-missing-reagents: You do not have the required reagents for that spell.
     str-cant-cast: You can't cast that spell right now.
-    str-no-magic-zone: An anti-magic aura makes your spell fizzle.
+    str-wrong-world: You cannot cast that spell here.
     str-console-name: Admin
     text-color: 3
     broadcast-range: 20
+    separate-player-spells-per-world: false
     allow-cycle-to-no-spell: false
     only-cycle-to-castable-spells: true
+    allow-cast-with-fist: false
     ops-have-all-spells: true
     default-all-perms-false: false
     ignore-default-bindings: false
     ignore-cast-item-durability: [ 268, 269, 270, 271, 283, 284, 285, 286, 290, 294, 314, 315, 316, 317 ]
     global-cooldown: 500
     cast-on-animate: true
+    
+    entity-names:
+        zombie: an ugly zombie
+        skeleton: a skeleton
+        spider: a spider
+        cavespider: a nasty little spider
+        creeper: a creepy creeper
+        slime: a slimy blob
+        wolf: a wolf
+        snowman: a snow golem
+        villager: an innocent villager
+        enderman: Mr. Enderman
+        silverfish: a slimy silverfish
+        ghast: a ghast
+        pigzombie: a pig zombie
+        blaze: a blaze
+        lavaslime: a magma slime
+        giant: the giant
+        enderdragon: the ender dragon
+        cow: a cow
+        sheep: a sheep
+        pig: a pig
+        chicken: a duck
+        mushroomcow: a deformed cow
+        squid: a squid
+    
     mana:
         enable-mana-bars: true
         max-mana: 100
@@ -36,6 +64,8 @@ general:
         show-mana-on-use: false
         show-mana-on-regen: false
         show-mana-on-wood-tool: true
+        show-mana-on-hunger-bar: false
+        show-mana-on-experience-bar: false
         tool-slot: 8
         mana-potion-cooldown: 30
         str-mana-potion-on-cooldown: You cannot use another mana potion yet (%c seconds).
@@ -112,13 +142,40 @@ spells:
         name: bind
         enable: true
         description: Binds a spell to a wand item.
+        allow-bind-to-fist: false
         str-cast-self: "You have successfully bound the %s spell to the \nitem you are holding."
         str-usage: You must specify a spell name and hold an item in your hand.
         str-no-spell: You do not know a spell by that name.
         str-cant-bind-spell: That spell cannot be bound to an item.
         str-cant-bind-item: That spell cannot be bound to that item.
+    unbind:
+        spell-class: ".command.UnbindSpell"
+        name: unbind
+        enable: true
+        description: Unbinds a spell from its assigned wand item.
+        str-cast-self: "You have successfully unbound the %s spell."
+        str-usage: You must specify a spell name.
+        str-no-spell: You do not know a spell by that name.
+        str-cant-bind-spell: That spell cannot be bound to an item.
+        str-not-bound: That spell is not bound to that item.
 
 
+    armor:
+        spell-class: ".buff.ArmorSpell"
+        name: armor
+        cast-item: 280
+        duration: 30
+        num-uses: 15
+        helmet: 314 protection_explosions:1 oxygen:1
+        chestplate: 315 protection_projectile:1
+        leggings: 316 protection_fire:1
+        boots: 317 protection_fall:1
+        cost:
+            - 331 1
+            - 371 1
+        str-cost: 1 redstone and 1 gold nugget
+        str-cast-self: You have conjured some magic armor!
+        str-has-armor: You cannot cast this spell if you are already wearing armor.
     blind:
         spell-class: ".targeted.PotionEffectSpell"
         name: blind
@@ -147,7 +204,9 @@ spells:
         range: 25
         pass-through-ceiling: false
         smoke-trail: true
-        portal-animation: true
+        effects:
+            - pos1 ender
+            - pos2 ender
         cost:
             - 331 2
         str-cost: 2 redstone dust
@@ -163,7 +222,8 @@ spells:
         range: 25
         slot: 0
         consume-block: true
-        show-effect: true
+        effects:
+            - target blockbreak
         check-plugins: true
         allowed-types: 1,2,3,4,5,12,13,17,20,22,24,35,41,42,43,44,45,47,48,49,50,53,57,65,67,80,85,87,88,89,91,92
         cost:
@@ -263,6 +323,8 @@ spells:
             - 276
             - 283
         disarm-duration: 100
+        dont-drop: false
+        prevent-theft: true
         obey-los: true
         cost:
             - 331 4
@@ -336,7 +398,10 @@ spells:
         explosion-size: 4
         backfire-chance: 3
         prevent-block-damage: false
+        prevent-player-damage: false
         damage-multiplier: 10
+        add-fire: false
+        simulate-tnt: true
         ignore-canceled: false
         cost:
             - 331 5
@@ -513,7 +578,9 @@ spells:
         can-cast-with-item: false
         world: CURRENT
         coordinates: SPAWN
-        use-spell-effect: true
+        effects:
+            - pos1 ender
+            - pos2 ender
         cast-time: 0
         cost:
             - 331 1
@@ -601,7 +668,8 @@ spells:
         cast-item: 280
         heal-amount: 10
         cancel-if-full: true
-        show-spell-effect: true
+        effects:
+            - target potion FF0000 40
         obey-los: true
         cooldown: 0
         range: 12
@@ -618,7 +686,9 @@ spells:
         description: Makes you invisible to players and monsters.
         cast-item: 280
         cooldown: 60
-        show-spell-effect: true
+        effects:
+            - caster spawn
+            - disabled spawn
         toggle: true
         prevent-pickups: true
         cancel-on-attack: true
@@ -676,6 +746,21 @@ spells:
         str-cost: 2 redstone dust
         str-cast-self: You leap forward.
         str-cast-others: "%a leaps forward."
+    levitate:
+        spell-class: ".targeted.LevitateSpell"
+        name: levitate
+        description: Cause your target to fly through the air.
+        cast-item: 280
+        tick-rate: 5
+        duration: 15
+        cooldown: 30
+        range: 12
+        cost:
+            - 331 2
+            - 288 1
+        str-cost: 2 redstone and 1 feather
+        str-cast-self: You are levitating %t!
+        str-cast-target: "%a is levitating you!"
     lifewalk:
         spell-class: ".buff.LifewalkSpell"
         name: lifewalk
@@ -865,6 +950,7 @@ spells:
         name: recall
         description: Teleports you to your marked location.
         cooldown: 300
+        mark-spell: mark
         max-range: -1
         cast-time: 0
         allow-cross-world: true
@@ -959,7 +1045,7 @@ spells:
         charge-reagents-for-spell-per-charge: false
         require-teach-perm: true
         require-scroll-cast-perm-on-use: true
-        stack-by-data-var: bQ
+        stack-by-data-fn: "a"
         str-scroll-over: "Spell Scroll: %s (%u uses remaining)"
         str-usage: |
             You must hold a single blank paper 
@@ -974,7 +1060,9 @@ spells:
         spell-class: ".targeted.ShadowstepSpell"
         name: shadowstep
         cast-item: 280
-        use-spell-effect: true
+        effects:
+            - caster spawner
+            - target spawner
         target-players: false
         obey-los: true
         range: 15
@@ -983,6 +1071,19 @@ spells:
         str-cost: 2 redstone dust
         str-no-target: No target.
         str-no-landing-spot: Cannot shadowstep there.
+    silence:
+        spell-class: ".targeted.SilenceSpell"
+        name: silence
+        description: Prevent a player from casting spells for a time.
+        cast-item: 280
+        range: 10
+        duration: 200
+        cost:
+            - 331 2
+        str-cost: 2 redstone dust
+        str-cast-self: You have silenced %t.
+        str-cast-target: "%a has silenced you."
+        str-silenced: You are silenced.
     stealth:
         spell-class: ".buff.StealthSpell"
         name: stealth
@@ -1012,6 +1113,22 @@ spells:
         str-cost: 4 redstone dust, 2 stone and 2 glass
         str-cast-self: You can see through stone!
         str-fade: You can no longer see through stone.
+    storm:
+        spell-class: ".targeted.AreaEffectSpell"
+        name: storm
+        description: Strike lightning upon all nearby enemies.
+        cast-item: 280
+        horizontal-radius: 10
+        vertical-radius: 5
+        point-blank: true
+        fail-if-no-targets: true
+        spells:
+            - lightning
+        cooldown: 15
+        cost:
+            - 331 5
+        str-cost: 5 redstone dust
+        str-cast-self: You call down a lightning storm!
     summon:
         spell-class: ".channeled.SummonSpell"
         name: summon
@@ -1080,6 +1197,17 @@ spells:
         str-cant-learn: You cannot learn the spell in this tome.
         str-learned: You have learned the %s spell.
         str-cast-self: You have created a spell tome.
+    tree:
+        spell-class: ".targeted.TreeSpell"
+        name: tree
+        range: 15
+        cooldown: 5
+        tree-type: tree
+        animation-speed: 20
+        cost:
+            - 6 1
+        str-cost: 1 sapling
+        str-no-target: You cannot grow a tree there.
     volley:
         spell-class: ".targeted.VolleySpell"
         name: volley
@@ -1149,10 +1277,13 @@ spells:
     windwalk:
         spell-class: ".buff.WindwalkSpell"
         name: windwalk
-        enabled: false
+        enabled: true
         description: Fly through the air.
         cast-item: 280
-        cancel-on-land: true
+        launch-speed: 1
+        cancel-on-land: false
+        cancel-on-logout: true
+        cancel-on-teleport: true
         duration: 120
         cost:
             - 331 3
@@ -1174,6 +1305,8 @@ spells:
         disallowed-block-types: 0,7
         drop-block: false
         drop-normal: true
+        effects:
+            - target blockbreak
         check-plugins: true
         range: 15
         cost:

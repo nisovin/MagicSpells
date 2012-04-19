@@ -45,7 +45,7 @@ public abstract class SpellAnimation implements Runnable {
 	}
 	
 	/**
-	 * Create a new spell animation with the specified interval and delay. It will not auto start.
+	 * Create a new spell animation with the specified interval and delay.
 	 * @param delay the delay before the animation begins, in server ticks
 	 * @param interval the animation interval, in server ticks (animation speed)
 	 * @param autoStart whether the animation should start immediately upon being created

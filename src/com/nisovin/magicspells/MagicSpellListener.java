@@ -7,7 +7,7 @@ import org.bukkit.event.Listener;
 
 import com.nisovin.magicspells.events.SpellTargetEvent;
 
-public class MagicSpellListener implements Listener {
+class MagicSpellListener implements Listener {
 		
 	public MagicSpellListener(MagicSpells plugin) {
 	}

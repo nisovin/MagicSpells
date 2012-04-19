@@ -18,7 +18,6 @@ public class ForcetossSpell extends TargetedEntitySpell {
 	private boolean obeyLos;
 	private boolean targetPlayers;
 	private boolean checkPlugins;
-	private String strNoTarget;
 	
 	public ForcetossSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -29,7 +28,6 @@ public class ForcetossSpell extends TargetedEntitySpell {
 		obeyLos = getConfigBoolean("obey-los", true);
 		targetPlayers = getConfigBoolean("target-players", false);
 		checkPlugins = getConfigBoolean("check-plugins", true);
-		strNoTarget = getConfigString("str-no-target", "");
 	}
 
 	@Override
@@ -40,7 +38,7 @@ public class ForcetossSpell extends TargetedEntitySpell {
 			if (target == null) {
 				sendMessage(player, strNoTarget);
 				fizzle(player);
-				return PostCastAction.ALREADY_HANDLED;
+				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 			}
 			
 			// do damage
@@ -52,7 +50,7 @@ public class ForcetossSpell extends TargetedEntitySpell {
 					if (event.isCancelled()) {
 						sendMessage(player, strNoTarget);
 						fizzle(player);
-						return PostCastAction.ALREADY_HANDLED;
+						return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 					}
 					damage = event.getDamage();
 				}
@@ -61,6 +59,9 @@ public class ForcetossSpell extends TargetedEntitySpell {
 			
 			// throw target
 			toss(player, target, power);
+			
+			sendMessages(player, target);
+			return PostCastAction.NO_MESSAGES;
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}
@@ -72,6 +73,7 @@ public class ForcetossSpell extends TargetedEntitySpell {
 				.multiply(hForce*power)
 				.setY(vForce*power);
 		target.setVelocity(v);
+		playGraphicalEffects(player, target);
 	}
 
 	@Override

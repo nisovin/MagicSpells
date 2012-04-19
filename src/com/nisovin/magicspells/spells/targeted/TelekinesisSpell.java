@@ -12,38 +12,40 @@ import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
 public class TelekinesisSpell extends TargetedLocationSpell {
-
-	private String strNoTarget;
 	
 	private HashSet<Byte> transparent;
 	
 	public TelekinesisSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		strNoTarget = config.getString("spells." + spellName + ".str-no-target", "You must target a switch or button.");
-		
-		transparent = new HashSet<Byte>();
-		transparent.add((byte)Material.AIR.getId());
-		transparent.add((byte)Material.REDSTONE_WIRE.getId());
-		transparent.add((byte)Material.REDSTONE_TORCH_ON.getId());
-		transparent.add((byte)Material.REDSTONE_TORCH_OFF.getId());
-		transparent.add((byte)Material.TORCH.getId());
+		transparent = new HashSet<Byte>(MagicSpells.getTransparentBlocks());
+		transparent.remove((byte)Material.LEVER.getId());
+		transparent.remove((byte)Material.STONE_PLATE.getId());
+		transparent.remove((byte)Material.WOOD_PLATE.getId());
+		transparent.remove((byte)Material.STONE_BUTTON.getId());
 	}
 	
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			Block target = player.getTargetBlock(transparent, range>0?range:100);
+			Block target = null;
+			try {
+				target = player.getTargetBlock(transparent, range);
+			} catch (IllegalStateException e) {
+				target = null;
+			}
 			if (target == null) {
 				// fail
 				sendMessage(player, strNoTarget);
 				fizzle(player);
-				return PostCastAction.ALREADY_HANDLED;
+				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 			} else {
 				boolean activated = activate(target);
 				if (!activated) {
 					sendMessage(player, strNoTarget);
 					fizzle(player);
-					return PostCastAction.ALREADY_HANDLED;
+					return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				} else {
+					playGraphicalEffects(player, target.getLocation());
 				}
 			}
 		}
@@ -52,10 +54,10 @@ public class TelekinesisSpell extends TargetedLocationSpell {
 	
 	private boolean activate(Block target) {
 		if (target.getType() == Material.LEVER || target.getType() == Material.STONE_BUTTON) {
-			MagicSpells.craftbukkit.toggleLeverOrButton(target);
+			MagicSpells.getVolatileCodeHandler().toggleLeverOrButton(target);
 			return true;
 		} else if (target.getType() == Material.WOOD_PLATE || target.getType() == Material.STONE_PLATE) {
-			MagicSpells.craftbukkit.pressPressurePlate(target);
+			MagicSpells.getVolatileCodeHandler().pressPressurePlate(target);
 			return true;
 		} else {
 			return false;
@@ -64,6 +66,10 @@ public class TelekinesisSpell extends TargetedLocationSpell {
 
 	@Override
 	public boolean castAtLocation(Player caster, Location target, float power) {
-		return activate(target.getBlock());
+		boolean activated = activate(target.getBlock());
+		if (activated) {
+			playGraphicalEffects(caster, target);
+		}
+		return activated;
 	}
 }

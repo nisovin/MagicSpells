@@ -8,6 +8,7 @@ import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BlockIterator;
@@ -19,19 +20,43 @@ import com.nisovin.magicspells.util.MagicConfig;
 public abstract class TargetedSpell extends InstantSpell {
 
 	protected int range;
+	protected boolean alwaysActivate;
 	protected boolean playFizzleSound;
 	protected String strCastTarget;
+	protected String strNoTarget;
 
 	public TargetedSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		range = config.getInt("spells." + spellName + ".range", 20);
+		range = getConfigInt("range", 20);
+		alwaysActivate = getConfigBoolean("always-activate", false);
 		playFizzleSound = getConfigBoolean("play-fizzle-sound", false);
 		strCastTarget = getConfigString("str-cast-target", "");
+		strNoTarget = getConfigString("str-no-target", "No target found.");
 	}
 
 	protected void sendMessageToTarget(Player caster, Player target) {
 		sendMessage(target, strCastTarget, "%a", caster.getDisplayName());
+	}
+	
+	protected void sendMessages(Player caster, LivingEntity target) {
+		EntityType entityType = target.getType();
+		String entityName;
+		Player playerTarget = null;
+		if (target instanceof Player) {
+			playerTarget = (Player)target;
+			entityName = playerTarget.getDisplayName();
+		} else {
+			entityName = MagicSpells.getEntityNames().get(entityType);
+			if (entityName == null) {
+				entityName = entityType.getName();
+			}
+		}
+		sendMessage(caster, strCastSelf, "%a", caster.getDisplayName(), "%t", entityName);
+		if (playerTarget != null) {
+			sendMessage(playerTarget, strCastTarget, "%a", caster.getDisplayName(), "%t", entityName);
+		}
+		sendMessageNear(caster, playerTarget, formatMessage(strCastOthers, "%a", caster.getDisplayName(), "%t", entityName), broadcastRange);
 	}
 	
 	/**
@@ -52,6 +77,17 @@ public abstract class TargetedSpell extends InstantSpell {
 		if (playFizzleSound) {
 			player.playEffect(player.getLocation(), Effect.EXTINGUISH, 0);
 		}
+	}
+	
+	/**
+	 * This should be called if a target should not be found. It sends the no target message
+	 * and returns the appropriate return value.
+	 * @param player the casting player
+	 * @return the appropriate PostcastAction value
+	 */
+	protected PostCastAction noTarget(Player player) {
+		sendMessage(player, strNoTarget);
+		return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 	}
 	
 	/**
@@ -112,7 +148,7 @@ public abstract class TargetedSpell extends InstantSpell {
 			bx = b.getX();
 			by = b.getY();
 			bz = b.getZ();			
-			if (checkLos && !MagicSpells.losTransparentBlocks.contains(b.getTypeId())) {
+			if (checkLos && !MagicSpells.getTransparentBlocks().contains((byte)b.getTypeId())) {
 				// line of sight is broken, stop without target
 				break;
 			} else {
@@ -127,7 +163,7 @@ public abstract class TargetedSpell extends InstantSpell {
 						target = e;
 						
 						// check for anti-magic-zone
-						if (target != null && MagicSpells.noMagicZones != null && MagicSpells.noMagicZones.willFizzle(target.getLocation(), this)) {
+						if (target != null && MagicSpells.getNoMagicZoneHandler() != null && MagicSpells.getNoMagicZoneHandler().willFizzle(target.getLocation(), this)) {
 							target = null;
 							continue;
 						}

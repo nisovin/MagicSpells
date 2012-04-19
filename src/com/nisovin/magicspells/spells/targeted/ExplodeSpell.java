@@ -14,6 +14,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 
+import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
@@ -21,10 +22,12 @@ public class ExplodeSpell extends TargetedLocationSpell {
 	
 	private int explosionSize;
 	private int backfireChance;
+	private boolean simulateTnt;
 	private boolean preventBlockDamage;
+	private boolean preventPlayerDamage;
 	private float damageMultiplier;
+	private boolean addFire;
 	private boolean ignoreCanceled;
-	private String strNoTarget;
 	
 	private long currentTick = 0;
 	private float currentPower = 0;
@@ -34,27 +37,34 @@ public class ExplodeSpell extends TargetedLocationSpell {
 		
 		explosionSize = getConfigInt("explosion-size", 4);
 		backfireChance = getConfigInt("backfire-chance", 0);
+		simulateTnt = getConfigBoolean("simulate-tnt", true);
 		preventBlockDamage = getConfigBoolean("prevent-block-damage", false);
+		preventPlayerDamage = getConfigBoolean("prevent-player-damage", false);
 		damageMultiplier = getConfigFloat("damage-multiplier", 0);
+		addFire = getConfigBoolean("add-fire", false);
 		ignoreCanceled = getConfigBoolean("ignore-canceled", false);
-		strNoTarget = getConfigString("str-no-target", "Cannot explode there.");
 		
 	}
 	
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			Block target = player.getTargetBlock(null, range);
+			Block target = null;
+			try {
+				target = player.getTargetBlock(null, range);
+			} catch (IllegalStateException e) {
+				target = null;
+			}
 			if (target == null || target.getType() == Material.AIR) {
 				// fail: no target
 				sendMessage(player, strNoTarget);
 				fizzle(player);
-				return PostCastAction.ALREADY_HANDLED;
+				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 			} else {
 				boolean exploded = explode(player, target.getLocation(), power);
 				if (!exploded && !ignoreCanceled) {
 					sendMessage(player, strNoTarget);
 					fizzle(player);
-					return PostCastAction.ALREADY_HANDLED;
+					return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 				}
 			}
 		}
@@ -62,6 +72,13 @@ public class ExplodeSpell extends TargetedLocationSpell {
 	}
 	
 	private boolean explode(Player player, Location target, float power) {
+		// check plugins
+		if (simulateTnt) {
+			boolean cancelled = MagicSpells.getVolatileCodeHandler().simulateTnt(target, explosionSize * power, addFire);
+			if (cancelled) {
+				return false;
+			}
+		}
 		// backfire chance
 		if (backfireChance > 0) {
 			Random rand = new Random();
@@ -69,9 +86,15 @@ public class ExplodeSpell extends TargetedLocationSpell {
 				target = player.getLocation();
 			}					
 		}
+		// save current explosion data
 		currentTick = Bukkit.getWorlds().get(0).getFullTime();
 		currentPower = power;
-		return target.getWorld().createExplosion(target, explosionSize * power);
+		// cause explosion
+		boolean ret = MagicSpells.getVolatileCodeHandler().createExplosionByPlayer(player, target, explosionSize * power, addFire);
+		if (ret) {
+			playGraphicalEffects(player, target);
+		}
+		return ret;
 	}
 
 	@Override
@@ -81,13 +104,16 @@ public class ExplodeSpell extends TargetedLocationSpell {
 
 	@EventHandler(priority=EventPriority.HIGH)
 	public void onEntityDamage(EntityDamageEvent event) {
-		if (damageMultiplier > 0 
+		if ((damageMultiplier > 0 || preventPlayerDamage) 
 				&& !event.isCancelled() 
 				&& event.getCause() == DamageCause.BLOCK_EXPLOSION
 				&& event instanceof EntityDamageByBlockEvent
-				&& ((EntityDamageByBlockEvent)event).getDamager() == null
 				&& currentTick == Bukkit.getWorlds().get(0).getFullTime()) {
-			event.setDamage(Math.round(event.getDamage() * damageMultiplier * currentPower));
+			if (preventPlayerDamage && event.getEntity() instanceof Player) {
+				event.setCancelled(true);
+			} else if (damageMultiplier > 0) {
+				event.setDamage(Math.round(event.getDamage() * damageMultiplier * currentPower));
+			}
 		}
 	}
 	
@@ -97,7 +123,7 @@ public class ExplodeSpell extends TargetedLocationSpell {
 			return;
 		}
 		
-		if (event.getEntity() == null && currentTick == Bukkit.getWorlds().get(0).getFullTime()) {
+		if (currentTick == Bukkit.getWorlds().get(0).getFullTime()) {
 			event.blockList().clear();
 			event.setYield(0);
 		}

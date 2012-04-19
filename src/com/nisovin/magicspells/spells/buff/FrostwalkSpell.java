@@ -26,8 +26,8 @@ public class FrostwalkSpell extends BuffSpell {
 	public FrostwalkSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		size = config.getInt("spells." + spellName + ".size", 2);
-		leaveFrozen = config.getBoolean("spells." + spellName + ".leave-frozen", false);
+		size = getConfigInt("size", 2);
+		leaveFrozen = getConfigBoolean("leave-frozen", false);
 		
 		frostwalkers = new HashMap<String,BlockPlatform>();
 	}

@@ -1,8 +1,8 @@
 name: MagicSpells
 main: com.nisovin.magicspells.MagicSpells
-version: 2.4.2
+version: 2.7-test
 author: nisovin
-softdepend: [BookWorm,WorldGuard]
+softdepend: [BookWorm,WorldGuard,Residence]
 commands:
     magicspellcast:
         description: Cast a spell
@@ -16,6 +16,3 @@ permissions:
     magicspells.silent:
         description: Cast spells without spell text messages
         default: false
-    magicspells.advanced:
-        description: Advanced spell functionality
-        default: op

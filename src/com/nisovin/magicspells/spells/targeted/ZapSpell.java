@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -48,7 +47,7 @@ public class ZapSpell extends TargetedSpell {
 				disallowedBlockTypes.add(Integer.parseInt(s));
 			}
 		}
-		dropBlock = config.getBoolean("spells." + spellName + ".drop-block", false);
+		dropBlock = getConfigBoolean("drop-block", false);
 		dropNormal = getConfigBoolean("drop-normal", true);
 		checkPlugins = getConfigBoolean("check-plugins", true);
 	}
@@ -57,13 +56,18 @@ public class ZapSpell extends TargetedSpell {
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
 			// get targeted block
-			Block target = player.getTargetBlock(transparentBlockTypes, range>0?range:100);
+			Block target;
+			try {
+				target = player.getTargetBlock(transparentBlockTypes, range>0?range:100);
+			} catch (IllegalStateException e) {
+				target = null;
+			}
 			if (target != null) {
 				// check for disallowed block
 				if (disallowedBlockTypes.contains(target.getTypeId()) || (allowedBlockTypes.size() > 0 && !allowedBlockTypes.contains(target.getTypeId()))) {
 					sendMessage(player, strCantZap);
 					fizzle(player);
-					return PostCastAction.ALREADY_HANDLED;
+					return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 				}
 				
 				// check for protection
@@ -74,7 +78,7 @@ public class ZapSpell extends TargetedSpell {
 						// a plugin cancelled the event
 						sendMessage(player, strCantZap);
 						fizzle(player);
-						return PostCastAction.ALREADY_HANDLED;
+						return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 					}
 				}
 				
@@ -88,7 +92,8 @@ public class ZapSpell extends TargetedSpell {
 				}
 				
 				// show animation
-				player.getWorld().playEffect(target.getLocation(), Effect.STEP_SOUND, target.getTypeId());
+				playGraphicalEffects(1, player);
+				playGraphicalEffects(2, target.getLocation(), target.getTypeId() + "");
 				
 				// remove block
 				target.setType(Material.AIR);

@@ -15,26 +15,29 @@ public class VolleySpell extends TargetedLocationSpell {
 	private int arrows;
 	private int speed;
 	private int spread;
-	private String strNoTarget;
 	
 	public VolleySpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		arrows = config.getInt("spells." + spellName + ".arrows", 10);
-		speed = config.getInt("spells." + spellName + ".speed", 20);
-		spread = config.getInt("spells." + spellName + ".spread", 150);
-		strNoTarget = config.getString("spells." + spellName + ".str-no-target", "No target found.");
+		arrows = getConfigInt("arrows", 10);
+		speed = getConfigInt("speed", 20);
+		spread = getConfigInt("spread", 150);
 	}
 	
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
 			
-			Block target = player.getTargetBlock(null, range>0?range:100);
+			Block target;
+			try {
+				target = player.getTargetBlock(null, range>0?range:100);
+			} catch (IllegalStateException e) {
+				target = null;
+			}
 			if (target == null || target.getType() == Material.AIR) {
 				sendMessage(player, strNoTarget);
 				fizzle(player);
-				return PostCastAction.ALREADY_HANDLED;
+				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 			} else {
 				volley(player, target.getLocation(), power);
 			}
@@ -51,7 +54,9 @@ public class VolleySpell extends TargetedLocationSpell {
 		for (int i = 0; i < arrows; i++) {
 			Arrow a = player.getWorld().spawnArrow(spawn, v, (speed/10.0F), (spread/10.0F));
 			a.setShooter(player);
-		}		
+		}
+		
+		playGraphicalEffects(player, target);
 	}
 
 	@Override

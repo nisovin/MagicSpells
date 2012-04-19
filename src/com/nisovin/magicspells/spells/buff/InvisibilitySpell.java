@@ -3,9 +3,8 @@ package com.nisovin.magicspells.spells.buff;
 import java.util.HashMap;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Effect;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Creature;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -22,7 +21,6 @@ import com.nisovin.magicspells.util.MagicConfig;
 
 public class InvisibilitySpell extends BuffSpell {
 
-	private boolean showSpellEffect;
 	private boolean toggle;
 	private boolean preventPickups;
 	private boolean cancelOnAttack;
@@ -32,7 +30,6 @@ public class InvisibilitySpell extends BuffSpell {
 	public InvisibilitySpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		showSpellEffect = getConfigBoolean("show-spell-effect", true);
 		toggle = getConfigBoolean("toggle", true);
 		preventPickups = getConfigBoolean("prevent-pickups", true);
 		cancelOnAttack = getConfigBoolean("cancel-on-attack", true);
@@ -48,22 +45,23 @@ public class InvisibilitySpell extends BuffSpell {
 			for (Player p : Bukkit.getOnlinePlayers()) {
 				p.hidePlayer(player);
 			}
+			// detarget monsters
+			Creature creature;
+			for (Entity e : player.getNearbyEntities(30, 30, 30)) {
+				if (e instanceof Creature) {
+					creature = (Creature)e;
+					if (creature.getTarget() != null && creature.getTarget().equals(player)) {
+						creature.setTarget(null);
+					}
+				}
+			}
 			// start buff stuff
 			startSpellDuration(player);
 			invisibles.put(player, new CostCharger(player));
 			// spell effect
-			if (showSpellEffect) {
-				spellEffect(player);
-			}
+			playGraphicalEffects(1, player);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
-	}
-	
-	private void spellEffect(Player player) {
-		Block block = player.getLocation().getBlock();
-		player.getWorld().playEffect(block.getLocation(), Effect.MOBSPAWNER_FLAMES, 0);
-		block = block.getRelative(BlockFace.UP);
-		player.getWorld().playEffect(block.getLocation(), Effect.MOBSPAWNER_FLAMES, 0);
 	}
 	
 	@EventHandler
@@ -116,9 +114,7 @@ public class InvisibilitySpell extends BuffSpell {
 				p.showPlayer(player);
 			}
 			// spell effect
-			if (showSpellEffect) {
-				spellEffect(player);
-			}
+			playGraphicalEffects(4, player);
 			sendMessage(player, strFade);
 		}
 	}
@@ -139,18 +135,15 @@ public class InvisibilitySpell extends BuffSpell {
 			this.player = player;
 			if (useCostInterval > 0) {
 				taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(MagicSpells.plugin, this, 20, 20);
-				System.out.println("start");
 			}
 		}
 		
 		public void run() {
-			System.out.println("tick");
 			addUseAndChargeCost(player);
 		}
 		
 		public void stop() {
 			if (taskId != -1) {
-				System.out.println("stop");
 				Bukkit.getScheduler().cancelTask(taskId);
 			}
 		}

@@ -10,6 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.SpellReagents;
 
 public abstract class BuffSpell extends Spell {
 	
@@ -19,6 +20,7 @@ public abstract class BuffSpell extends Spell {
 	protected int hungerCost = 0;
 	protected int experienceCost = 0;
 	protected int levelsCost = 0;
+	protected SpellReagents reagents;
 	protected int useCostInterval;
 	protected int numUses;
 	protected int duration;
@@ -33,7 +35,7 @@ public abstract class BuffSpell extends Spell {
 	public BuffSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		List<String> costList = config.getStringList("spells." + spellName + ".use-cost", null);
+		List<String> costList = getConfigStringList("use-cost", null);
 		if (costList != null && costList.size() > 0) {
 			useCost = new ItemStack [costList.size()];
 			for (int i = 0; i < costList.size(); i++) {
@@ -62,12 +64,13 @@ public abstract class BuffSpell extends Spell {
 		} else {
 			useCost = null;
 		}
-		useCostInterval = config.getInt("spells." + spellName + ".use-cost-interval", 0);
-		numUses = config.getInt("spells." + spellName + ".num-uses", 0);
-		duration = config.getInt("spells." + spellName + ".duration", 0);
-		cancelOnRecast = config.getBoolean("spells." + spellName + ".cancel-on-recast", true);
+		reagents = new SpellReagents(useCost, manaCost, healthCost, hungerCost, experienceCost, levelsCost);
+		useCostInterval = getConfigInt("use-cost-interval", 0);
+		numUses = getConfigInt("num-uses", 0);
+		duration = getConfigInt("duration", 0);
+		cancelOnRecast = getConfigBoolean("cancel-on-recast", true);
 		
-		strFade = config.getString("spells." + spellName + ".str-fade", "");
+		strFade = getConfigString("str-fade", "");
 		
 		if (numUses > 0 || (useCost != null && useCostInterval > 0)) {
 			useCounter = new HashMap<String,Integer>();
@@ -76,8 +79,8 @@ public abstract class BuffSpell extends Spell {
 			durationStartTime = new HashMap<String,Long>();
 		}
 		
-		castWithItem = config.getBoolean("spells." + spellName + ".can-cast-with-item", true);
-		castByCommand = config.getBoolean("spells." + spellName + ".can-cast-by-command", true);
+		castWithItem = getConfigBoolean("can-cast-with-item", true);
+		castByCommand = getConfigBoolean("can-cast-by-command", true);
 	}
 	
 	public boolean canCastWithItem() {
@@ -160,8 +163,8 @@ public abstract class BuffSpell extends Spell {
 		if (useCost != null && useCostInterval > 0 && useCounter != null && useCounter.containsKey(player.getName())) {
 			int uses = useCounter.get(player.getName());
 			if (uses % useCostInterval == 0) {
-				if (hasReagents(player, useCost, healthCost, manaCost, hungerCost, experienceCost, levelsCost)) {
-					removeReagents(player, useCost, healthCost, manaCost, hungerCost, experienceCost, levelsCost);
+				if (hasReagents(player, reagents)) {
+					removeReagents(player, reagents);
 					return true;
 				} else {
 					turnOff(player);

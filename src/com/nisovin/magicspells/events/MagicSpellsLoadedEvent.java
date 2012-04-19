@@ -5,6 +5,11 @@ import org.bukkit.event.HandlerList;
 
 import com.nisovin.magicspells.MagicSpells;
 
+/**
+ * This event is fired whenever MagicSpells finishes loading, either after the server first starts,
+ * after a server reload (/reload), or after an internal reload (/cast reload).
+ *
+ */
 public class MagicSpellsLoadedEvent extends Event {
 
     private static final HandlerList handlers = new HandlerList();
@@ -15,6 +20,10 @@ public class MagicSpellsLoadedEvent extends Event {
     	this.plugin = plugin;
     }
     
+    /**
+     * Gets the instance of the MagicSpells plugin
+     * @return plugin instance
+     */
     public MagicSpells getPlugin() {
     	return plugin;
     }

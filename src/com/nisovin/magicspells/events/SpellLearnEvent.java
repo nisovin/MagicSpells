@@ -7,6 +7,12 @@ import org.bukkit.event.HandlerList;
 
 import com.nisovin.magicspells.Spell;
 
+/**
+ * This event is fired whenever a player is about to learn a spell, either from
+ * the teach spell, a spellbook, a tome, or from an external plugin calling the
+ * MagicSpells.teachSpell method.
+ *
+ */
 public class SpellLearnEvent extends Event implements Cancellable {
 
     private static final HandlerList handlers = new HandlerList();

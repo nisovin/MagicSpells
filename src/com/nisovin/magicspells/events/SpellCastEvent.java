@@ -7,30 +7,109 @@ import org.bukkit.event.HandlerList;
 import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.util.SpellReagents;
 
+/** 
+ * The event that is called whenever a player attempts to cast a spell. 
+ * This event is called just before the effects of the spell are performed.
+ * Cancelling this event will prevent the spell from casting.
+ *
+ */
 public class SpellCastEvent extends SpellEvent implements Cancellable {
 
     private static final HandlerList handlers = new HandlerList();
 
-	private String[] args;
-	private float power;
+    private Spell.SpellCastState state;
+    private boolean stateChanged;
 	private int cooldown;
 	private SpellReagents reagents;
+	private boolean reagentsChanged;
+	private float power;
+	private String[] args;
 	private boolean cancelled = false;
 	
 	public SpellCastEvent(Spell spell, Player caster, Spell.SpellCastState state, float power, String[] args, int cooldown, SpellReagents reagents) {
 		super(spell, caster);
+		this.state = state;
+		this.stateChanged = false;
 		this.cooldown = cooldown;
 		this.reagents = reagents;
+		this.reagentsChanged = false;
 		this.power = power;
 		this.args = args;
 	}
 	
 	/**
-	 * Gets the arguments passed to the spell if the spell was cast by command.
-	 * @return the args, or null if there were none
+	 * Gets the current spell cast state.
+	 * @return the spell cast state
 	 */
-	public String[] getSpellArgs() {
-		return args;
+	public Spell.SpellCastState getSpellCastState() {
+		return state;
+	}
+	
+	/**
+	 * Changes the spell cast state.
+	 * @param state the new spell cast state
+	 */
+	public void setSpellCastState(Spell.SpellCastState state) {
+		this.state = state;
+		this.stateChanged = true;
+	}
+	
+	/**
+	 * Checks whether the spell cast state has been changed.
+	 * @return true if it has been changed
+	 */
+	public boolean hasSpellCastStateChanged() {
+		return stateChanged;
+	}
+	
+	/**
+	 * Gets the cooldown that will be triggered after the spell is cast.
+	 * @return the cooldown
+	 */
+	public int getCooldown() {
+		return cooldown;
+	}
+	
+	/**
+	 * Sets the cooldown that will be triggered after the spell is cast.
+	 * @param cooldown the cooldown to set
+	 */
+	public void setCooldown(int cooldown) {
+		this.cooldown = cooldown;
+	}
+	
+	/**
+	 * Gets the reagents that will be charged after the spell is cast. This can be modified.
+	 * @return the reagents
+	 */
+	public SpellReagents getReagents() {
+		return reagents;
+	}
+	
+	/**
+	 * Changes the spell's required cast reagents.
+	 * @param reagents the new reagents
+	 */
+	public void setReagents(SpellReagents reagents) {
+		this.reagents = reagents;
+		this.reagentsChanged = true;
+	}
+	
+	/**
+	 * Gets whether the spell's reagents have been changed by this event.
+	 * @return true if reagents are changed
+	 */
+	public boolean haveReagentsChanged() {
+		return reagentsChanged;
+	}
+	
+	/**
+	 * Sets whether the reagents have been changed. If a plugin changes the reagents list,
+	 * this should be called and set to true.
+	 * @param reagentsChanged whether reagents have been changed
+	 */
+	public void setReagentsChanged(boolean reagentsChanged) {
+		this.reagentsChanged = reagentsChanged;
 	}
 	
 	/**
@@ -58,27 +137,11 @@ public class SpellCastEvent extends SpellEvent implements Cancellable {
 	}
 	
 	/**
-	 * Gets the cooldown that will be triggered after the spell is cast.
-	 * @return the cooldown
+	 * Gets the arguments passed to the spell if the spell was cast by command.
+	 * @return the args, or null if there were none
 	 */
-	public int getCooldown() {
-		return cooldown;
-	}
-	
-	/**
-	 * Sets the cooldown that will be triggered after the spell is cast.
-	 * @param cooldown the cooldown to set
-	 */
-	public void setCooldown(int cooldown) {
-		this.cooldown = cooldown;
-	}
-	
-	/**
-	 * Gets the reagents that will be charged after the spell is cast. This can be modified.
-	 * @return the reagents
-	 */
-	public SpellReagents getReagents() {
-		return reagents;
+	public String[] getSpellArgs() {
+		return args;
 	}
 	
 	@Override

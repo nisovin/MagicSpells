@@ -21,10 +21,10 @@ public class HelpSpell extends CommandSpell {
 		super(config, spellName);
 		
 		requireKnownSpell = getConfigBoolean("require-known-spell", true);
-		strUsage = config.getString("spells." + spellName + ".str-usage", "Usage: /cast " + name + " <spell>");
-		strNoSpell = config.getString("spells." + spellName + ".str-no-spell", "You do not know a spell by that name.");
-		strDescLine = config.getString("spells." + spellName + ".str-desc-line", "%s - %d");
-		strCostLine = config.getString("spells." + spellName + ".str-cost-line", "Cost: %c");
+		strUsage = getConfigString("str-usage", "Usage: /cast " + name + " <spell>");
+		strNoSpell = getConfigString("str-no-spell", "You do not know a spell by that name.");
+		strDescLine = getConfigString("str-desc-line", "%s - %d");
+		strCostLine = getConfigString("str-cost-line", "Cost: %c");
 	}
 
 	@Override

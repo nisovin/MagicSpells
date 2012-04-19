@@ -14,7 +14,6 @@ public class CrippleSpell extends TargetedEntitySpell {
 	private int duration;
 	private boolean targetPlayers;
 	private boolean obeyLos;
-	private String strNoTarget;
 	
 	public CrippleSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -23,7 +22,6 @@ public class CrippleSpell extends TargetedEntitySpell {
 		duration = getConfigInt("effect-duration", 100);
 		targetPlayers = getConfigBoolean("target-players", false);
 		obeyLos = getConfigBoolean("obey-los", true);
-		strNoTarget = getConfigString("str-no-target", "No target found.");
 	}
 
 	@Override
@@ -34,10 +32,12 @@ public class CrippleSpell extends TargetedEntitySpell {
 				// fail
 				sendMessage(player, strNoTarget);
 				fizzle(player);
-				return PostCastAction.ALREADY_HANDLED;
+				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 			}
-			
+			playGraphicalEffects(player, target);
 			target.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, Math.round(duration*power), strength), true);
+			sendMessages(player, target);
+			return PostCastAction.NO_MESSAGES;
 		}
 		
 		return PostCastAction.HANDLE_NORMALLY;
@@ -48,6 +48,7 @@ public class CrippleSpell extends TargetedEntitySpell {
 		if (target instanceof Player && !targetPlayers) {
 			return false;
 		} else {
+			playGraphicalEffects(caster, target);
 			target.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, Math.round(duration*power), strength), true);
 			return true;
 		}

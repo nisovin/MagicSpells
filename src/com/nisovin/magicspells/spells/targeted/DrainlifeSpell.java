@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Effect;
+import org.bukkit.EntityEffect;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -15,6 +16,7 @@ import org.bukkit.util.BlockIterator;
 import org.bukkit.util.Vector;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
+import com.nisovin.magicspells.util.ExperienceUtils;
 import com.nisovin.magicspells.util.MagicConfig;
 
 public class DrainlifeSpell extends TargetedEntitySpell {
@@ -29,7 +31,6 @@ public class DrainlifeSpell extends TargetedEntitySpell {
 	private boolean obeyLos;
 	private boolean targetPlayers;
 	private boolean checkPlugins;
-	private String strNoTarget;
 	
 	public DrainlifeSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -44,7 +45,6 @@ public class DrainlifeSpell extends TargetedEntitySpell {
 		obeyLos = getConfigBoolean("obey-los", true);
 		targetPlayers = getConfigBoolean("target-players", false);
 		checkPlugins = getConfigBoolean("check-plugins", true);
-		strNoTarget = getConfigString("str-no-target", "");
 	}
 	
 	@Override
@@ -55,12 +55,15 @@ public class DrainlifeSpell extends TargetedEntitySpell {
 				// fail: no target
 				sendMessage(player, strNoTarget);
 				fizzle(player);
-				return PostCastAction.ALREADY_HANDLED;
+				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 			} else {
 				boolean drained = drain(player, target, power);
 				if (!drained) {
 					sendMessage(player, strNoTarget);
-					return PostCastAction.ALREADY_HANDLED;
+					return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				} else {
+					sendMessages(player, target);
+					return PostCastAction.NO_MESSAGES;
 				}
 			}
 		}
@@ -85,6 +88,7 @@ public class DrainlifeSpell extends TargetedEntitySpell {
 				int health = target.getHealth() - take;
 				if (health < 0) health = 0;
 				target.setHealth(health);
+				target.playEffect(EntityEffect.HURT);
 			} else {
 				target.damage(take);
 			}
@@ -107,11 +111,9 @@ public class DrainlifeSpell extends TargetedEntitySpell {
 		} else if (takeType.equals("experience")) {
 			if (target instanceof Player) {
 				Player p = (Player)target;
-				int exp = p.getTotalExperience();
+				int exp = ExperienceUtils.getCurrentExp(p);
 				if (give > exp) give = exp;
-				exp -= take;
-				if (exp < 0) exp = 0;
-				p.setTotalExperience(exp);
+				ExperienceUtils.changeExp(p, -take);
 			}
 		}
 		
@@ -124,14 +126,14 @@ public class DrainlifeSpell extends TargetedEntitySpell {
 			MagicSpells.getManaHandler().addMana(player, give);
 		} else if (takeType.equals("hunger")) {
 			int food = player.getFoodLevel();
-			food += take;
+			food += give;
 			if (food > 20) food = 20;
 			player.setFoodLevel(food);
 		} else if (takeType.equals("experience")) {
-			int exp = player.getTotalExperience();
-			exp += take;
-			player.setTotalExperience(exp);
+			ExperienceUtils.changeExp(player, give);
 		}
+		
+		playGraphicalEffects(player, target);
 		
 		// show animation
 		if (showSpellEffect) {
@@ -163,7 +165,12 @@ public class DrainlifeSpell extends TargetedEntitySpell {
 			Vector playerVector = player.getLocation().toVector();
 			double distanceSq = start.distanceSquared(playerVector);
 			Vector direction = playerVector.subtract(start);
-			BlockIterator iterator = new BlockIterator(player.getWorld(), start, direction, player.getEyeHeight(), range);
+			BlockIterator iterator;
+			try { 
+				iterator = new BlockIterator(player.getWorld(), start, direction, player.getEyeHeight(), range);
+			} catch (IllegalStateException e) {
+				return;
+			}
 			blocks = new ArrayList<Block>();
 			Block b;
 			while (iterator.hasNext()) {

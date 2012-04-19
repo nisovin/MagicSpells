@@ -10,12 +10,13 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerAnimationEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 
-public class MagicPlayerListener implements Listener {
+class MagicPlayerListener implements Listener {
 	
 	private MagicSpells plugin;
 	
@@ -43,6 +44,7 @@ public class MagicPlayerListener implements Listener {
 		MagicSpells.spellbooks.remove(event.getPlayer().getName());
 	}
 
+	@SuppressWarnings("deprecation")
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPlayerInteract(PlayerInteractEvent event) {		
 		// first check if player is interacting with a special block
@@ -72,7 +74,7 @@ public class MagicPlayerListener implements Listener {
 			Player player = event.getPlayer();
 			ItemStack inHand = player.getItemInHand();
 			
-			if (inHand != null && inHand.getType() != Material.AIR) {
+			if ((inHand != null && inHand.getType() != Material.AIR) || MagicSpells.allowCastWithFist) {
 			
 				// cycle spell
 				Spell spell = null;
@@ -112,6 +114,7 @@ public class MagicPlayerListener implements Listener {
 								inHand.setAmount(inHand.getAmount()-1);
 							}
 							player.setItemInHand(inHand);
+							player.updateInventory();
 						}
 					}
 				}
@@ -120,6 +123,14 @@ public class MagicPlayerListener implements Listener {
 		}
 	}
 
+	@EventHandler(priority=EventPriority.MONITOR)
+	public void onPlayerChangeWorld(PlayerChangedWorldEvent event) {
+		if (MagicSpells.separatePlayerSpellsPerWorld) {
+			MagicSpells.debug(2, "Player '" + event.getPlayer().getName() + "' changed from world '" + event.getFrom().getName() + "' to '" + event.getPlayer().getWorld().getName() + "', reloading spells");
+			MagicSpells.getSpellbook(event.getPlayer()).reload();
+		}
+	}
+	
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPlayerAnimation(PlayerAnimationEvent event) {		
 		if (event.isCancelled() || !MagicSpells.castOnAnimate) return;
@@ -136,11 +147,9 @@ public class MagicPlayerListener implements Listener {
 	
 	private void castSpell(Player player) {
 		ItemStack inHand = player.getItemInHand();
-		Spell spell = null;
-		try {
-			spell = MagicSpells.getSpellbook(player).getActiveSpell(inHand);
-		} catch (NullPointerException e) {
-		}
+		if (!MagicSpells.allowCastWithFist && (inHand == null || inHand.getType() == Material.AIR)) return;
+		
+		Spell spell = MagicSpells.getSpellbook(player).getActiveSpell(inHand);
 		if (spell != null && spell.canCastWithItem()) {
 			// first check global cooldown
 			if (MagicSpells.globalCooldown > 0 && !spell.ignoreGlobalCooldown) {

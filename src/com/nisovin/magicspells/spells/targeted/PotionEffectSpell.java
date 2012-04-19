@@ -20,7 +20,6 @@ public class PotionEffectSpell extends TargetedEntitySpell {
 	private boolean targetPlayers;
 	private boolean targetNonPlayers;
 	private boolean obeyLos;
-	private String strNoTarget;
 	
 	public PotionEffectSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -32,7 +31,6 @@ public class PotionEffectSpell extends TargetedEntitySpell {
 		targetPlayers = getConfigBoolean("target-players", false);
 		targetNonPlayers = getConfigBoolean("target-non-players", true);
 		obeyLos = getConfigBoolean("obey-los", true);
-		strNoTarget = getConfigString("str-no-target", "No target found.");
 	}
 
 	@Override
@@ -48,10 +46,13 @@ public class PotionEffectSpell extends TargetedEntitySpell {
 				// fail no target
 				sendMessage(player, strNoTarget);
 				fizzle(player);
-				return PostCastAction.ALREADY_HANDLED;
+				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 			}
 			
 			target.addPotionEffect(new PotionEffect(PotionEffectType.getById(type), Math.round(duration*power), amplifier));
+			playGraphicalEffects(player, target);
+			sendMessages(player, target);
+			return PostCastAction.NO_MESSAGES;
 		}		
 		return PostCastAction.HANDLE_NORMALLY;
 	}
@@ -64,6 +65,7 @@ public class PotionEffectSpell extends TargetedEntitySpell {
 			return false;
 		} else {
 			target.addPotionEffect(new PotionEffect(PotionEffectType.getById(type), Math.round(duration*power), amplifier));
+			playGraphicalEffects(caster, target);
 			return true;
 		}
 	}

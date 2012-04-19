@@ -32,12 +32,12 @@ public class LifewalkSpell extends BuffSpell {
 		lifewalkers = new HashSet<String>();
 		random = new Random();
 		
-		tickInterval = config.getInt("spells." + spellName + ".tick-interval", 15);
-		redFlowerChance = config.getInt("spells." + spellName + ".red-flower-chance", 15);
-		yellowFlowerChance = config.getInt("spells." + spellName + ".yellow-flower-chance", 15);
-		saplingChance = config.getInt("spells." + spellName + ".sapling-chance", 5);
-		tallgrassChance = config.getInt("spells." + spellName + ".tallgrass-chance", 25);
-		fernChance = config.getInt("spells." + spellName + ".fern-chance", 15);
+		tickInterval = getConfigInt("tick-interval", 15);
+		redFlowerChance = getConfigInt("red-flower-chance", 15);
+		yellowFlowerChance = getConfigInt("yellow-flower-chance", 15);
+		saplingChance = getConfigInt("sapling-chance", 5);
+		tallgrassChance = getConfigInt("tallgrass-chance", 25);
+		fernChance = getConfigInt("fern-chance", 15);
 	}
 
 	@Override

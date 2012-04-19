@@ -1,6 +1,7 @@
 package com.nisovin.magicspells.spells.targeted;
 
 import org.bukkit.Bukkit;
+import org.bukkit.EntityEffect;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -16,7 +17,6 @@ public class PainSpell extends TargetedEntitySpell {
 	private boolean obeyLos;
 	private boolean targetPlayers;
 	private boolean checkPlugins;
-	private String strNoTarget;
 	
 	public PainSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -26,7 +26,6 @@ public class PainSpell extends TargetedEntitySpell {
 		obeyLos = getConfigBoolean("obey-los", true);
 		targetPlayers = getConfigBoolean("target-players", false);
 		checkPlugins = getConfigBoolean("check-plugins", true);
-		strNoTarget = getConfigString("str-no-target", "No target found.");
 	}
 
 	@Override
@@ -37,13 +36,16 @@ public class PainSpell extends TargetedEntitySpell {
 				// fail -- no target
 				sendMessage(player, strNoTarget);
 				fizzle(player);
-				return PostCastAction.ALREADY_HANDLED;
+				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 			} else {
 				boolean done = causePain(player, target, power);
 				if (!done) {
 					sendMessage(player, strNoTarget);
 					fizzle(player);
-					return PostCastAction.ALREADY_HANDLED;
+					return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				} else {
+					sendMessages(player, target);
+					return PostCastAction.NO_MESSAGES;
 				}
 			}
 		}
@@ -65,9 +67,11 @@ public class PainSpell extends TargetedEntitySpell {
 			int health = target.getHealth() - dam;
 			if (health < 0) health = 0;
 			target.setHealth(health);
+			target.playEffect(EntityEffect.HURT);
 		} else {
 			target.damage(dam);
 		}
+		playGraphicalEffects(player, target);
 		return true;
 	}
 

@@ -52,6 +52,7 @@ public class KeybindSpell extends CommandSpell {
 	
 	@Override
 	protected void initialize() {
+		super.initialize();
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			loadKeybinds(p);
 		}
@@ -189,7 +190,7 @@ public class KeybindSpell extends CommandSpell {
 	}
 	
 	protected void sendFakeSlotUpdate(Player player, int slot, ItemStack item) {
-		MagicSpells.craftbukkit.sendFakeSlotUpdate(player, slot, item);
+		MagicSpells.getVolatileCodeHandler().sendFakeSlotUpdate(player, slot, item);
 	}
 	
 	private class Keybinds {

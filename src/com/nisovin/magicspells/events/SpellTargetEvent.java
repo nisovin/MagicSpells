@@ -7,6 +7,11 @@ import org.bukkit.event.HandlerList;
 
 import com.nisovin.magicspells.Spell;
 
+/**
+ * This event is fired whenever a TargetedSpell is trying to target an entity.
+ * Cancelling this event will prevent the spell from targeting the entity.
+ *
+ */
 public class SpellTargetEvent extends SpellEvent implements Cancellable {
 
     private static final HandlerList handlers = new HandlerList();

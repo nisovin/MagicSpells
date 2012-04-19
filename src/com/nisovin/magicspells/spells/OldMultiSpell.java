@@ -56,7 +56,7 @@ public final class OldMultiSpell extends Spell {
 					if (action.isSpell()) {
 						if (action.getSpell().onCooldown(player)) {
 							// a spell is on cooldown
-							sendMessage(player, MagicSpells.strOnCooldown);
+							sendMessage(player, strOnCooldown);
 							return PostCastAction.ALREADY_HANDLED;
 						}
 					}

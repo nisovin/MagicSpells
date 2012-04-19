@@ -20,7 +20,6 @@ public class MaterializeSpell extends TargetedLocationSpell {
 	private byte data;
 	private boolean applyPhysics;
 	private boolean checkPlugins;
-	private String strNoTarget;
 	private String strFailed;
 	
 	public MaterializeSpell(MagicConfig config, String spellName) {
@@ -37,26 +36,30 @@ public class MaterializeSpell extends TargetedLocationSpell {
 		}
 		applyPhysics = getConfigBoolean("apply-physics", true);
 		checkPlugins = getConfigBoolean("check-plugins", true);
-		strNoTarget = getConfigString("str-no-target", "No target.");
 		strFailed = getConfigString("str-failed", "");
 	}
 
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			List<Block> lastTwo = player.getLastTwoTargetBlocks(null, range);
-			if (lastTwo.size() == 2 && lastTwo.get(1).getType() != Material.AIR && lastTwo.get(0).getType() == Material.AIR) {
+			List<Block> lastTwo = null;
+			try {
+				lastTwo = player.getLastTwoTargetBlocks(null, range);
+			} catch (IllegalStateException e) {
+				lastTwo = null;
+			}
+			if (lastTwo != null && lastTwo.size() == 2 && lastTwo.get(1).getType() != Material.AIR && lastTwo.get(0).getType() == Material.AIR) {
 				boolean done = materialize(player, lastTwo.get(0), lastTwo.get(1));
 				if (!done) {
 					sendMessage(player, strFailed);
 					fizzle(player);
-					return PostCastAction.ALREADY_HANDLED;
+					return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 				}
 			} else {
 				// fail no target
 				sendMessage(player, strNoTarget);
 				fizzle(player);
-				return PostCastAction.ALREADY_HANDLED;
+				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
@@ -78,6 +81,9 @@ public class MaterializeSpell extends TargetedLocationSpell {
 		} else {
 			block.setTypeIdAndData(type, data, applyPhysics);
 		}
+		
+		playGraphicalEffects(1, player);
+		playGraphicalEffects(2, block.getLocation(), block.getTypeId() + "");
 		
 		return true;
 	}

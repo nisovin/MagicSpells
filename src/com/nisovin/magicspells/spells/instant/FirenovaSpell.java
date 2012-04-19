@@ -20,6 +20,8 @@ public class FirenovaSpell extends InstantSpell {
 
 	private int range;
 	private int tickSpeed;
+	private int blockType;
+	private byte blockData;
 	private boolean burnTallGrass;
 	private boolean checkPlugins;
 	
@@ -29,17 +31,31 @@ public class FirenovaSpell extends InstantSpell {
 		super(config, spellName);
 		
 		range = getConfigInt("range", 3);
-		tickSpeed = config.getInt("spells." + spellName + ".tick-speed", 5);
+		tickSpeed = getConfigInt("tick-speed", 5);
 		burnTallGrass = getConfigBoolean("burn-tall-grass", true);
-		checkPlugins = config.getBoolean("spells." + spellName + ".check-plugins", true);
+		checkPlugins = getConfigBoolean("check-plugins", true);
 		
-		fireImmunity = new HashSet<Player>();
+		String type = getConfigString("block-type", "51:15");
+		if (type.contains(":")) {
+			String[] data = type.split(":");
+			blockType = Integer.parseInt(data[0]);
+			blockData = Byte.parseByte(data[1]);
+		} else {
+			blockType = Integer.parseInt(type);
+			blockData = (byte)0;
+		}
+		
+		if (blockType == Material.FIRE.getId()) {
+			fireImmunity = new HashSet<Player>();
+		}
 	}
 
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			fireImmunity.add(player);
+			if (fireImmunity != null) {
+				fireImmunity.add(player);
+			}
 			new FirenovaAnimation(player);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
@@ -47,7 +63,7 @@ public class FirenovaSpell extends InstantSpell {
 
 	@EventHandler
 	public void onEntityDamage(EntityDamageEvent event) {
-		if (event.isCancelled()) return;
+		if (event.isCancelled() || fireImmunity == null) return;
 		if (event.getEntity() instanceof Player && (event.getCause() == DamageCause.FIRE || event.getCause() == DamageCause.FIRE_TICK) && fireImmunity.size() > 0) {
 			Player player = (Player)event.getEntity();
 			if (fireImmunity.contains(player)) {
@@ -93,7 +109,7 @@ public class FirenovaSpell extends InstantSpell {
 		public void run() {
 			// remove old fire blocks
 			for (Block block : fireBlocks) {
-				if (block.getType() == Material.FIRE) {
+				if (block.getTypeId() == blockType) {
 					block.setTypeIdAndData(0, (byte)0, false);
 				}
 			}
@@ -114,11 +130,11 @@ public class FirenovaSpell extends InstantSpell {
 								if (under.getType() == Material.AIR || (burnTallGrass && under.getType() == Material.LONG_GRASS)) {
 									b = under;
 								}
-								b.setTypeIdAndData(Material.FIRE.getId(), (byte)15, false);
+								b.setTypeIdAndData(blockType, blockData, false);
 								fireBlocks.add(b);
 							} else if (b.getRelative(BlockFace.UP).getType() == Material.AIR || (burnTallGrass && b.getRelative(BlockFace.UP).getType() == Material.LONG_GRASS)) {
 								b = b.getRelative(BlockFace.UP);
-								b.setTypeIdAndData(Material.FIRE.getId(), (byte)15, false);
+								b.setTypeIdAndData(blockType, blockData, false);
 								fireBlocks.add(b);
 							}
 						}
@@ -127,7 +143,9 @@ public class FirenovaSpell extends InstantSpell {
 			} else if (i > range+1) {
 				// stop if done
 				Bukkit.getServer().getScheduler().cancelTask(taskId);
-				fireImmunity.remove(player);
+				if (fireImmunity != null) {
+					fireImmunity.remove(player);
+				}
 			}
 		}
 	}

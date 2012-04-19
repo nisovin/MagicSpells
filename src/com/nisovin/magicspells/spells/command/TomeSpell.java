@@ -92,9 +92,6 @@ public class TomeSpell extends CommandSpell {
 				}
 				book.addHiddenData("MagicSpell", spell.getInternalName() + (uses>0?","+uses:""));
 				book.save();
-				if (consumeBook) {
-					player.setItemInHand(null);
-				}
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
@@ -146,6 +143,10 @@ public class TomeSpell extends CommandSpell {
 							} else {
 								event.getBook().removeHiddenData("MagicSpell");
 							}							
+						}
+						// consume
+						if (uses <= 0 && consumeBook) {
+							event.getPlayer().setItemInHand(null);
 						}
 					}
 				}

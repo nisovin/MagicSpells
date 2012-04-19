@@ -48,7 +48,7 @@ public class BlockPlatform {
 				for (int z = cz-size; z <= cz+size; z++) {
 					block = world.getBlockAt(x,cy,z);
 					above = block.getRelative(0,1,0);
-					if ((block.getTypeId() == replaceType && (cy >= max-1 || blocks.contains(above) || above.getType() == Material.AIR)) || (blocks != null && blocks.contains(block))) {
+					if ((block.getTypeId() == replaceType && (cy >= max-1 || (blocks != null && blocks.contains(above)) || above.getType() == Material.AIR)) || (blocks != null && blocks.contains(block))) {
 						// only add if it's a replaceable block and has air above, or if it is already part of the platform
 						platform.add(block);
 					}

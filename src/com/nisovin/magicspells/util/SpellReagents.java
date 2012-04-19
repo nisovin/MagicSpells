@@ -14,6 +14,27 @@ public class SpellReagents {
 	private int experience;
 	private int levels;
 	
+	public SpellReagents() {
+		this.items = new HashSet<ItemStack>();
+		this.mana = 0;
+		this.health = 0;
+		this.hunger = 0;
+		this.experience = 0;
+		this.levels = 0;
+	}
+	
+	public SpellReagents(SpellReagents other) {
+		this.items = new HashSet<ItemStack>();
+		for (ItemStack item : other.items) {
+			this.items.add(item.clone());
+		}
+		this.mana = other.mana;
+		this.health = other.health;
+		this.hunger = other.hunger;
+		this.experience = other.experience;
+		this.levels = other.levels;
+	}
+	
 	public SpellReagents(ItemStack[] items, int mana, int health, int hunger, int experience, int levels) {
 		this.items = new HashSet<ItemStack>();
 		if (items != null) {
@@ -50,6 +71,10 @@ public class SpellReagents {
 		for (ItemStack i : items) {
 			this.items.add(i);
 		}
+	}
+	
+	public void addItem(ItemStack item) {
+		this.items.add(item);
 	}
 	
 	public int getMana() {
@@ -90,6 +115,34 @@ public class SpellReagents {
 	
 	public void setLevels(int levels) {
 		this.levels = levels;
+	}
+	
+	public SpellReagents clone() {
+		SpellReagents other = new SpellReagents();
+		for (ItemStack item : this.items) {
+			other.items.add(item.clone());
+		}
+		other.mana = this.mana;
+		other.health = this.health;
+		other.hunger = this.hunger;
+		other.experience = this.experience;
+		other.levels = this.levels;
+		return other;
+	}
+	
+	public SpellReagents multiply(int x) {
+		SpellReagents other = new SpellReagents();
+		for (ItemStack item : this.items) {
+			ItemStack i = item.clone();
+			i.setAmount(i.getAmount() * x);
+			other.items.add(i);
+		}
+		other.mana = this.mana * x;
+		other.health = this.health * x;
+		other.hunger = this.hunger * x;
+		other.experience = this.experience * x;
+		other.levels = this.levels * x;
+		return other;
 	}
 	
 }

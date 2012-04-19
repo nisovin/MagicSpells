@@ -24,6 +24,7 @@ public class ExternalCommandSpell extends TargetedEntitySpell {
 	private List<String> temporaryPermissions;
 	private boolean requirePlayerTarget;
 	private boolean executeAsTargetInstead;
+	private boolean executeOnConsoleInstead;
 	private boolean obeyLos;
 	private String strCantUseCommand;
 	private String strNoTarget;
@@ -31,8 +32,8 @@ public class ExternalCommandSpell extends TargetedEntitySpell {
 	public ExternalCommandSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		castWithItem = config.getBoolean("spells." + spellName + ".can-cast-with-item", true);
-		castByCommand = config.getBoolean("spells." + spellName + ".can-cast-by-command", true);
+		castWithItem = getConfigBoolean("can-cast-with-item", true);
+		castByCommand = getConfigBoolean("can-cast-by-command", true);
 		commandToExecute = getConfigStringList("command-to-execute", null);
 		commandToExecuteLater = getConfigStringList("command-to-execute-later", null);
 		commandDelay = getConfigInt("command-delay", 0);
@@ -40,8 +41,9 @@ public class ExternalCommandSpell extends TargetedEntitySpell {
 		temporaryPermissions = getConfigStringList("temporary-permissions", null);
 		requirePlayerTarget = getConfigBoolean("require-player-target", false);
 		executeAsTargetInstead = getConfigBoolean("execute-as-target-instead", false);
+		executeOnConsoleInstead = getConfigBoolean("execute-on-console-instead", false);
 		obeyLos = getConfigBoolean("obey-los", true);
-		strCantUseCommand = config.getString("spells." + spellName + ".str-cant-use-command", "&4You don't have permission to do that.");
+		strCantUseCommand = getConfigString("str-cant-use-command", "&4You don't have permission to do that.");
 		strNoTarget = getConfigString("str-no-target", "No target found.");
 	}
 
@@ -74,9 +76,7 @@ public class ExternalCommandSpell extends TargetedEntitySpell {
 						player.addAttachment(MagicSpells.plugin, perm, true, 5);
 					}
 				} else {
-					System.out.println("adding perm " + perm + " to " + target.getName());
 					if (!target.hasPermission(perm)) {
-						System.out.println("yup");
 						target.addAttachment(MagicSpells.plugin, perm, true, 5);
 					}
 				}
@@ -93,12 +93,21 @@ public class ExternalCommandSpell extends TargetedEntitySpell {
 			if (target != null) {
 				comm = comm.replace("%t", target.getName());
 			}
-			if (!executeAsTargetInstead) {
-				player.performCommand(comm);
-			} else {
+			if (executeAsTargetInstead) {
 				target.performCommand(comm);
+			} else if (executeOnConsoleInstead) {
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), comm);
+			} else {
+				player.performCommand(comm);
 			}
 		}
+		// effects
+		if (target != null) {
+			playGraphicalEffects(player, target);
+		} else {
+			playGraphicalEffects(1, player);
+		}
+		// add delayed command
 		if (commandToExecuteLater != null && commandToExecuteLater.size() > 0 && !commandToExecuteLater.get(0).isEmpty()) {
 			Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new DelayedCommand(player, target), commandDelay);
 		}
@@ -172,13 +181,17 @@ public class ExternalCommandSpell extends TargetedEntitySpell {
 					if (target != null) {
 						comm = comm.replace("%t", target.getName());
 					}
-					if (!executeAsTargetInstead) {
-						player.performCommand(comm);
-					} else {
+					if (executeAsTargetInstead) {
 						target.performCommand(comm);
+					} else if (executeOnConsoleInstead) {
+						Bukkit.dispatchCommand(Bukkit.getConsoleSender(), comm);
+					} else {
+						player.performCommand(comm);
 					}
 				}
-			}			
+			}
+			// graphical effect
+			playGraphicalEffects(4, player);
 		}
 		
 	}

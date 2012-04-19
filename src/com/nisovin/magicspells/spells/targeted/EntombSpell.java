@@ -23,20 +23,18 @@ public class EntombSpell extends TargetedEntitySpell {
 	private int tombDuration;
 	private boolean closeTopAndBottom;
 	private boolean allowBreaking;
-	private String strNoTarget;
 	
 	private HashSet<Block> blocks;
 	
 	public EntombSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 
-		targetPlayers = config.getBoolean("spells." + spellName + ".target-players", false);
-		obeyLos = config.getBoolean("spells." + spellName + ".obey-los", true);
-		tombBlockType = config.getInt("spells." + spellName + ".tomb-block-type", Material.GLASS.getId());
-		tombDuration = config.getInt("spells." + spellName + ".tomb-duration", 20);
-		closeTopAndBottom = config.getBoolean("spells." + spellName + ".close-top-and-bottom", true);
-		allowBreaking = config.getBoolean("spells." + spellName + ".allow-breaking", true);
-		strNoTarget = config.getString("spells." + spellName + ".str-no-target", "");
+		targetPlayers = getConfigBoolean("target-players", false);
+		obeyLos = getConfigBoolean("obey-los", true);
+		tombBlockType = getConfigInt("tomb-block-type", Material.GLASS.getId());
+		tombDuration = getConfigInt("tomb-duration", 20);
+		closeTopAndBottom = getConfigBoolean("close-top-and-bottom", true);
+		allowBreaking = getConfigBoolean("allow-breaking", true);
 		
 		blocks = new HashSet<Block>();
 	}
@@ -54,10 +52,13 @@ public class EntombSpell extends TargetedEntitySpell {
 				target.teleport(loc);
 				
 				createTomb(target, power);
+				playGraphicalEffects(player, target);
+				sendMessages(player, target);
+				return PostCastAction.NO_MESSAGES;
 			} else {
 				sendMessage(player, strNoTarget);
 				fizzle(player);
-				return PostCastAction.ALREADY_HANDLED;
+				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 			}
 		}		
 		return PostCastAction.HANDLE_NORMALLY;
@@ -132,6 +133,7 @@ public class EntombSpell extends TargetedEntitySpell {
 			return false;
 		} else {
 			createTomb(target, power);
+			playGraphicalEffects(caster, target);
 			return true;
 		}
 	}

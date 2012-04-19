@@ -37,7 +37,7 @@ public class ListSpell extends CommandSpell {
 		if (state == SpellCastState.NORMAL) {
 			Spellbook spellbook = MagicSpells.getSpellbook(player);
 			String extra = "";
-			if (args != null && args.length > 0 && spellbook.hasAdvancedPerm()) {
+			if (args != null && args.length > 0 && spellbook.hasAdvancedPerm("list")) {
 				Player p = Bukkit.getServer().getPlayer(args[0]);
 				if (p != null) {
 					spellbook = MagicSpells.getSpellbook(p);

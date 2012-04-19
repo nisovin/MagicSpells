@@ -24,7 +24,7 @@ public class GillsSpell extends BuffSpell {
 	public GillsSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		glassHeadEffect = config.getBoolean("spells." + spellName + ".glass-head-effect", true);
+		glassHeadEffect = getConfigBoolean("glass-head-effect", true);
 		
 		fishes = new HashSet<String>();
 		if (glassHeadEffect) {

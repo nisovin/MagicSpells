@@ -37,7 +37,6 @@ public class FireballSpell extends TargetedSpell {
 	private int noExplosionDamage;
 	private int noExplosionDamageRange;
 	private boolean noFire;
-	private String strNoTarget;
 	
 	private HashMap<Fireball,Float> fireballs;
 	
@@ -54,8 +53,7 @@ public class FireballSpell extends TargetedSpell {
 		noExplosionEffect = getConfigBoolean("no-explosion-effect", true);
 		noExplosionDamage = getConfigInt("no-explosion-damage", 5);
 		noExplosionDamageRange = getConfigInt("no-explosion-damage-range", 3);
-		noFire = config.getBoolean("spells." + spellName + ".no-fire", false);
-		strNoTarget = config.getString("spells." + spellName + ".str-no-target", "You cannot throw a fireball there.");
+		noFire = getConfigBoolean("no-fire", false);
 		
 		fireballs = new HashMap<Fireball,Float>();
 	}
@@ -63,54 +61,48 @@ public class FireballSpell extends TargetedSpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			Block target = player.getTargetBlock(null, range);
-			if (target == null || target.getType() == Material.AIR) {
-				// fail -- no target
-				sendMessage(player, strNoTarget);
-				fizzle(player);
-				return PostCastAction.ALREADY_HANDLED;
-			} else {				
-				// get a target if required
-				boolean selfTarget = false;
-				if (requireEntityTarget) {
-					LivingEntity entity = getTargetedEntity(player, range, targetPlayers, obeyLos);
-					if (entity == null) {
+			// get a target if required
+			boolean selfTarget = false;
+			if (requireEntityTarget) {
+				LivingEntity entity = getTargetedEntity(player, range, targetPlayers, obeyLos);
+				if (entity == null) {
+					sendMessage(player, strNoTarget);
+					fizzle(player);
+					return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				} else if (entity instanceof Player && checkPlugins) {
+					// run a pvp damage check
+					EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, entity, DamageCause.ENTITY_ATTACK, 1);
+					Bukkit.getServer().getPluginManager().callEvent(event);
+					if (event.isCancelled()) {
 						sendMessage(player, strNoTarget);
 						fizzle(player);
-						return PostCastAction.ALREADY_HANDLED;
-					} else if (entity instanceof Player && checkPlugins) {
-						// run a pvp damage check
-						EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, entity, DamageCause.ENTITY_ATTACK, 1);
-						Bukkit.getServer().getPluginManager().callEvent(event);
-						if (event.isCancelled()) {
-							sendMessage(player, strNoTarget);
-							fizzle(player);
-							return PostCastAction.ALREADY_HANDLED;
-						}
-					}
-					if (entity.equals(player)) {
-						selfTarget = true;
+						return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 					}
 				}
-				
-				// create fireball
-				Location loc;
-				if (!selfTarget) {
-					loc = player.getEyeLocation().toVector().add(player.getLocation().getDirection().multiply(2)).toLocation(player.getWorld(), player.getLocation().getYaw(), player.getLocation().getPitch());
-				} else {
-					loc = player.getLocation().toVector().add(player.getLocation().getDirection().setY(0).multiply(2)).toLocation(player.getWorld(), player.getLocation().getYaw()+180, 0);
+				if (entity.equals(player)) {
+					selfTarget = true;
 				}
-				Fireball fireball;
-				if (smallFireball) {
-					fireball = player.getWorld().spawn(loc, SmallFireball.class);
-					player.getWorld().playEffect(player.getLocation(), Effect.BLAZE_SHOOT, 0);
-				} else {
-					fireball = player.getWorld().spawn(loc, Fireball.class);
-					player.getWorld().playEffect(player.getLocation(), Effect.GHAST_SHOOT, 0);
-				}
-				fireball.setShooter(player);
-				fireballs.put(fireball,power);
 			}
+			
+			// create fireball
+			Location loc;
+			if (!selfTarget) {
+				loc = player.getEyeLocation().toVector().add(player.getLocation().getDirection().multiply(2)).toLocation(player.getWorld(), player.getLocation().getYaw(), player.getLocation().getPitch());
+			} else {
+				loc = player.getLocation().toVector().add(player.getLocation().getDirection().setY(0).multiply(2)).toLocation(player.getWorld(), player.getLocation().getYaw()+180, 0);
+			}
+			Fireball fireball;
+			if (smallFireball) {
+				fireball = player.getWorld().spawn(loc, SmallFireball.class);
+				player.getWorld().playEffect(player.getLocation(), Effect.BLAZE_SHOOT, 0);
+			} else {
+				fireball = player.getWorld().spawn(loc, Fireball.class);
+				player.getWorld().playEffect(player.getLocation(), Effect.GHAST_SHOOT, 0);
+			}
+			fireball.setShooter(player);
+			fireballs.put(fireball,power);
+			
+			playGraphicalEffects(1, player);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}
@@ -124,6 +116,7 @@ public class FireballSpell extends TargetedSpell {
 		if (event.getEntity() instanceof Fireball) {
 			Fireball fireball = (Fireball)event.getEntity();
 			if (fireballs.containsKey(fireball)) {
+				playGraphicalEffects(2, fireball.getLocation());
 				if (noExplosion) {
 					event.setCancelled(true);
 					Location loc = fireball.getLocation();
@@ -173,7 +166,7 @@ public class FireballSpell extends TargetedSpell {
 				} else {
 					event.setFire(true);
 				}
-				if (noExplosion || damageMultiplier == 0) {
+				if (noExplosion || (damageMultiplier == 0 && targetPlayers)) {
 					fireballs.remove(fireball);
 				}
 			}
@@ -182,13 +175,17 @@ public class FireballSpell extends TargetedSpell {
 
 	@EventHandler(priority=EventPriority.HIGH)
 	public void onEntityDamage(EntityDamageEvent event) {
-		if (damageMultiplier > 0 && !event.isCancelled() && event instanceof EntityDamageByEntityEvent && event.getCause() == DamageCause.ENTITY_EXPLOSION) {
+		if ((damageMultiplier > 0 || !targetPlayers) && !event.isCancelled() && event instanceof EntityDamageByEntityEvent && event.getCause() == DamageCause.ENTITY_EXPLOSION) {
 			EntityDamageByEntityEvent evt = (EntityDamageByEntityEvent)event;
 			if (evt.getDamager() instanceof Fireball || evt.getDamager() instanceof SmallFireball) {
 				Fireball fireball = (Fireball)evt.getDamager();
 				if (fireball.getShooter() instanceof Player && fireballs.containsKey(fireball)) {
 					float power = fireballs.remove(fireball);
-					event.setDamage(Math.round(event.getDamage() * damageMultiplier * power));
+					if (event.getEntity() instanceof Player && !targetPlayers) {
+						event.setCancelled(true);
+					} else if (damageMultiplier > 0) {
+						event.setDamage(Math.round(event.getDamage() * damageMultiplier * power));
+					}
 				}
 			}
 		}

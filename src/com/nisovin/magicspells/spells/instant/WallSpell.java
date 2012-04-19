@@ -29,12 +29,12 @@ public class WallSpell extends InstantSpell {
 		super(config, spellName);
 		
 		distance = getConfigInt("distance", 3);
-		wallWidth = config.getInt("spells." + spellName + ".wall-width", 5);
-		wallHeight = config.getInt("spells." + spellName + ".wall-height", 3);
-		wallType = Material.getMaterial(config.getInt("spells." + spellName + ".wall-type", Material.BRICK.getId()));
-		wallDuration = config.getInt("spells." + spellName + ".wall-duration", 15);
+		wallWidth = getConfigInt("wall-width", 5);
+		wallHeight = getConfigInt("wall-height", 3);
+		wallType = Material.getMaterial(getConfigInt("wall-type", Material.BRICK.getId()));
+		wallDuration = getConfigInt("wall-duration", 15);
 		preventBreaking = getConfigBoolean("prevent-breaking", true);
-		strNoTarget = config.getString("spells." + spellName + ".str-no-target", "Unable to create a wall.");
+		strNoTarget = getConfigString("str-no-target", "Unable to create a wall.");
 		
 		if (preventBreaking) {
 			blockSets = new ArrayList<TemporaryBlockSet>();

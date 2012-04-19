@@ -5,7 +5,7 @@ import org.bukkit.event.Event;
 
 import com.nisovin.magicspells.Spell;
 
-public class SpellEvent extends Event {
+public abstract class SpellEvent extends Event {
 
 	private Spell spell;
 	private Player caster;

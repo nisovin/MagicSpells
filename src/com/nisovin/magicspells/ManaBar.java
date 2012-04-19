@@ -16,6 +16,10 @@ public class ManaBar {
 		this.mana = maxMana;
 	}
 	
+	public void setMaxMana(int maxMana) {
+		this.maxMana = maxMana;
+	}
+	
 	public boolean has(int amount) {
 		return (mana >= amount);
 	}
@@ -62,17 +66,28 @@ public class ManaBar {
 	
 	public void showOnTool(Player player) {
 		ItemStack item = player.getInventory().getItem(ManaBarManager.manaBarToolSlot);
-		Material type = item.getType();
-		if (type == Material.WOOD_AXE || type == Material.WOOD_HOE || type == Material.WOOD_PICKAXE || type == Material.WOOD_SPADE || type == Material.WOOD_SWORD) {
-			int dur = 60 - (int)(((double)mana/(double)maxMana) * 60);
-			if (dur == 60) {
-				dur = 59;
-			} else if (dur == 0) {
-				dur = 1;
+		if (item != null) {
+			Material type = item.getType();
+			if (type == Material.WOOD_AXE || type == Material.WOOD_HOE || type == Material.WOOD_PICKAXE || type == Material.WOOD_SPADE || type == Material.WOOD_SWORD) {
+				int dur = 60 - (int)(((double)mana/(double)maxMana) * 60);
+				if (dur == 60) {
+					dur = 59;
+				} else if (dur == 0) {
+					dur = 1;
+				}
+				item.setDurability((short)dur);
+				player.getInventory().setItem(ManaBarManager.manaBarToolSlot, item);
 			}
-			item.setDurability((short)dur);
-			player.getInventory().setItem(ManaBarManager.manaBarToolSlot, item);
 		}
+	}
+	
+	public void showOnHungerBar(Player player) {
+		player.setFoodLevel(Math.round(((float)mana/(float)maxMana) * 20));
+		player.setSaturation(20);
+	}
+	
+	public void showOnExperienceBar(Player player) {
+		MagicSpells.getVolatileCodeHandler().setExperienceBar(player, mana, (float)mana/(float)maxMana);
 	}
 	
 	public void callManaChangeEvent(Player player) {

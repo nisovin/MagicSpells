@@ -12,8 +12,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import com.nisovin.magicspells.MagicSpells;
@@ -21,6 +24,7 @@ import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.Spellbook;
 import com.nisovin.magicspells.spells.CommandSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.SpellReagents;
 
 public class ScrollSpell extends CommandSpell {
 
@@ -35,7 +39,7 @@ public class ScrollSpell extends CommandSpell {
 	private boolean chargeReagentsForSpellPerCharge;
 	private boolean requireTeachPerm;
 	private boolean requireScrollCastPermOnUse;
-	private String stackByDataVar;
+	private String stackByDataFn;
 	private int maxScrolls;
 	private String strScrollOver;
 	private String strUsage;
@@ -63,7 +67,7 @@ public class ScrollSpell extends CommandSpell {
 		chargeReagentsForSpellPerCharge = getConfigBoolean("charge-reagents-for-spell-per-charge", false);
 		requireTeachPerm = getConfigBoolean("require-teach-perm", true);
 		requireScrollCastPermOnUse = getConfigBoolean("require-scroll-cast-perm-on-use", true);
-		stackByDataVar = getConfigString("stack-by-data-var", "bQ");
+		stackByDataFn = getConfigString("stack-by-data-fn", "a");
 		maxScrolls = getConfigInt("max-scrolls", 500);
 		strScrollOver = getConfigString("str-scroll-over", "Spell Scroll: %s (%u uses remaining)");
 		strUsage = getConfigString("str-usage", "You must hold a single blank paper \nand type /cast scroll <spell> <uses>.");
@@ -78,12 +82,13 @@ public class ScrollSpell extends CommandSpell {
 		
 		// prevent paper stacking
 		if (setUnstackable) {
-			MagicSpells.craftbukkit.stackByData(itemId, stackByDataVar);
+			MagicSpells.getVolatileCodeHandler().stackByData(itemId, stackByDataFn);
 		}
 	}
 	
 	@Override
 	protected void initialize() {
+		super.initialize();
 		load();
 	}
 
@@ -97,7 +102,7 @@ public class ScrollSpell extends CommandSpell {
 			} 
 			
 			// check for base scroll
-			if (MagicSpells.getSpellbook(player).hasAdvancedPerm() && args[0].equalsIgnoreCase("-base")) {
+			if (MagicSpells.getSpellbook(player).hasAdvancedPerm("scroll") && args[0].equalsIgnoreCase("-base")) {
 				createBaseScroll(args, player);
 				return PostCastAction.ALREADY_HANDLED;
 			}
@@ -144,28 +149,14 @@ public class ScrollSpell extends CommandSpell {
 			
 			// get additional reagent cost
 			if (chargeReagentsForSpellPerCharge && uses > 0) {
-				ItemStack[] spellReagents = spell.getReagentCost();
-				ItemStack[] reagents = new ItemStack[spellReagents.length];
-				for (int i = 0; i < reagents.length; i++) {
-					ItemStack item = spellReagents[i];
-					if (item != null) {
-						item = item.clone();
-						item.setAmount(item.getAmount() * uses);
-					}
-					reagents[i] = item;
-				}
-				int manaCost = spell.getManaCost() * uses;
-				int healthCost = spell.getHealthCost() * uses;
-				int hungerCost = spell.getHungerCost() * uses;
-				int experienceCost = spell.getExperienceCost() * uses;
-				int levelsCost = spell.getLevelsCost() * uses;
-				if (!hasReagents(player, reagents, healthCost, manaCost, hungerCost, experienceCost, levelsCost)) {
+				SpellReagents reagents = spell.getReagents().multiply(uses);
+				if (!hasReagents(player, reagents)) {
 					// missing reagents
-					sendMessage(player, MagicSpells.strMissingReagents);
+					sendMessage(player, strMissingReagents);
 					return PostCastAction.ALREADY_HANDLED;
 				} else {
 					// has reagents, so just remove them
-					removeReagents(player, reagents, healthCost, manaCost, hungerCost, experienceCost, levelsCost);
+					removeReagents(player, reagents);
 				}
 			}
 			
@@ -338,11 +329,63 @@ public class ScrollSpell extends CommandSpell {
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onItemHeldChange(PlayerItemHeldEvent event) {
 		ItemStack inHand = event.getPlayer().getInventory().getItem(event.getNewSlot());
-		if (inHand != null && inHand.getTypeId() == itemId && inHand.getDurability() != 0) {
-			Spell spell = scrollSpells.get(inHand.getDurability());
-			if (spell != null) {
-				sendMessage(event.getPlayer(), formatMessage(strScrollOver, "%s", spell.getName(), "%u", scrollUses.get(inHand.getDurability())+""));
+		if (inHand != null && inHand.getTypeId() == itemId && inHand.getDurability() != 0) {			
+			sendInfoMessage(event.getPlayer(), inHand);
+		}
+	}
+	
+	@EventHandler(ignoreCancelled=true)
+	public void onInventoryClick(InventoryClickEvent event) {
+		ItemStack clicked = event.getCurrentItem();
+		ItemStack cursor = event.getCursor();
+		
+		if (clicked != null && clicked.getTypeId() == itemId && clicked.getDurability() != 0) {
+			if (cursor != null && cursor.getTypeId() == itemId && event.isLeftClick() && !event.isShiftClick() && clicked.getDurability() != cursor.getDurability()) {
+				// trying to stack different scrolls - prevent it
+				event.setCancelled(true);
+				event.setCursor(clicked.clone());
+				event.setCurrentItem(cursor.clone());
+			} else if (cursor != null && cursor.getType() == Material.AIR && event.isRightClick()) {
+				// get info
+				if (event.getWhoClicked() instanceof Player) {
+					boolean sent = sendInfoMessage((Player)event.getWhoClicked(), clicked);
+					if (sent) {
+						event.setCancelled(true);
+					}
+				}
+			} else if (event.isShiftClick()) {
+				// trying to shift move
+				// TODO: make this better
+				event.setCancelled(true);
+				//System.out.println("inv: " + event.getInventory().getType());
+				//System.out.println("top: " + event.getView().getTopInventory().getType());
+				//System.out.println("bottom: " + event.getView().getBottomInventory().getType());
 			}
+		}
+	}
+	
+	@EventHandler(priority=EventPriority.HIGH, ignoreCancelled=true)
+	public void onPickupItem(PlayerPickupItemEvent event) {
+		ItemStack item = event.getItem().getItemStack();
+		if (item.getTypeId() == itemId && item.getDurability() > 0) {
+			event.setCancelled(true);
+			Inventory inv = event.getPlayer().getInventory();
+			int slot = inv.firstEmpty();
+			if (slot >= 0) {
+				inv.setItem(slot, item);
+				MagicSpells.getVolatileCodeHandler().collectItem(event.getPlayer(), event.getItem());
+				event.getItem().remove();
+			}
+		}
+	}
+	
+	private boolean sendInfoMessage(Player player, ItemStack item) {
+		Spell spell = scrollSpells.get(item.getDurability());
+		if (spell != null) {
+			sendMessage(player, strScrollOver, "%s", spell.getName(), "%u", scrollUses.get(item.getDurability())+"");
+			return true;
+		} else {
+			return false;
 		}
 	}
 	
@@ -361,7 +404,7 @@ public class ScrollSpell extends CommandSpell {
 	
 	private void save() {
 		if (dirtyData) {
-			MagicSpells.debug("Saving scrolls...");
+			MagicSpells.debug(2, "Saving scrolls...");
 			File file = new File(MagicSpells.plugin.getDataFolder(), "scrolls.txt");
 			if (file.exists()) {
 				file.delete();
@@ -370,7 +413,7 @@ public class ScrollSpell extends CommandSpell {
 			String data;
 			for (short i : scrollSpells.keySet()) {
 				data = scrollSpells.get(i).getInternalName() + "|" + scrollUses.get(i);
-				MagicSpells.debug("    " + i + " : " + data);
+				MagicSpells.debug(3, "    " + i + " : " + data);
 				c.set(i+"", data);
 			}
 			try {
@@ -384,7 +427,7 @@ public class ScrollSpell extends CommandSpell {
 	private void load() {
 		File file = new File(MagicSpells.plugin.getDataFolder(), "scrolls.txt");
 		if (file.exists()) {
-			MagicSpells.debug("Loading scrolls...");
+			MagicSpells.debug(2, "Loading scrolls...");
 			YamlConfiguration c = new YamlConfiguration();
 			try {
 				c.load(file);
@@ -396,13 +439,13 @@ public class ScrollSpell extends CommandSpell {
 			for (String s : keys) {
 				short id = Short.parseShort(s);
 				String[] data = c.getString(s).split("\\|");
-				MagicSpells.debug("    Raw data: " + c.getString(s));
+				MagicSpells.debug(3, "    Raw data: " + c.getString(s));
 				Spell spell = MagicSpells.getSpellByInternalName(data[0]);
 				int uses = Integer.parseInt(data[1]);
 				if (spell != null) {
 					scrollSpells.put(id, spell);
 					scrollUses.put(id, uses);
-					MagicSpells.debug("        Loaded scroll: " + id + " - " + spell.getInternalName() + " - " + uses);
+					MagicSpells.debug(3, "        Loaded scroll: " + id + " - " + spell.getInternalName() + " - " + uses);
 				}
 			}
 			dirtyData = false;

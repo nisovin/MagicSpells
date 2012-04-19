@@ -6,15 +6,11 @@ import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.util.MagicConfig;
-import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
-import com.sk89q.worldguard.protection.managers.RegionManager;
-import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
 public class NoMagicZoneManager implements NoMagicZoneHandler {
 	
@@ -22,12 +18,7 @@ public class NoMagicZoneManager implements NoMagicZoneHandler {
 
 	public NoMagicZoneManager(MagicConfig config) {
 		zones = new HashSet<NoMagicZone>();
-		
-		WorldGuardPlugin worldGuard = null;
-		if (Bukkit.getServer().getPluginManager().isPluginEnabled("WorldGuard")) {
-			worldGuard = (WorldGuardPlugin)Bukkit.getServer().getPluginManager().getPlugin("WorldGuard");
-		}
-		
+				
 		Set<String> zoneNodes = config.getKeys("no-magic-zones");
 		if (zoneNodes != null) {
 			for (String node : zoneNodes) {
@@ -35,25 +26,11 @@ public class NoMagicZoneManager implements NoMagicZoneHandler {
 				String worldName = zoneConfig.getString("world", Bukkit.getServer().getWorlds().get(0).getName());
 				String type = zoneConfig.getString("type", "cuboid");
 				String message = zoneConfig.getString("message", "You are in a no-magic zone.");
-				@SuppressWarnings("unchecked")
-				List<String> allowedSpells = zoneConfig.getList("allowed-spells", null);
-				if (type.equalsIgnoreCase("worldguard") && worldGuard != null) {
-					World w = Bukkit.getServer().getWorld(worldName);
-					if (w != null) {
-						RegionManager rm = worldGuard.getRegionManager(w);
-						if (rm != null) {
-							ProtectedRegion region = rm.getRegion(zoneConfig.getString("region"));
-							if (region != null) {
-								zones.add(new NoMagicZone(worldName, region, message, allowedSpells));
-							} else {
-								Bukkit.getServer().getLogger().severe("MagicSpells: Invalid no-magic zone WorldGuard region: " + node);
-							}
-						} else {
-							Bukkit.getServer().getLogger().severe("MagicSpells: Failed to get WorldGuard region manager for world: " + worldName);
-						}
-					} else {
-						Bukkit.getServer().getLogger().severe("MagicSpells: Invalid no-magic zone world: " + worldName);						
-					}
+				List<String> allowedSpells = zoneConfig.getStringList("allowed-spells");
+				if (type.equalsIgnoreCase("worldguard")) {
+					zones.add(new NoMagicZone(worldName, zoneConfig.getString("region"), message, allowedSpells, NoMagicZone.Type.WORLDGUARD));
+				} else if (type.equalsIgnoreCase("residence")) {
+					zones.add(new NoMagicZone(worldName, zoneConfig.getString("region"), message, allowedSpells, NoMagicZone.Type.RESIDENCE));
 				} else if (type.equalsIgnoreCase("cuboid")) {
 					try {
 						String[] p1 = zoneConfig.getString("point1").split(",");

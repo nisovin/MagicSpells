@@ -44,13 +44,16 @@ public class HasteSpell extends BuffSpell {
 		Player player = event.getPlayer();
 		if (hasted.containsKey(player)) {
 			if (isExpired(player)) {
+				playGraphicalEffects(2, player);
 				turnOff(player);
 			} else if (event.isSprinting()) {
 				event.setCancelled(true);
 				player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, boostDuration, hasted.get(player)), true);
 				addUseAndChargeCost(player);
+				playGraphicalEffects(1, player);
 			} else {
-				player.removePotionEffect(PotionEffectType.SPEED);
+				MagicSpells.getVolatileCodeHandler().removeMobEffect(player, PotionEffectType.SPEED);
+				playGraphicalEffects(2, player);
 			}
 		}
 	}
@@ -60,7 +63,7 @@ public class HasteSpell extends BuffSpell {
 		if (hasted.containsKey(player)) {
 			super.turnOff(player);
 			hasted.remove(player);
-			MagicSpells.craftbukkit.removeMobEffect(player, PotionEffectType.SPEED);
+			MagicSpells.getVolatileCodeHandler().removeMobEffect(player, PotionEffectType.SPEED);
 			sendMessage(player, strFade);
 		}
 	}

@@ -10,22 +10,16 @@ public class HealSpell extends TargetedEntitySpell {
 	
 	private int healAmount;
 	private boolean cancelIfFull;
-	private boolean showSpellEffect;
 	private boolean obeyLos;
-	private String strNoTarget;
 	private String strMaxHealth;
-	private String strCastTarget;
 
 	public HealSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
 		healAmount = getConfigInt("heal-amount", 10);
 		cancelIfFull = getConfigBoolean("cancel-if-full", true);
-		showSpellEffect = getConfigBoolean("show-spell-effect", true);
 		obeyLos = getConfigBoolean("obey-los", true);
-		strNoTarget = getConfigString("str-no-target", "No target to heal.");
 		strMaxHealth = getConfigString("str-max-health", "%t is already at max health.");
-		strCastTarget = getConfigString("str-cast-target", "%a healed you.");
 	}
 
 	@Override
@@ -40,14 +34,12 @@ public class HealSpell extends TargetedEntitySpell {
 			} else {
 				heal(player, target, power);
 				
-				sendMessage(player, formatMessage(strCastSelf, "%t", target.getDisplayName()));
-				sendMessage(target, formatMessage(strCastTarget, "%a", player.getDisplayName()));
-				sendMessageNear(player, formatMessage(strCastOthers, "%t", target.getDisplayName(), "%a", player.getDisplayName()));
+				sendMessages(player, target);
 				
 				return PostCastAction.NO_MESSAGES;
 			}
-			
-			return PostCastAction.ALREADY_HANDLED;
+
+			return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}
@@ -58,9 +50,8 @@ public class HealSpell extends TargetedEntitySpell {
 		if (health > 20) health = 20;
 		target.setHealth(health);
 		
-		if (showSpellEffect) {
-			playPotionEffect(player, target, 0xFF0000, 40);
-		}
+		playGraphicalEffects(1, player);
+		playGraphicalEffects(2, target, "FF0000 40");
 	}
 
 	@Override

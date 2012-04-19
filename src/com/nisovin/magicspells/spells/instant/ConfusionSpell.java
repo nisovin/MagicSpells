@@ -36,7 +36,9 @@ public class ConfusionSpell extends InstantSpell {
 					next = 0;
 				}
 				monsters.get(i).setTarget(monsters.get(next));
+				playGraphicalEffects(2, monsters.get(i));
 			}
+			playGraphicalEffects(1, player);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}

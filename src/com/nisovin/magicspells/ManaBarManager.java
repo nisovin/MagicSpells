@@ -22,7 +22,9 @@ public class ManaBarManager extends ManaHandler {
 	private int manaRegenAmount;
 	private boolean showManaOnUse;
 	private boolean showManaOnRegen;
-	private boolean showManaOnWoodTool;	
+	private boolean showManaOnWoodTool;
+	private boolean showManaOnHungerBar;
+	private boolean showManaOnExperienceBar;
 	
 	private Map<String,ManaBar> manaBars;
 	private int taskId = -1;
@@ -40,6 +42,8 @@ public class ManaBarManager extends ManaHandler {
 		showManaOnUse = config.getBoolean("general.mana.show-mana-on-use", false);
 		showManaOnRegen = config.getBoolean("general.mana.show-mana-on-regen", false);
 		showManaOnWoodTool = config.getBoolean("general.mana.show-mana-on-wood-tool", true);
+		showManaOnHungerBar = config.getBoolean("general.mana.show-mana-on-hunger-bar", false);
+		showManaOnExperienceBar = config.getBoolean("general.mana.show-mana-on-experience-bar", false);
 		
 		manaBars = new HashMap<String,ManaBar>();
 		startRegenerator();
@@ -49,6 +53,14 @@ public class ManaBarManager extends ManaHandler {
 	public void createManaBar(Player player) {
 		if (!manaBars.containsKey(player.getName())) {
 			manaBars.put(player.getName(), new ManaBar(maxMana));
+		}
+	}
+	
+	@Override
+	public void setMaxMana(Player player, int amount) {
+		ManaBar manaBar = manaBars.get(player.getName());
+		if (manaBar != null) {
+			manaBar.setMaxMana(amount);
 		}
 	}
 	
@@ -87,10 +99,6 @@ public class ManaBarManager extends ManaHandler {
 		}		
 	}
 	
-	public void showMana(Player player) {
-		showMana(player, false);
-	}
-	
 	@Override
 	public void showMana(Player player, boolean forceShowInChat) {
 		ManaBar bar = manaBars.get(player.getName());
@@ -100,6 +108,12 @@ public class ManaBarManager extends ManaHandler {
 			}
 			if (showManaOnWoodTool) {
 				bar.showOnTool(player);
+			}
+			if (showManaOnHungerBar) {
+				bar.showOnHungerBar(player);
+			}
+			if (showManaOnExperienceBar) {
+				bar.showOnExperienceBar(player);
 			}
 			// send event
 			bar.callManaChangeEvent(player);
@@ -138,6 +152,12 @@ public class ManaBarManager extends ManaHandler {
 						}
 						if (showManaOnWoodTool) {
 							bar.showOnTool(player);
+						}
+						if (showManaOnHungerBar) {
+							bar.showOnHungerBar(player);
+						}
+						if (showManaOnExperienceBar) {
+							bar.showOnExperienceBar(player);
 						}
 					}
 					bar.callManaChangeEvent(player);

@@ -4,6 +4,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
+/**
+ * This event is fired whenever a player's mana value is changed.
+ *
+ */
 public class ManaChangeEvent extends Event {
 
     private static final HandlerList handlers = new HandlerList();
@@ -22,10 +26,18 @@ public class ManaChangeEvent extends Event {
 		return player;
 	}
 	
+	/**
+	 * The amount of mana the player now has.
+	 * @return mana amount
+	 */
 	public int getNewAmount() {
 		return newAmt;
 	}
 	
+	/**
+	 * The maximum amount of mana the player can have.
+	 * @return max mana
+	 */
 	public int getMaxMana() {
 		return maxMana;
 	}

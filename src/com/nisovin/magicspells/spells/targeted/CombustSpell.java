@@ -22,7 +22,6 @@ public class CombustSpell extends TargetedEntitySpell {
 	private boolean preventImmunity;
 	private boolean obeyLos;
 	private boolean checkPlugins;
-	private String strNoTarget;
 	
 	private HashMap<Integer, CombustData> combusting = new HashMap<Integer, CombustData>();
 	
@@ -35,7 +34,6 @@ public class CombustSpell extends TargetedEntitySpell {
 		preventImmunity = getConfigBoolean("prevent-immunity", true);
 		obeyLos = getConfigBoolean("obey-los", true);
 		checkPlugins = getConfigBoolean("check-plugins", true);
-		strNoTarget = getConfigString("str-no-target", "");
 	}
 	
 	@Override
@@ -45,15 +43,16 @@ public class CombustSpell extends TargetedEntitySpell {
 			if (target == null) {
 				sendMessage(player, strNoTarget);
 				fizzle(player);
-				return PostCastAction.ALREADY_HANDLED;
+				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 			} else {
 				boolean combusted = combust(player, target, power);
 				if (!combusted) {
 					sendMessage(player, strNoTarget);
 					fizzle(player);
-					return PostCastAction.ALREADY_HANDLED;
+					return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 				}
-				// TODO: manually send messages with replacements
+				sendMessages(player, target);
+				return PostCastAction.NO_MESSAGES;
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
@@ -71,6 +70,7 @@ public class CombustSpell extends TargetedEntitySpell {
 		int duration = Math.round(fireTicks*power);
 		combusting.put(target.getEntityId(), new CombustData(power));
 		target.setFireTicks(duration);
+		playGraphicalEffects(player, target);
 		Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new Runnable() {
 			public void run() {
 				CombustData data = combusting.get(target.getEntityId());

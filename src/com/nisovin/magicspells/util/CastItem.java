@@ -15,7 +15,7 @@ public class CastItem {
 	
 	public CastItem(int type, short data) {
 		this.type = type;
-		if (MagicSpells.ignoreCastItemDurability != null && MagicSpells.ignoreCastItemDurability.contains(type)) {
+		if (MagicSpells.ignoreCastItemDurability(type)) {
 			this.data = 0;
 		} else {
 			this.data = data;
@@ -28,7 +28,7 @@ public class CastItem {
 			this.data = 0;
 		} else {
 			this.type = i.getTypeId();
-			if (MagicSpells.ignoreCastItemDurability != null && MagicSpells.ignoreCastItemDurability.contains(type)) {
+			if (this.type == 0 || MagicSpells.ignoreCastItemDurability(type)) {
 				this.data = 0;
 			} else {
 				this.data = i.getDurability();
@@ -40,7 +40,7 @@ public class CastItem {
 		if (s.contains(":")) {
 			String[] split = s.split(":");
 			this.type = Integer.parseInt(split[0]);
-			if (MagicSpells.ignoreCastItemDurability != null && MagicSpells.ignoreCastItemDurability.contains(type)) {
+			if (MagicSpells.ignoreCastItemDurability(type)) {
 				this.data = 0;
 			} else {
 				this.data = Short.parseShort(split[1]);
@@ -48,8 +48,11 @@ public class CastItem {
 		} else {
 			this.type = Integer.parseInt(s);
 			this.data = 0;
-		}
-		
+		}		
+	}
+	
+	public int getItemTypeId() {
+		return this.type;
 	}
 	
 	public boolean equals(CastItem i) {

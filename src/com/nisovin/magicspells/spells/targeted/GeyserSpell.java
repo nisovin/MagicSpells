@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.EntityEffect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -29,7 +30,6 @@ public class GeyserSpell extends TargetedEntitySpell {
 	private boolean obeyLos;
 	private boolean targetPlayers;
 	private boolean checkPlugins;
-	private String strNoTarget;
 
 	public GeyserSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -48,7 +48,6 @@ public class GeyserSpell extends TargetedEntitySpell {
 		obeyLos = getConfigBoolean("obey-los", true);
 		targetPlayers = getConfigBoolean("target-players", false);
 		checkPlugins = getConfigBoolean("check-plugins", true);
-		strNoTarget = getConfigString("str-no-target", "No target found.");
 	}
 
 	@Override
@@ -58,7 +57,8 @@ public class GeyserSpell extends TargetedEntitySpell {
 			if (target == null) {
 				// fail -- no target
 				sendMessage(player, strNoTarget);
-				return PostCastAction.ALREADY_HANDLED;
+				fizzle(player);
+				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 			}
 			
 			int dam = Math.round(damage*power);
@@ -69,7 +69,7 @@ public class GeyserSpell extends TargetedEntitySpell {
 				Bukkit.getServer().getPluginManager().callEvent(event);
 				if (event.isCancelled()) {
 					sendMessage(player, strNoTarget);
-					return PostCastAction.ALREADY_HANDLED;
+					return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 				}
 				dam = event.getDamage();
 			}
@@ -80,6 +80,7 @@ public class GeyserSpell extends TargetedEntitySpell {
 					int health = target.getHealth() - dam;
 					if (health < 0) health = 0;
 					target.setHealth(health);
+					target.playEffect(EntityEffect.HURT);
 				} else {
 					target.damage(dam);
 				}
@@ -87,6 +88,10 @@ public class GeyserSpell extends TargetedEntitySpell {
 			
 			// do geyser action + animation
 			geyser(target, power);
+			playGraphicalEffects(player, target);
+			
+			sendMessages(player, target);
+			return PostCastAction.NO_MESSAGES;
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}
@@ -116,6 +121,7 @@ public class GeyserSpell extends TargetedEntitySpell {
 			return false;
 		} else {
 			geyser(target, power);
+			playGraphicalEffects(caster, target);
 			return true;
 		}
 	}

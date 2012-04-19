@@ -28,11 +28,11 @@ public class FlamewalkSpell extends BuffSpell {
 	public FlamewalkSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		range = config.getInt("spells." + spellName + ".range", 8);
-		fireTicks = config.getInt("spells." + spellName + ".fire-ticks", 80);
-		tickInterval = config.getInt("spells." + spellName + ".tick-interval", 100);
-		targetPlayers = config.getBoolean("spells." + spellName + ".target-players", false);
-		checkPlugins = config.getBoolean("spells." + spellName + ".check-plugins", true);
+		range = getConfigInt("range", 8);
+		fireTicks = getConfigInt("fire-ticks", 80);
+		tickInterval = getConfigInt("tick-interval", 100);
+		targetPlayers = getConfigBoolean("target-players", false);
+		checkPlugins = getConfigBoolean("check-plugins", true);
 		
 		flamewalkers = new HashMap<String,Float>();
 	}

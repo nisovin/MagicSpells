@@ -22,10 +22,10 @@ public class ForcepushSpell extends InstantSpell {
 		super(config, spellName);
 		
 		radius = getConfigInt("range", 3);
-		targetPlayers = config.getBoolean("spells." + spellName + ".target-players", false);
-		force = config.getInt("spells." + spellName + ".pushback-force", 30);
-		yForce = config.getInt("spells." + spellName + ".additional-vertical-force", 15);
-		maxYForce = config.getInt("spells." + spellName + ".max-vertical-force", 20);
+		targetPlayers = getConfigBoolean("target-players", false);
+		force = getConfigInt("pushback-force", 30);
+		yForce = getConfigInt("additional-vertical-force", 15);
+		maxYForce = getConfigInt("max-vertical-force", 20);
 	}
 
 	@Override
@@ -53,8 +53,10 @@ public class ForcepushSpell extends InstantSpell {
 					v.setY(maxYForce/10.0);
 				}
 				entity.setVelocity(v);
+				playGraphicalEffects(2, entity);
 			}
 	    }
+		playGraphicalEffects(1, player);
 	}
 
 }

@@ -1,20 +1,22 @@
-package com.nisovin.magicspells.util;
+package com.nisovin.magicspells;
 
 import java.util.Set;
 
 import org.bukkit.Chunk;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-public class CraftBukkitHandleDisabled implements CraftBukkitHandle {
+class CraftBukkitHandleDisabled implements CraftBukkitHandle {
 
 	@Override
-	public void playPotionEffect(Player player, Entity entity, int color, int duration) {
+	public void addPotionGraphicalEffect(LivingEntity entity, int color, int duration) {
 	}
 
 	@Override
@@ -52,7 +54,28 @@ public class CraftBukkitHandleDisabled implements CraftBukkitHandle {
 
 	@Override
 	public void removeMobEffect(LivingEntity entity, PotionEffectType type) {
+		entity.addPotionEffect(new PotionEffect(type, 1, 0), true);
 		entity.removePotionEffect(type);
+	}
+
+	@Override
+	public void collectItem(Player player, Item item) {
+	}
+
+	@Override
+	public boolean simulateTnt(Location target, float explosionSize, boolean fire) {
+		return false;
+	}
+
+	@Override
+	public boolean createExplosionByPlayer(Player player, Location location, float size, boolean fire) {
+		return location.getWorld().createExplosion(location, size, fire);
+	}
+
+	@Override
+	public void setExperienceBar(Player player, int level, float percent) {
+		player.setLevel(level);
+		player.setExp(percent);
 	}
 
 }

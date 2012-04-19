@@ -7,7 +7,7 @@ import java.util.Random;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Creature;
-import org.bukkit.entity.CreatureType;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -25,7 +25,7 @@ import com.nisovin.magicspells.util.MagicConfig;
 
 public class MinionSpell extends BuffSpell {
 	
-	private CreatureType[] creatureTypes;
+	private EntityType[] creatureTypes;
 	private int[] chances;
 	private boolean preventCombust;
 	private boolean targetPlayers;
@@ -37,18 +37,18 @@ public class MinionSpell extends BuffSpell {
 	public MinionSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		List<String> c = config.getStringList("spells." + spellName + ".mob-chances", null);
+		List<String> c = getConfigStringList("mob-chances", null);
 		if (c == null) {
 			c = new ArrayList<String>();
 		}
 		if (c.size() == 0) {
 			c.add("Zombie 100");
 		}
-		creatureTypes = new CreatureType[c.size()];
+		creatureTypes = new EntityType[c.size()];
 		chances = new int[c.size()];
 		for (int i = 0; i < c.size(); i++) {
 			String[] data = c.get(i).split(" ");
-			CreatureType creatureType = CreatureType.fromName(data[0]);
+			EntityType creatureType = EntityType.fromName(data[0]);
 			int chance = 0;
 			if (creatureType != null) {
 				try {
@@ -59,8 +59,8 @@ public class MinionSpell extends BuffSpell {
 			creatureTypes[i] = creatureType;
 			chances[i] = chance;
 		}
-		preventCombust = config.getBoolean("spells." + spellName + ".prevent-sun-burn", true);
-		targetPlayers = config.getBoolean("spells." + spellName + ".target-players", false);
+		preventCombust = getConfigBoolean("prevent-sun-burn", true);
+		targetPlayers = getConfigBoolean("target-players", false);
 		
 		minions = new HashMap<String,LivingEntity>();
 		targets = new HashMap<String,LivingEntity>();
@@ -77,7 +77,7 @@ public class MinionSpell extends BuffSpell {
 			}
 		} 
 		if (state == SpellCastState.NORMAL) {
-			CreatureType creatureType = null;
+			EntityType creatureType = null;
 			int num = random.nextInt(100);
 			int n = 0;
 			for (int i = 0; i < creatureTypes.length; i++) {
@@ -89,16 +89,22 @@ public class MinionSpell extends BuffSpell {
 				}
 			}
 			if (creatureType != null) {
-				// get spawn location TODO: improve this
+				// get spawn location
 				Location loc = null;
 				loc = player.getLocation();
 				loc.setX(loc.getX()-1);
 				
 				// spawn creature
 				LivingEntity minion = player.getWorld().spawnCreature(loc, creatureType);
-				minions.put(player.getName(), minion);
-				targets.put(player.getName(), null);
-				startSpellDuration(player);
+				if (minion instanceof Creature) {
+					minions.put(player.getName(), minion);
+					targets.put(player.getName(), null);
+					startSpellDuration(player);
+				} else {
+					minion.remove();
+					MagicSpells.error("Cannot summon a non-creature with the minion spell!");
+					return PostCastAction.ALREADY_HANDLED;
+				}
 			} else {
 				// fail -- no creature found
 				return PostCastAction.ALREADY_HANDLED;
@@ -110,7 +116,7 @@ public class MinionSpell extends BuffSpell {
 	@EventHandler
 	public void onEntityTarget(EntityTargetEvent event) {
 		if (!event.isCancelled() && minions.size() > 0 ) {	
-			if (event.getTarget() instanceof Player) {
+			if (event.getTarget() != null && event.getTarget() instanceof Player) {
 				// a monster is trying to target a player
 				Player player = (Player)event.getTarget();
 				LivingEntity minion = minions.get(player.getName());
@@ -141,13 +147,13 @@ public class MinionSpell extends BuffSpell {
 						double distSq = minion.getLocation().toVector().distanceSquared(player.getLocation().toVector());
 						if (distSq > 3*3) {
 							// minion is too far, tell him to move closer
-							MagicSpells.craftbukkit.entityPathTo(minion, player);
+							MagicSpells.getVolatileCodeHandler().entityPathTo(minion, player);
 						} 
 					}
 				} else if (!targetPlayers && minions.containsValue(event.getEntity())) {
 					// player doesn't own minion, but it is an owned minion and pvp is off, so cancel
 					event.setCancelled(true);
-				}				
+				}
 			} else if (event.getReason() == TargetReason.FORGOT_TARGET && minions.containsValue(event.getEntity())) {
 				// forgetting target but it's a minion, don't let them do that! (probably a spider going passive)
 				event.setCancelled(true);
@@ -159,6 +165,7 @@ public class MinionSpell extends BuffSpell {
 	public void onEntityDeath(EntityDeathEvent event) {
 		if (minions.containsValue(event.getEntity())) {
 			event.setDroppedExp(0);
+			event.getDrops().clear();
 		}
 	}
 

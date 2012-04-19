@@ -47,7 +47,7 @@ public class FreezeSpell extends InstantSpell {
 			Random rand = new Random();
 			Vector mod;
 			for (int i = 0; i < snowballs; i++) {
-				Snowball snowball = player.throwSnowball();
+				Snowball snowball = player.launchProjectile(Snowball.class);
 				snowball.setFallDistance(10.2F); // tag the snowballs
 				mod = new Vector((rand.nextDouble() - .5) * horizSpread, (rand.nextDouble() - .5) * vertSpread, (rand.nextDouble() - .5) * horizSpread);
 				snowball.setVelocity(snowball.getVelocity().add(mod));
