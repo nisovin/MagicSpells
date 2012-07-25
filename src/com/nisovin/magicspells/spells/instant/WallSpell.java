@@ -6,9 +6,15 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.util.Vector;
 
+import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
+import com.nisovin.magicspells.util.ItemNameResolver.ItemTypeAndData;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.TemporaryBlockSet;
 import com.nisovin.magicspells.util.TemporaryBlockSet.BlockSetRemovalCallback;
@@ -18,9 +24,11 @@ public class WallSpell extends InstantSpell {
 	private int distance;
 	private int wallWidth;
 	private int wallHeight;
+	private int wallDepth;
 	private Material wallType;
 	private int wallDuration;
 	private boolean preventBreaking;
+	private boolean preventDrops;
 	private String strNoTarget;
 	
 	private ArrayList<TemporaryBlockSet> blockSets;
@@ -31,13 +39,22 @@ public class WallSpell extends InstantSpell {
 		distance = getConfigInt("distance", 3);
 		wallWidth = getConfigInt("wall-width", 5);
 		wallHeight = getConfigInt("wall-height", 3);
-		wallType = Material.getMaterial(getConfigInt("wall-type", Material.BRICK.getId()));
+		wallDepth = getConfigInt("wall-depth", 1);
+		String type = getConfigString("wall-type", Material.BRICK.getId() + "");
+		ItemTypeAndData t = MagicSpells.getItemNameResolver().resolve(type);
+		wallType = Material.getMaterial(t != null ? t.id : Material.BRICK.getId());
 		wallDuration = getConfigInt("wall-duration", 15);
-		preventBreaking = getConfigBoolean("prevent-breaking", true);
+		preventBreaking = getConfigBoolean("prevent-breaking", false);
+		preventDrops = getConfigBoolean("prevent-drops", true);
 		strNoTarget = getConfigString("str-no-target", "Unable to create a wall.");
 		
-		if (preventBreaking) {
-			blockSets = new ArrayList<TemporaryBlockSet>();
+		blockSets = new ArrayList<TemporaryBlockSet>();
+	}
+	
+	@Override
+	public void initialize() {
+		if (preventBreaking || preventDrops) {
+			registerEvents(new BreakListener());
 		}
 	}
 	
@@ -56,31 +73,59 @@ public class WallSpell extends InstantSpell {
 				int wallWidth = Math.round(this.wallWidth*power);
 				int wallHeight = Math.round(this.wallHeight*power);
 				if (Math.abs(dir.getX()) > Math.abs(dir.getZ())) {
+					int depthDir = dir.getX() > 0 ? 1 : -1;
 					for (int z = loc.getBlockZ() - (wallWidth/2); z <= loc.getBlockZ() + (wallWidth/2); z++) {
 						for (int y = loc.getBlockY() - 1; y < loc.getBlockY() + wallHeight - 1; y++) {
-							blockSet.add(player.getWorld().getBlockAt(target.getX(), y, z));
+							for (int x = target.getX(); x < target.getX() + wallDepth && x > target.getX() - wallDepth; x += depthDir) {
+								blockSet.add(player.getWorld().getBlockAt(x, y, z));
+							}
 						}
 					}
 				} else {
+					int depthDir = dir.getZ() > 0 ? 1 : -1;
 					for (int x = loc.getBlockX() - (wallWidth/2); x <= loc.getBlockX() + (wallWidth/2); x++) {
 						for (int y = loc.getBlockY() - 1; y < loc.getBlockY() + wallHeight - 1; y++) {
-							blockSet.add(player.getWorld().getBlockAt(x, y, target.getZ()));
+							for (int z = target.getZ(); z < target.getZ() + wallDepth && z > target.getZ() - wallDepth; z += depthDir) {
+								blockSet.add(player.getWorld().getBlockAt(x, y, z));
+							}
 						}
 					}
 				}
-				if (preventBreaking) {
-					blockSets.add(blockSet);
-					blockSet.removeAfter(Math.round(wallDuration*power), new BlockSetRemovalCallback() {
-						@Override
-						public void run(TemporaryBlockSet set) {
-							blockSets.remove(set);
-						}
-					});
-				} else {
-					blockSet.removeAfter(Math.round(wallDuration*power));
-				}
+				blockSets.add(blockSet);
+				blockSet.removeAfter(Math.round(wallDuration*power), new BlockSetRemovalCallback() {
+					@Override
+					public void run(TemporaryBlockSet set) {
+						blockSets.remove(set);
+					}
+				});
+				
+				playSpellEffects(EffectPosition.CASTER, player);
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+	
+	class BreakListener implements Listener {
+		@EventHandler(ignoreCancelled=true)
+		void onBlockBreak(BlockBreakEvent event) {
+			if (blockSets.size() > 0) {
+				for (TemporaryBlockSet blockSet : blockSets) {
+					if (blockSet.contains(event.getBlock())) {
+						event.setCancelled(true);
+						if (!preventBreaking) {
+							event.getBlock().setType(Material.AIR);
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	@Override
+	public void turnOff() {
+		for (TemporaryBlockSet blockSet : blockSets) {
+			blockSet.remove();
+		}
+		blockSets.clear();
 	}
 }

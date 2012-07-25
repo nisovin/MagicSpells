@@ -23,6 +23,7 @@ import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.Spellbook;
 import com.nisovin.magicspells.events.SpellLearnEvent;
 import com.nisovin.magicspells.events.SpellLearnEvent.LearnSource;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.CommandSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.MagicLocation;
@@ -117,6 +118,7 @@ public class SpellbookSpell extends CommandSpell {
 						}
 						saveSpellbooks();
 						sendMessage(player, formatMessage(strCastSelf, "%s", spell.getName()));
+						playSpellEffects(player, target.getLocation());
 						return PostCastAction.NO_MESSAGES;
 					}
 				}
@@ -165,6 +167,7 @@ public class SpellbookSpell extends CommandSpell {
 						spellbook.addSpell(spell);
 						spellbook.save();
 						sendMessage(player, formatMessage(strLearned, "%s", spell.getName()));
+						playSpellEffects(EffectPosition.DELAYED, player);
 						int uses = bookUses.get(i);
 						if (uses > 0) {
 							uses--;
@@ -215,6 +218,14 @@ public class SpellbookSpell extends CommandSpell {
 		} else {
 			return false;
 		}
+	}
+	
+	@Override
+	public String[] tabComplete(CommandSender sender, String partial) {
+		if (sender instanceof Player && !partial.contains(" ")) {
+			return tabCompleteSpellName(sender, partial);
+		}
+		return null;
 	}
 	
 	private void loadSpellbooks() {

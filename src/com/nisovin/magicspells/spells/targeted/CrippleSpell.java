@@ -30,11 +30,9 @@ public class CrippleSpell extends TargetedEntitySpell {
 			LivingEntity target = getTargetedEntity(player, range, targetPlayers, obeyLos);
 			if (target == null) {
 				// fail
-				sendMessage(player, strNoTarget);
-				fizzle(player);
-				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				return noTarget(player);
 			}
-			playGraphicalEffects(player, target);
+			playSpellEffects(player, target);
 			target.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, Math.round(duration*power), strength), true);
 			sendMessages(player, target);
 			return PostCastAction.NO_MESSAGES;
@@ -48,7 +46,7 @@ public class CrippleSpell extends TargetedEntitySpell {
 		if (target instanceof Player && !targetPlayers) {
 			return false;
 		} else {
-			playGraphicalEffects(caster, target);
+			playSpellEffects(caster, target);
 			target.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, Math.round(duration*power), strength), true);
 			return true;
 		}

@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.Spellbook;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.CommandSpell;
 import com.nisovin.magicspells.util.CastItem;
 import com.nisovin.magicspells.util.MagicConfig;
@@ -56,11 +57,26 @@ public class UnbindSpell extends CommandSpell {
 					}
 					spellbook.save();
 					sendMessage(player, formatMessage(strCastSelf, "%s", spell.getName()));
+					playSpellEffects(EffectPosition.CASTER, player);
 					return PostCastAction.NO_MESSAGES;
 				}
 			}
 		}		
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+
+	@Override
+	public String[] tabComplete(CommandSender sender, String partial) {
+		if (sender instanceof Player) {
+			// only one arg
+			if (partial.contains(" ")) {
+				return null;
+			}
+			
+			// tab complete spellname from spellbook
+			return tabCompleteSpellName(sender, partial);
+		}
+		return null;
 	}
 
 	@Override

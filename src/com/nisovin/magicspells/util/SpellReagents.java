@@ -130,18 +130,18 @@ public class SpellReagents {
 		return other;
 	}
 	
-	public SpellReagents multiply(int x) {
+	public SpellReagents multiply(float x) {
 		SpellReagents other = new SpellReagents();
 		for (ItemStack item : this.items) {
 			ItemStack i = item.clone();
-			i.setAmount(i.getAmount() * x);
+			i.setAmount(Math.round(i.getAmount() * x));
 			other.items.add(i);
 		}
-		other.mana = this.mana * x;
-		other.health = this.health * x;
-		other.hunger = this.hunger * x;
-		other.experience = this.experience * x;
-		other.levels = this.levels * x;
+		other.mana = Math.round(this.mana * x);
+		other.health = Math.round(this.health * x);
+		other.hunger = Math.round(this.hunger * x);
+		other.experience = Math.round(this.experience * x);
+		other.levels = Math.round(this.levels * x);
 		return other;
 	}
 	

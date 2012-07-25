@@ -82,23 +82,20 @@ public class BlinkSpell extends TargetedLocationSpell {
 					loc.setZ(loc.getZ()+.5);
 					loc.setPitch(player.getLocation().getPitch());
 					loc.setYaw(player.getLocation().getYaw());
+					playSpellEffects(player.getLocation(), loc);
 					teleport(player, loc, smokes);
 				} else {
-					sendMessage(player, strCantBlink);
-					fizzle(player);
-					return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+					return noTarget(player, strCantBlink);
 				}
 			} else {
-				sendMessage(player, strCantBlink);
-				fizzle(player);
-				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				return noTarget(player, strCantBlink);
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}
 
 	private void teleport(Player player, Location location, HashSet<Location> smokeLocs) {
-		playGraphicalEffects(player.getLocation(), location);
+		playSpellEffects(player.getLocation(), location);
 		player.teleport(location);
 		if (smokeTrail && smokeLocs != null) {
 			for (Location l : smokeLocs) {

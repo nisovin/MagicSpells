@@ -9,6 +9,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
@@ -109,6 +110,8 @@ public class RepairSpell extends InstantSpell {
 			if (repaired == 0) {
 				sendMessage(player, strNothingToRepair);
 				return PostCastAction.ALREADY_HANDLED;
+			} else {
+				playSpellEffects(EffectPosition.CASTER, player);
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;

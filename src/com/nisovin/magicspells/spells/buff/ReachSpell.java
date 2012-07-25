@@ -151,6 +151,11 @@ public class ReachSpell extends BuffSpell {
 		reaching.clear();
 	}
 
+	@Override
+	public boolean isActive(Player player) {
+		return reaching.contains(player.getName());
+	}
+
 
 
 }

@@ -20,7 +20,6 @@ public final class TargetedMultiSpell extends TargetedSpell {
 	private boolean requireEntityTarget;
 	private boolean targetPlayers;
 	private boolean obeyLos;
-	private String strNoTarget;
 	
 	private List<String> spellList;
 	private ArrayList<Action> actions;
@@ -32,7 +31,6 @@ public final class TargetedMultiSpell extends TargetedSpell {
 		requireEntityTarget = getConfigBoolean("require-entity-target", false);
 		targetPlayers = getConfigBoolean("target-players", false);
 		obeyLos = getConfigBoolean("obey-los", true);
-		strNoTarget = getConfigString("str-no-target", "No target found.");
 
 		actions = new ArrayList<Action>();
 		spellList = getConfigStringList("spells", null);
@@ -97,8 +95,7 @@ public final class TargetedMultiSpell extends TargetedSpell {
 				}
 			}
 			if (locTarget == null && entTarget == null) {
-				sendMessage(player, strNoTarget);
-				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				return noTarget(player);
 			}
 			
 			boolean somethingWasDone = false;
@@ -128,7 +125,15 @@ public final class TargetedMultiSpell extends TargetedSpell {
 			}
 			
 			if (!somethingWasDone) {
-				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				return noTarget(player);
+			}
+			
+			if (entTarget != null) {
+				sendMessages(player, entTarget);
+				playSpellEffects(player, entTarget);
+				return PostCastAction.NO_MESSAGES;
+			} else if (locTarget != null) {
+				playSpellEffects(player, locTarget);
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;

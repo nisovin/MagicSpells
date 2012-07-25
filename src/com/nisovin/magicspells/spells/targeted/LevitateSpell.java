@@ -6,9 +6,14 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.events.SpellCastEvent;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
@@ -16,6 +21,10 @@ public class LevitateSpell extends TargetedEntitySpell {
 
 	private int tickRate;
 	private int duration;
+	private boolean targetPlayers;
+	private boolean obeyLos;
+	private boolean cancelOnItemSwitch;
+	private boolean cancelOnSpellCast;
 	
 	private HashMap<Player,Levitator> levitating;
 	
@@ -24,8 +33,23 @@ public class LevitateSpell extends TargetedEntitySpell {
 		
 		tickRate = getConfigInt("tick-rate", 5);
 		duration = getConfigInt("duration", 10);
+		targetPlayers = getConfigBoolean("target-players", false);
+		obeyLos = getConfigBoolean("obey-los", true);
+		cancelOnItemSwitch = getConfigBoolean("cancel-on-item-switch", true);
+		cancelOnSpellCast = getConfigBoolean("cancel-on-spell-cast", false);
 		
 		levitating = new HashMap<Player,Levitator>();
+	}
+	
+	@Override
+	public void initialize() {
+		super.initialize();
+		if (cancelOnItemSwitch) {
+			registerEvents(new ItemSwitchListener());
+		}
+		if (cancelOnSpellCast) {
+			registerEvents(new SpellCastListener());
+		}
 	}
 
 	@Override
@@ -34,7 +58,7 @@ public class LevitateSpell extends TargetedEntitySpell {
 			levitating.remove(player).stop();
 			return PostCastAction.ALREADY_HANDLED;
 		} else if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, range, true, true);
+			LivingEntity target = getTargetedEntity(player, range, targetPlayers, obeyLos);
 			if (target == null) {
 				return noTarget(player);
 			}
@@ -48,16 +72,42 @@ public class LevitateSpell extends TargetedEntitySpell {
 	
 	private void levitate(Player player, Entity target, float power) {
 		double distance = player.getLocation().distance(target.getLocation());
-		int duration = Math.round(this.duration * (20F/tickRate) * power);
+		int duration = this.duration > 0 ? Math.round(this.duration * (20F/tickRate) * power) : 0;
 		Levitator lev = new Levitator(player, target, duration, distance);
 		levitating.put(player, lev);
-		playGraphicalEffects(player, target);
+		playSpellEffects(player, target);
 	}
 
 	@Override
 	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
 		levitate(caster, target, power);
 		return true;
+	}
+	
+	public class ItemSwitchListener implements Listener {
+		@EventHandler
+		public void onItemSwitch(PlayerItemHeldEvent event) {
+			if (levitating.containsKey(event.getPlayer())) {
+				levitating.remove(event.getPlayer()).stop();
+			}
+		}
+	}
+	
+	public class SpellCastListener implements Listener {
+		@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
+		public void onSpellCast(SpellCastEvent event) {
+			if (levitating.containsKey(event.getCaster()) && !event.getSpell().getInternalName().equals(internalName)) {
+				levitating.remove(event.getCaster()).stop();
+			}
+		}
+	}
+	
+	@Override
+	public void turnOff() {
+		for (Levitator l : levitating.values()) {
+			l.stop();
+		}
+		levitating.clear();
 	}
 	
 	private class Levitator implements Runnable {
@@ -90,7 +140,7 @@ public class LevitateSpell extends TargetedEntitySpell {
 				Vector v = wantedLocation.subtract(targetLocation).multiply(tickRate/25F + .1);
 				target.setVelocity(v);
 				counter++;
-				if (counter > duration) {
+				if (duration > 0 && counter > duration) {
 					stop();
 				}
 			}

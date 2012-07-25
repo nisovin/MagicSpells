@@ -121,6 +121,11 @@ public class FlamewalkSpell extends BuffSpell {
 		}
 	}
 
+	@Override
+	public boolean isActive(Player player) {
+		return flamewalkers.containsKey(player.getName());
+	}
+
 
 
 }

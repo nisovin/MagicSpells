@@ -100,4 +100,9 @@ public class LightwalkSpell extends BuffSpell {
 		lightwalkers.clear();
 	}
 
+	@Override
+	public boolean isActive(Player player) {
+		return lightwalkers.containsKey(player.getName());
+	}
+
 }

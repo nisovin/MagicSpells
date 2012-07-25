@@ -1,7 +1,6 @@
 package com.nisovin.magicspells.util;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -9,8 +8,6 @@ import org.bukkit.block.Block;
 import com.nisovin.magicspells.MagicSpells;
 
 public class TemporaryBlockSet implements Runnable {
-	
-	private static HashSet<TemporaryBlockSet> blockSets = new HashSet<TemporaryBlockSet>();
 	
 	private Material original;
 	private Material replaceWith;
@@ -24,8 +21,6 @@ public class TemporaryBlockSet implements Runnable {
 		this.replaceWith = replaceWith;
 		
 		this.blocks = new ArrayList<Block>();
-		
-		blockSets.add(this);
 	}
 	
 	public void add(Block block) {
@@ -54,27 +49,14 @@ public class TemporaryBlockSet implements Runnable {
 		if (callback != null) {
 			callback.run(this);
 		}
+		remove();
+	}
+	
+	public void remove() {
 		for (Block block : blocks) {
 			if (block.getType() == replaceWith) {
 				block.setType(original);
 			}
-		}
-		
-		blockSets.remove(this);
-	}
-	
-	public static boolean isTemporary(Block block) {
-		if (blockSets == null || blockSets.size() == 0) {
-			return false;
-		} else {
-			for (TemporaryBlockSet set : blockSets) {
-				for (Block b : set.blocks) {	
-					if (b.equals(block)) {
-						return true;
-					}
-				}
-			}
-			return false;
 		}
 	}
 	

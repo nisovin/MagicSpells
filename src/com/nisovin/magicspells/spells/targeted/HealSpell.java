@@ -3,6 +3,7 @@ package com.nisovin.magicspells.spells.targeted;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
@@ -27,19 +28,14 @@ public class HealSpell extends TargetedEntitySpell {
 		if (state == SpellCastState.NORMAL) {
 			Player target = getTargetedPlayer(player, range, obeyLos);
 			if (target == null) {
-				sendMessage(player, strNoTarget);
-				fizzle(player);
+				return noTarget(player);
 			} else if (cancelIfFull && target.getHealth() == 20) {
-				sendMessage(player, formatMessage(strMaxHealth, "%t", target.getName()));
+				return noTarget(player, formatMessage(strMaxHealth, "%t", target.getName()));
 			} else {
-				heal(player, target, power);
-				
-				sendMessages(player, target);
-				
+				heal(player, target, power);				
+				sendMessages(player, target);				
 				return PostCastAction.NO_MESSAGES;
 			}
-
-			return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}
@@ -50,8 +46,9 @@ public class HealSpell extends TargetedEntitySpell {
 		if (health > 20) health = 20;
 		target.setHealth(health);
 		
-		playGraphicalEffects(1, player);
-		playGraphicalEffects(2, target, "FF0000 40");
+		playSpellEffects(EffectPosition.CASTER, player);
+		playSpellEffects(EffectPosition.TARGET, target, "FF0000 40");
+		playSpellEffectsTrail(player.getLocation(), target.getLocation(), null);
 	}
 
 	@Override
@@ -62,6 +59,11 @@ public class HealSpell extends TargetedEntitySpell {
 		} else {
 			return false;
 		}
+	}
+	
+	@Override
+	public boolean isBeneficial() {
+		return true;
 	}
 
 }

@@ -41,15 +41,11 @@ public class CombustSpell extends TargetedEntitySpell {
 		if (state == SpellCastState.NORMAL) {
 			LivingEntity target = getTargetedEntity(player, range>0?range:100, targetPlayers, obeyLos);
 			if (target == null) {
-				sendMessage(player, strNoTarget);
-				fizzle(player);
-				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				return noTarget(player);
 			} else {
 				boolean combusted = combust(player, target, power);
 				if (!combusted) {
-					sendMessage(player, strNoTarget);
-					fizzle(player);
-					return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+					return noTarget(player);
 				}
 				sendMessages(player, target);
 				return PostCastAction.NO_MESSAGES;
@@ -70,7 +66,7 @@ public class CombustSpell extends TargetedEntitySpell {
 		int duration = Math.round(fireTicks*power);
 		combusting.put(target.getEntityId(), new CombustData(power));
 		target.setFireTicks(duration);
-		playGraphicalEffects(player, target);
+		playSpellEffects(player, target);
 		Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new Runnable() {
 			public void run() {
 				CombustData data = combusting.get(target.getEntityId());

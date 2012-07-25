@@ -32,6 +32,7 @@ public class EmpowerSpell extends BuffSpell {
 		} else if (state == SpellCastState.NORMAL) {
 			float p = power * extraPower;
 			empowered.put(player, p);
+			startSpellDuration(player);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}
@@ -57,6 +58,11 @@ public class EmpowerSpell extends BuffSpell {
 	@Override
 	protected void turnOff() {
 		empowered.clear();
+	}
+
+	@Override
+	public boolean isActive(Player player) {
+		return empowered.containsKey(player);
 	}
 
 }

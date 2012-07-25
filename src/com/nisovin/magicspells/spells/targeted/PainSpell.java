@@ -34,15 +34,11 @@ public class PainSpell extends TargetedEntitySpell {
 			LivingEntity target = getTargetedEntity(player, range, targetPlayers, obeyLos);
 			if (target == null) {
 				// fail -- no target
-				sendMessage(player, strNoTarget);
-				fizzle(player);
-				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				return noTarget(player);
 			} else {
 				boolean done = causePain(player, target, power);
 				if (!done) {
-					sendMessage(player, strNoTarget);
-					fizzle(player);
-					return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+					return noTarget(player);
 				} else {
 					sendMessages(player, target);
 					return PostCastAction.NO_MESSAGES;
@@ -71,7 +67,7 @@ public class PainSpell extends TargetedEntitySpell {
 		} else {
 			target.damage(dam);
 		}
-		playGraphicalEffects(player, target);
+		playSpellEffects(player, target);
 		return true;
 	}
 

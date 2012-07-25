@@ -2,11 +2,14 @@ package com.nisovin.magicspells.spells.instant;
 
 import java.util.List;
 
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import com.nisovin.magicspells.events.SpellTargetEvent;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
@@ -17,6 +20,7 @@ public class ForcepushSpell extends InstantSpell {
 	private int force;
 	private int yForce;
 	private int maxYForce;
+	private boolean callTargetEvents;
 	
 	public ForcepushSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -26,6 +30,7 @@ public class ForcepushSpell extends InstantSpell {
 		force = getConfigInt("pushback-force", 30);
 		yForce = getConfigInt("additional-vertical-force", 15);
 		maxYForce = getConfigInt("max-vertical-force", 20);
+		callTargetEvents = getConfigBoolean("call-target-events", false);
 	}
 
 	@Override
@@ -42,6 +47,13 @@ public class ForcepushSpell extends InstantSpell {
 		Vector e, v;
 		for (Entity entity : entities) {
 			if (entity instanceof LivingEntity && (targetPlayers || !(entity instanceof Player))) {
+				if (callTargetEvents) {
+					SpellTargetEvent event = new SpellTargetEvent(this, player, (LivingEntity)entity);
+					Bukkit.getPluginManager().callEvent(event);
+					if (event.isCancelled()) {
+						continue;
+					}
+				}
 				e = entity.getLocation().toVector();
 				v = e.subtract(p).normalize().multiply(force/10.0*power);
 				if (force != 0) {
@@ -53,10 +65,10 @@ public class ForcepushSpell extends InstantSpell {
 					v.setY(maxYForce/10.0);
 				}
 				entity.setVelocity(v);
-				playGraphicalEffects(2, entity);
+				playSpellEffects(EffectPosition.TARGET, entity);
 			}
 	    }
-		playGraphicalEffects(1, player);
+		playSpellEffects(EffectPosition.CASTER, player);
 	}
 
 }

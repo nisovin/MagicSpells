@@ -5,6 +5,7 @@ import java.util.Set;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -36,5 +37,9 @@ public interface CraftBukkitHandle {
 	public boolean createExplosionByPlayer(Player player, Location location, float size, boolean fire);
 	
 	public void setExperienceBar(Player player, int level, float percent);
+	
+	public Fireball shootSmallFireball(Player player);
+	
+	public void setTarget(LivingEntity entity, LivingEntity target);
 	
 }

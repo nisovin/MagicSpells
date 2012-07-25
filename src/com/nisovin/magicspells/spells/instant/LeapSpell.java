@@ -8,6 +8,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.util.Vector;
 
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
@@ -40,7 +41,7 @@ public class LeapSpell extends InstantSpell {
 			if (cancelDamage) {
 				jumping.add(player);
 			}
-			playGraphicalEffects(1, player);
+			playSpellEffects(EffectPosition.CASTER, player);
 		}
 		
 		return PostCastAction.HANDLE_NORMALLY;
@@ -52,6 +53,7 @@ public class LeapSpell extends InstantSpell {
 		if (cancelDamage && event.getCause() == DamageCause.FALL && event.getEntity() instanceof Player && jumping.contains((Player)event.getEntity())) {
 			event.setCancelled(true);
 			jumping.remove((Player)event.getEntity());
+			playSpellEffects(EffectPosition.TARGET, event.getEntity().getLocation());
 		}
 	}
 

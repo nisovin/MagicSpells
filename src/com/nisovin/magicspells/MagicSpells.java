@@ -1,8 +1,11 @@
 package com.nisovin.magicspells;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -12,28 +15,42 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.logging.Level;
 
-
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
+import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.nisovin.magicspells.events.MagicSpellsLoadedEvent;
+import com.nisovin.magicspells.events.MagicSpellsLoadingEvent;
 import com.nisovin.magicspells.events.SpellLearnEvent;
 import com.nisovin.magicspells.events.SpellLearnEvent.LearnSource;
-import com.nisovin.magicspells.spells.*;
+import com.nisovin.magicspells.mana.ManaHandler;
+import com.nisovin.magicspells.mana.ManaSystem;
+import com.nisovin.magicspells.util.ExperienceBarManager;
+import com.nisovin.magicspells.util.ItemNameResolver;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.MagicItemNameResolver;
+import com.nisovin.magicspells.util.Metrics;
+import com.nisovin.magicspells.util.Metrics.Graph;
+import com.nisovin.magicspells.util.Util;
+import com.nisovin.magicspells.zones.NoMagicZoneManager;
 
 public class MagicSpells extends JavaPlugin {
 
@@ -43,6 +60,8 @@ public class MagicSpells extends JavaPlugin {
 	
 	static boolean debug;
 	static int debugLevel;
+	static boolean enableErrorLogging;
+	static boolean enableProfiling;
 	static ChatColor textColor;
 	static int broadcastRange;
 	
@@ -51,7 +70,9 @@ public class MagicSpells extends JavaPlugin {
 	
 	static boolean separatePlayerSpellsPerWorld;
 	static boolean allowCycleToNoSpell;
+	static boolean alwaysShowMessageOnCycle;
 	static boolean onlyCycleToCastableSpells;
+	static int spellIconSlot;
 	static boolean allowCastWithFist;
 	static boolean ignoreDefaultBindings;
 	static boolean showStrCostOnMissingReagents;
@@ -60,12 +81,16 @@ public class MagicSpells extends JavaPlugin {
 	static HashMap<EntityType, String> entityNames;
 	static int globalCooldown;
 	static boolean castOnAnimate;
+	static boolean useExpBarAsCastTimeBar;
+	static boolean cooldownsPersistThroughReload;
+	static boolean ignoreCastItemEnchants;
 	
 	static boolean enableManaBars;
 	static int manaPotionCooldown;
 	static String strManaPotionOnCooldown;
 	static HashMap<ItemStack,Integer> manaPotions;
 	
+	// strings
 	static String strCastUsage;
 	static String strUnknownSpell;
 	static String strSpellChange;
@@ -77,14 +102,32 @@ public class MagicSpells extends JavaPlugin {
 	static String strCantBind;
 	static String strConsoleName;
 	
+	// metrics vars
+	static boolean metricsEnabled;
+	static int metricSpellCasts;
+	static int metricSpellCastsExternal;
+	static int metricSpellCastsTargeted;
+	static int metricSpellCastsInstant;
+	static int metricSpellCastsBuff;
+	static int metricErrors;
+	
 	static HashMap<String,Spell> spells; // map internal names to spells
 	static HashMap<String,Spell> spellNames; // map configured names to spells
 	static ArrayList<Spell> spellsOrdered; // spells in loaded order
 	static HashMap<String,Spellbook> spellbooks; // player spellbooks
-	
+	static HashMap<String,Spell> incantations; // map incantation strings to spells
+		
+	// container vars
 	static ManaHandler mana;
 	static HashMap<Player,Long> manaPotionCooldowns;
-	static NoMagicZoneHandler noMagicZones;
+	static NoMagicZoneManager noMagicZones;
+	static BuffManager buffManager;
+	static ExperienceBarManager expBarManager;
+	static ItemNameResolver itemNameResolver;
+	
+	// profiling
+	static HashMap<String, Long> profilingTotalTime;
+	static HashMap<String, Integer> profilingRuns;
 	
 	@Override
 	public void onEnable() {
@@ -92,17 +135,15 @@ public class MagicSpells extends JavaPlugin {
 		load();
 	}
 	
-	private void load() {
-		// load listeners
+	private void load() {		
 		PluginManager pm = plugin.getServer().getPluginManager();
-		pm.registerEvents(new MagicPlayerListener(this), this);
-		pm.registerEvents(new MagicSpellListener(this), this);
 		
 		// create storage stuff
 		spells = new HashMap<String,Spell>();
 		spellNames = new HashMap<String,Spell>();
 		spellsOrdered = new ArrayList<Spell>();
 		spellbooks = new HashMap<String,Spellbook>();
+		incantations = new HashMap<String,Spell>();
 		
 		// make sure directories are created
 		this.getDataFolder().mkdir();
@@ -125,6 +166,8 @@ public class MagicSpells extends JavaPlugin {
 		
 		debug = config.getBoolean("general.debug", false);
 		debugLevel = config.getInt("general.debug-level", 3);
+		enableErrorLogging = config.getBoolean("general.enable-error-logging", true);
+		enableProfiling = config.getBoolean("general.enable-profiling", false);
 		textColor = ChatColor.getByChar(config.getString("general.text-color", ChatColor.DARK_AQUA.getChar() + ""));
 		broadcastRange = config.getInt("general.broadcast-range", 20);
 		
@@ -133,9 +176,12 @@ public class MagicSpells extends JavaPlugin {
 
 		separatePlayerSpellsPerWorld = config.getBoolean("general.separate-player-spells-per-world", false);
 		allowCycleToNoSpell = config.getBoolean("general.allow-cycle-to-no-spell", false);
+		alwaysShowMessageOnCycle = config.getBoolean("general.always-show-message-on-cycle", false);
 		onlyCycleToCastableSpells = config.getBoolean("general.only-cycle-to-castable-spells", true);
+		spellIconSlot = config.getInt("general.spell-icon-slot", -1);
 		allowCastWithFist = config.getBoolean("general.allow-cast-with-fist", false);
 		ignoreDefaultBindings = config.getBoolean("general.ignore-default-bindings", false);
+		ignoreCastItemEnchants = config.getBoolean("general.ignore-cast-item-enchants", true);
 		showStrCostOnMissingReagents = config.getBoolean("general.show-str-cost-on-missing-reagents", true);
 		losTransparentBlocks = new HashSet<Byte>(config.getByteList("general.los-transparent-blocks", new ArrayList<Byte>()));
 		if (losTransparentBlocks.size() == 0) {
@@ -155,7 +201,9 @@ public class MagicSpells extends JavaPlugin {
 		}
 		ignoreCastItemDurability = config.getIntList("general.ignore-cast-item-durability", new ArrayList<Integer>());
 		globalCooldown = config.getInt("general.global-cooldown", 500);
-		castOnAnimate = config.getBoolean("general.cast-on-animate", true);
+		castOnAnimate = config.getBoolean("general.cast-on-animate", false);
+		useExpBarAsCastTimeBar = config.getBoolean("general.use-exp-bar-as-cast-time-bar", true);
+		cooldownsPersistThroughReload = config.getBoolean("general.cooldowns-persist-through-reload", true);
 		
 		entityNames = new HashMap<EntityType, String>();
 		if (config.contains("general.entity-names")) {
@@ -179,14 +227,29 @@ public class MagicSpells extends JavaPlugin {
 		strWrongWorld = config.getString("general.str-wrong-world", "You cannot cast that spell here.");
 		strConsoleName = config.getString("general.console-name", "Admin");
 		
-		enableManaBars = config.getBoolean("general.mana.enable-mana-bars", true);
-		manaPotionCooldown = config.getInt("general.mana.mana-potion-cooldown", 30);
-		strManaPotionOnCooldown = config.getString("general.mana.str-mana-potion-on-cooldown", "You cannot use another mana potion yet.");
+		enableManaBars = config.getBoolean("mana.enable-mana-system", true);
+		manaPotionCooldown = config.getInt("mana.mana-potion-cooldown", 30);
+		strManaPotionOnCooldown = config.getString("mana.str-mana-potion-on-cooldown", "You cannot use another mana potion yet.");
+		
+		// create handling objects
+		if (enableManaBars) mana = new ManaSystem(config);
+		noMagicZones = new NoMagicZoneManager();
+		buffManager = new BuffManager(config.getInt("general.buff-check-interval", 0));
+		expBarManager = new ExperienceBarManager();
+		itemNameResolver = new MagicItemNameResolver();
+		
+		// call loading event
+		pm.callEvent(new MagicSpellsLoadingEvent(this));
 				
-		// init spell permissions
-		addPermission(pm, "noreagents", defaultAllPermsFalse? PermissionDefault.FALSE : PermissionDefault.OP);
-		addPermission(pm, "nocooldown", defaultAllPermsFalse? PermissionDefault.FALSE : PermissionDefault.OP);
-		addPermission(pm, "notarget", defaultAllPermsFalse? PermissionDefault.FALSE : PermissionDefault.OP);
+		// init permissions
+		boolean opsIgnoreReagents = config.getBoolean("general.ops-ignore-reagents", true);
+		boolean opsIgnoreCooldowns = config.getBoolean("general.ops-ignore-cooldowns", true);
+		boolean opsIgnoreCastTimes = config.getBoolean("general.ops-ignore-cast-times", true);
+		addPermission(pm, "noreagents", opsIgnoreReagents? PermissionDefault.OP : PermissionDefault.FALSE, "Allows casting without needing reagents");
+		addPermission(pm, "nocooldown", opsIgnoreCooldowns? PermissionDefault.OP : PermissionDefault.FALSE, "Allows casting without being affected by cooldowns");
+		addPermission(pm, "nocasttime", opsIgnoreCastTimes? PermissionDefault.OP : PermissionDefault.FALSE, "Allows casting without being affected by cast times");
+		addPermission(pm, "notarget", PermissionDefault.FALSE, "Prevents being targeted by any targeted spells");
+		addPermission(pm, "silent", PermissionDefault.FALSE, "Prevents cast messages from being broadcast to players");
 		HashMap<String, Boolean> permGrantChildren = new HashMap<String,Boolean>();
 		HashMap<String, Boolean> permLearnChildren = new HashMap<String,Boolean>();
 		HashMap<String, Boolean> permCastChildren = new HashMap<String,Boolean>();
@@ -194,7 +257,6 @@ public class MagicSpells extends JavaPlugin {
 		
 		// load spells
 		loadSpells(config, pm, permGrantChildren, permLearnChildren, permCastChildren, permTeachChildren);
-		loadMultiSpells(config, pm, permGrantChildren, permLearnChildren, permCastChildren, permTeachChildren);
 		log("Spells loaded: " + spells.size());
 		if (spells.size() == 0) {
 			MagicSpells.log(Level.SEVERE, "No spells loaded!");
@@ -217,7 +279,7 @@ public class MagicSpells extends JavaPlugin {
 		advancedPermChildren.put("magicspells.advanced.scroll", true);
 		addPermission(pm, "advanced.*", defaultAllPermsFalse? PermissionDefault.FALSE : PermissionDefault.OP, advancedPermChildren);
 		
-		// load in-game spell names and initialize spells
+		// load in-game spell names, incantations, and initialize spells
 		for (Spell spell : spells.values()) {
 			spellNames.put(spell.getName(), spell);
 			String[] aliases = spell.getAliases();
@@ -228,6 +290,12 @@ public class MagicSpells extends JavaPlugin {
 					}
 				}
 			}
+			List<String> incs = spell.getIncantations();
+			if (incs != null && incs.size() > 0) {
+				for (String s : incs) {
+					incantations.put(s.toLowerCase(), spell);
+				}
+			}
 			spell.initialize();
 		}
 		
@@ -236,40 +304,85 @@ public class MagicSpells extends JavaPlugin {
 			spellbooks.put(p.getName(), new Spellbook(p, this));
 		}
 		
-		// setup mana bar manager
+		// load saved cooldowns
+		if (cooldownsPersistThroughReload) {
+			File file = new File(getDataFolder(), "cooldowns.txt");
+			Scanner scanner = null;
+			if (file.exists()) {
+				try {
+					scanner = new Scanner(file);
+					while (scanner.hasNext()) {
+						String line = scanner.nextLine();
+						if (!line.isEmpty()) {
+							String[] data = line.split(":");
+							long cooldown = Long.parseLong(data[2]);
+							if (cooldown > System.currentTimeMillis()) {
+								Spell spell = getSpellByInternalName(data[0]);
+								if (spell != null) {
+									spell.setCooldownManually(data[1], cooldown);
+								}
+							}
+						}
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				} finally {
+					if (scanner != null) scanner.close();
+					file.delete();
+				}
+			}
+		}
+		
+		// setup mana
 		if (enableManaBars) {
-			mana = new ManaBarManager(config);
+			// setup online player mana bars
 			for (Player p : getServer().getOnlinePlayers()) {
 				mana.createManaBar(p);
 			}
-		}
-		
-		// load mana potions
-		List<String> manaPots = config.getStringList("general.mana.mana-potions", null);
-		if (manaPots != null && manaPots.size() > 0) {
-			manaPotions = new HashMap<ItemStack,Integer>();
-			for (int i = 0; i < manaPots.size(); i++) {
-				String[] data = manaPots.get(i).split(" ");
-				ItemStack item;
-				if (data[0].contains(":")) {
-					String[] data2 = data[0].split(":");
-					item = new ItemStack(Integer.parseInt(data2[0]), 1, Short.parseShort(data2[1]));
-				} else {
-					item = new ItemStack(Integer.parseInt(data[0]), 1);					
+			
+			// load mana potions
+			List<String> manaPots = config.getStringList("mana.mana-potions", null);
+			if (manaPots != null && manaPots.size() > 0) {
+				manaPotions = new HashMap<ItemStack,Integer>();
+				for (int i = 0; i < manaPots.size(); i++) {
+					String[] data = manaPots.get(i).split(" ");
+					ItemStack item;
+					if (data[0].contains(":")) {
+						String[] data2 = data[0].split(":");
+						item = new ItemStack(Integer.parseInt(data2[0]), 1, Short.parseShort(data2[1]));
+					} else {
+						item = new ItemStack(Integer.parseInt(data[0]), 1);					
+					}
+					manaPotions.put(item, Integer.parseInt(data[1]));
 				}
-				manaPotions.put(item, Integer.parseInt(data[1]));
+				manaPotionCooldowns = new HashMap<Player,Long>();
 			}
-			manaPotionCooldowns = new HashMap<Player,Long>();
 		}
 		
 		// load no-magic zones
-		noMagicZones = new NoMagicZoneManager(config);
+		noMagicZones.load(config);
 		if (noMagicZones.zoneCount() == 0) {
 			noMagicZones = null;
 		}
 		
-		// set up metrics
-		setupMetrics();
+		// load listeners
+		registerEvents(new MagicPlayerListener(this));
+		registerEvents(new MagicSpellListener(this));
+		if (incantations.size() > 0) {
+			registerEvents(new MagicChatListener(this));
+		}
+		
+		// setup metrics
+		metricsEnabled = config.getBoolean("general.enable-stat-collection", true);
+		if (metricsEnabled) {
+			setupMetrics();
+		}
+		
+		// setup profiling
+		if (enableProfiling) {
+			profilingTotalTime = new HashMap<String, Long>();
+			profilingRuns = new HashMap<String, Integer>();
+		}
 		
 		// call loaded event
 		pm.callEvent(new MagicSpellsLoadedEvent(this));
@@ -301,17 +414,17 @@ public class MagicSpells extends JavaPlugin {
 		Set<String> spellKeys = config.getSpellKeys();
 		if (spellKeys == null) return;
 		for (String spellName : spellKeys) {
-			String className = "";
-			if (config.contains("spells." + spellName + ".spell-class")) {
-				className = config.getString("spells." + spellName + ".spell-class", "");
-			}
-			if (className == null || className.isEmpty()) {
-				error("Spell '" + spellName + "' does not have a spell-class property");
-				continue;
-			} else if (className.startsWith(".")) {
-				className = "com.nisovin.magicspells.spells" + className;
-			}
 			if (config.getBoolean("spells." + spellName + ".enabled", true)) {
+				String className = "";
+				if (config.contains("spells." + spellName + ".spell-class")) {
+					className = config.getString("spells." + spellName + ".spell-class", "");
+				}
+				if (className == null || className.isEmpty()) {
+					error("Spell '" + spellName + "' does not have a spell-class property");
+					continue;
+				} else if (className.startsWith(".")) {
+					className = "com.nisovin.magicspells.spells" + className;
+				}
 				try {
 					// load spell class
 					Class<? extends Spell> spellClass = cl.loadClass(className).asSubclass(Spell.class);
@@ -326,6 +439,7 @@ public class MagicSpells extends JavaPlugin {
 					addPermission(pm, "learn." + spellName, defaultAllPermsFalse ? PermissionDefault.FALSE : PermissionDefault.TRUE);
 					addPermission(pm, "cast." + spellName, defaultAllPermsFalse ? PermissionDefault.FALSE : PermissionDefault.TRUE);
 					addPermission(pm, "teach." + spellName, defaultAllPermsFalse ? PermissionDefault.FALSE : PermissionDefault.TRUE);
+					addPermission(pm, "tempgrant." + spellName, PermissionDefault.FALSE);
 					permGrantChildren.put("magicspells.grant." + spellName, true);
 					permLearnChildren.put("magicspells.learn." + spellName, true);
 					permCastChildren.put("magicspells.cast." + spellName, true);
@@ -336,111 +450,177 @@ public class MagicSpells extends JavaPlugin {
 					
 				} catch (ClassNotFoundException e) {
 					error("Unable to load spell " + spellName + " (missing class " + className + ")");
-					if (className.contains("instant")) {
-						error("(Maybe try " + className.replace("com.nisovin.magicspells.spells.instant.", ".targeted.") + ")");
-					}
 				} catch (NoSuchMethodException e) {
 					error("Unable to load spell " + spellName + " (malformed class)");
 				} catch (Exception e) {
-					error("Unable to load spell " + spellName + " (unknown error)");
+					error("Unable to load spell " + spellName + " (general error)");
 					e.printStackTrace();
 				}
 			}
 		}
 	}
 	
-	private void loadMultiSpells(MagicConfig config, PluginManager pm, HashMap<String, Boolean> permGrantChildren, HashMap<String, Boolean> permLearnChildren, HashMap<String, Boolean> permCastChildren, HashMap<String, Boolean> permTeachChildren) {
-		// load multi-spells
-		Set<String> multiSpells = config.getKeys("multispells");
-		if (multiSpells != null && multiSpells.size() > 0) {
-			error("Please update your Multi Spells to the new layout! To do so,");
-			error("just remove the 'multispells:' config header so that your multi spells");
-			error("are in the same section as your normal spells. Then, add the");
-			error("spell-class: \".MultiSpell\"");
-			error("option to all of your Multi Spells. Now you're good to go!");
-			for (String spellName : multiSpells) {
-				if (config.getBoolean("multispells." + spellName + ".enabled", true)) {
-					// initialize spell
-					OldMultiSpell multiSpell = new OldMultiSpell(config, spellName);
-					spells.put(spellName, multiSpell);
-					spellsOrdered.add(multiSpell);
-					// add permissions
-					addPermission(pm, "grant." + spellName, PermissionDefault.FALSE);
-					addPermission(pm, "learn." + spellName, defaultAllPermsFalse ? PermissionDefault.FALSE : PermissionDefault.TRUE);
-					addPermission(pm, "cast." + spellName, defaultAllPermsFalse ? PermissionDefault.FALSE : PermissionDefault.TRUE);
-					addPermission(pm, "teach." + spellName, defaultAllPermsFalse ? PermissionDefault.FALSE : PermissionDefault.TRUE);
-					permGrantChildren.put("magicspells.grant." + spellName, true);
-					permLearnChildren.put("magicspells.learn." + spellName, true);
-					permCastChildren.put("magicspells.cast." + spellName, true);
-					permTeachChildren.put("magicspells.teach." + spellName, true);
-					// load complete
-					debug(2, "Loaded multi-spell: " + spellName);
-				}
-			}
-		}
+	private void addPermission(PluginManager pm, String perm, PermissionDefault permDefault) {
+		addPermission(pm, perm, permDefault, null, null);
 	}
 	
-	private void addPermission(PluginManager pm, String perm, PermissionDefault permDefault) {
-		addPermission(pm, perm, permDefault, null);
+	private void addPermission(PluginManager pm, String perm, PermissionDefault permDefault, String description) {
+		addPermission(pm, perm, permDefault, null, description);
 	}
 	
 	private void addPermission(PluginManager pm, String perm, PermissionDefault permDefault, Map<String,Boolean> children) {
+		addPermission(pm, perm, permDefault, children, null);
+	}
+	
+	private void addPermission(PluginManager pm, String perm, PermissionDefault permDefault, Map<String,Boolean> children, String description) {
 		if (pm.getPermission("magicspells." + perm) == null) {
-			pm.addPermission(new Permission("magicspells." + perm, permDefault, children));
+			if (description == null) {
+				pm.addPermission(new Permission("magicspells." + perm, permDefault, children));
+			} else {
+				pm.addPermission(new Permission("magicspells." + perm, description, permDefault, children));
+			}
 		}
 	}
 	
 	private void setupMetrics() {
 		try {
-			Metrics metrics = new Metrics();
+			Metrics metrics = new Metrics(this);
 			
-			metrics.addCustomData(this, new Metrics.Plotter("Spell Count") {
+			Graph graph1 = metrics.createGraph("Spell Casts");
+			graph1.addPlotter(new Metrics.Plotter("Total") {
+				@Override
 				public int getValue() {
-					return spells.size();
+					int r = metricSpellCasts;
+					metricSpellCasts = 0;
+					return r;
+				}
+			});
+			graph1.addPlotter(new Metrics.Plotter("External") {
+				@Override
+				public int getValue() {
+					int r = metricSpellCastsExternal;
+					metricSpellCastsExternal = 0;
+					return r;
+				}
+			});
+			graph1.addPlotter(new Metrics.Plotter("Targeted") {
+				@Override
+				public int getValue() {
+					int r = metricSpellCastsTargeted;
+					metricSpellCastsTargeted = 0;
+					return r;
+				}
+			});
+			graph1.addPlotter(new Metrics.Plotter("Instant") {
+				@Override
+				public int getValue() {
+					int r = metricSpellCastsInstant;
+					metricSpellCastsInstant = 0;
+					return r;
+				}
+			});
+			graph1.addPlotter(new Metrics.Plotter("Buff") {
+				@Override
+				public int getValue() {
+					int r = metricSpellCastsBuff;
+					metricSpellCastsBuff = 0;
+					return r;
 				}
 			});
 			
-			metrics.beginMeasuringPlugin(this);
+			Graph graph2 = metrics.createGraph("Errors");
+			graph2.addPlotter(new Metrics.Plotter("Errors") {
+				@Override
+				public int getValue() {
+					int r = metricErrors;
+					metricErrors = 0;
+					return r;
+				}
+			});
+			
+			metrics.start();
 		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 	
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String [] args) {
-		if (command.getName().equalsIgnoreCase("magicspellcast")) {
-			if (args == null || args.length == 0) {
-				if (sender instanceof Player) {
-					sendMessage((Player)sender, strCastUsage);
-				} else {
-					sender.sendMessage(textColor + strCastUsage);
-				}
-			} else if (sender.isOp() && args[0].equals("reload")) {
-				if (args.length == 1) {
-					unload();
-					load();
-					sender.sendMessage(textColor + "MagicSpells config reloaded.");
-				} else {
-					List<Player> players = getServer().matchPlayer(args[1]);
-					if (players.size() != 1) {
-						sender.sendMessage(textColor + "Player not found.");
+		try {
+			if (command.getName().equalsIgnoreCase("magicspellcast")) {
+				args = Util.splitParams(args);
+				if (args == null || args.length == 0) {
+					if (sender instanceof Player) {
+						sendMessage((Player)sender, strCastUsage);
 					} else {
-						Player player = players.get(0);
-						spellbooks.put(player.getName(), new Spellbook(player, this));
-						sender.sendMessage(textColor + player.getName() + "'s spellbook reloaded.");
+						sender.sendMessage(textColor + strCastUsage);
 					}
-				}
-			} else if (sender.isOp() && args[0].equals("debug")) {
-				debug = !debug;
-				sender.sendMessage("MagicSpells: debug mode " + (debug?"enabled":"disabled"));
-			} else if (sender.isOp() && args[0].equals("configexplode")) {
-				MagicConfig.explode();
-				sender.sendMessage("MagicSpells: spell config exploded");
-			} else if (sender instanceof Player) {
-				Player player = (Player)sender;
-				Spellbook spellbook = getSpellbook(player);
-				Spell spell = getSpellByInGameName(args[0]);
-				if (spell != null && spell.canCastByCommand() && spellbook.hasSpell(spell)) {
-					if (spell.isValidItemForCastCommand(player.getItemInHand())) {
+				} else if (sender.isOp() && args[0].equals("reload")) {
+					if (args.length == 1) {
+						unload();
+						load();
+						sender.sendMessage(textColor + "MagicSpells config reloaded.");
+					} else {
+						List<Player> players = getServer().matchPlayer(args[1]);
+						if (players.size() != 1) {
+							sender.sendMessage(textColor + "Player not found.");
+						} else {
+							Player player = players.get(0);
+							spellbooks.put(player.getName(), new Spellbook(player, this));
+							sender.sendMessage(textColor + player.getName() + "'s spellbook reloaded.");
+						}
+					}
+				} else if (sender.isOp() && args[0].equals("resetcd")) {
+					Player p = null;
+					if (args.length > 1) {
+						p = Bukkit.getPlayer(args[1]);
+						if (p == null) {
+							sender.sendMessage(textColor + "No matching player found");
+							return true;
+						}
+					}
+					for (Spell spell : spells.values()) {
+						if (p != null) {
+							spell.setCooldown(p, 0);
+						} else {
+							spell.getCooldowns().clear();
+						}
+					}
+					sender.sendMessage(textColor + "Cooldowns reset" + (p != null ? " for " + p.getName() : ""));
+				} else if (sender.isOp() && args[0].equals("profilereport")) {
+					sender.sendMessage(textColor + "Creating profiling report");
+					profilingReport();
+				} else if (sender.isOp() && args[0].equals("debug")) {
+					debug = !debug;
+					sender.sendMessage("MagicSpells: debug mode " + (debug?"enabled":"disabled"));
+				} else if (sender.isOp() && args[0].equals("configexplode")) {
+					MagicConfig.explode();
+					sender.sendMessage("MagicSpells: spell config exploded");
+				} else if (sender instanceof Player) {
+					Player player = (Player)sender;
+					Spellbook spellbook = getSpellbook(player);
+					Spell spell = getSpellByInGameName(args[0]);
+					if (spell != null && spell.canCastByCommand() && spellbook.hasSpell(spell)) {
+						if (spell.isValidItemForCastCommand(player.getItemInHand())) {
+							String[] spellArgs = null;
+							if (args.length > 1) {
+								spellArgs = new String[args.length-1];
+								for (int i = 1; i < args.length; i++) {
+									spellArgs[i-1] = args[i];
+								}
+							}
+							spell.cast(player, spellArgs);
+						} else {
+							sendMessage(player, spell.getStrWrongCastItem());
+						}
+					} else {
+						sendMessage(player, strUnknownSpell);
+					}
+				} else { // not a player
+					Spell spell = spellNames.get(args[0]);
+					if (spell == null) {
+						sender.sendMessage("Unknown spell.");
+					} else {
 						String[] spellArgs = null;
 						if (args.length > 1) {
 							spellArgs = new String[args.length-1];
@@ -448,40 +628,26 @@ public class MagicSpells extends JavaPlugin {
 								spellArgs[i-1] = args[i];
 							}
 						}
-						spell.cast(player, spellArgs);
-					} else {
-						sendMessage(player, spell.getStrWrongCastItem());
-					}
-				} else {
-					sendMessage(player, strUnknownSpell);
-				}
-			} else { // not a player
-				Spell spell = spellNames.get(args[0]);
-				if (spell == null) {
-					sender.sendMessage("Unknown spell.");
-				} else {
-					String[] spellArgs = null;
-					if (args.length > 1) {
-						spellArgs = new String[args.length-1];
-						for (int i = 1; i < args.length; i++) {
-							spellArgs[i-1] = args[i];
+						boolean ok = spell.castFromConsole(sender, spellArgs);
+						if (!ok) {
+							sender.sendMessage("Cannot cast that spell from console.");
 						}
 					}
-					boolean ok = spell.castFromConsole(sender, spellArgs);
-					if (!ok) {
-						sender.sendMessage("Cannot cast that spell from console.");
-					}
 				}
+				return true;
+			} else if (command.getName().equalsIgnoreCase("magicspellmana")) {
+				if (enableManaBars && sender instanceof Player) {
+					Player player = (Player)sender;
+					mana.showMana(player, true);
+				}
+				return true;
 			}
-			return true;
-		} else if (command.getName().equalsIgnoreCase("magicspellmana")) {
-			if (enableManaBars && sender instanceof Player) {
-				Player player = (Player)sender;
-				mana.showMana(player, true);
-			}
+			return false;
+		} catch (Exception ex) {
+			handleException(ex);
+			sender.sendMessage(ChatColor.RED + "An error has occured.");
 			return true;
 		}
-		return false;
 	}
 	
 	/**
@@ -529,6 +695,10 @@ public class MagicSpells extends JavaPlugin {
 		return spellbook;
 	}
 	
+	public static ChatColor getTextColor() {
+		return textColor;
+	}
+	
 	/**
 	 * Gets a list of blocks that are considered transparent
 	 * @return list of block types
@@ -558,20 +728,20 @@ public class MagicSpells extends JavaPlugin {
 		}
 	}
 	
+	public static boolean ignoreCastItemEnchants() {
+		return ignoreCastItemEnchants;
+	}
+	
 	/**
 	 * Gets the handler for no-magic zones.
 	 * @return the no-magic zone handler
 	 */
-	public static NoMagicZoneHandler getNoMagicZoneHandler() {
+	public static NoMagicZoneManager getNoMagicZoneManager() {
 		return noMagicZones;
 	}
 	
-	/**
-	 * Sets the handler for no-magic zones
-	 * @param handler the no-magic zone handler
-	 */
-	public static void setNoMagicZoneHandler(NoMagicZoneHandler handler) {
-		noMagicZones = handler;
+	public static BuffManager getBuffManager() {
+		return buffManager;
 	}
 	
 	/**
@@ -593,6 +763,18 @@ public class MagicSpells extends JavaPlugin {
 	
 	public static CraftBukkitHandle getVolatileCodeHandler() {
 		return craftbukkit;
+	}
+	
+	public static ExperienceBarManager getExpBarManager() {
+		return expBarManager;
+	}
+	
+	public static ItemNameResolver getItemNameResolver() {
+		return itemNameResolver;
+	}
+	
+	public static void setItemNameResolver(ItemNameResolver resolver) {
+		itemNameResolver = resolver;
 	}
 	
 	/**
@@ -634,6 +816,105 @@ public class MagicSpells extends JavaPlugin {
 					player.sendMessage(MagicSpells.textColor + msg);
 				}
 			}
+		}
+	}
+	
+	static void registerEvents(final Listener listener) {
+		Method[] methods;
+        try {
+            methods = listener.getClass().getDeclaredMethods();
+        } catch (NoClassDefFoundError e) {
+            return;
+        }
+        for (int i = 0; i < methods.length; i++) {
+            final Method method = methods[i];
+            final EventHandler eh = method.getAnnotation(EventHandler.class);
+            if (eh == null) continue;
+            final Class<?> checkClass = method.getParameterTypes()[0];
+            if (!Event.class.isAssignableFrom(checkClass) || method.getParameterTypes().length != 1) {
+                plugin.getLogger().severe("Wrong method arguments used for event type registered");
+                continue;
+            }
+            final Class<? extends Event> eventClass = checkClass.asSubclass(Event.class);
+            method.setAccessible(true);
+            EventExecutor executor = new EventExecutor() {
+            	final String eventKey = enableProfiling ? "Event:" + listener.getClass().getName().replace("com.nisovin.magicspells.","") + "." + method.getName() + "(" + eventClass.getSimpleName() + ")" : null;
+                public void execute(Listener listener, Event event) {
+                    try {
+                        if (!eventClass.isAssignableFrom(event.getClass())) {
+                            return;
+                        }
+                        long start = System.nanoTime();
+                        method.invoke(listener, event);
+                        if (enableProfiling) {
+                        	Long total = profilingTotalTime.get(eventKey);
+                        	if (total == null) total = (long)0;
+                        	total += (System.nanoTime() - start);
+                        	profilingTotalTime.put(eventKey, total);
+                        	Integer runs = profilingRuns.get(eventKey);
+                        	if (runs == null) runs = 0;
+                        	runs += 1;
+                        	profilingRuns.put(eventKey, runs);
+                        }
+                    } catch (Exception ex) {
+                    	handleException(ex);
+                    }
+                }
+            };
+            plugin.getServer().getPluginManager().registerEvent(eventClass, listener, eh.priority(), executor, plugin, eh.ignoreCancelled());
+        }
+	}
+	
+	static void handleException(Exception ex) {
+		if (enableErrorLogging) {
+			plugin.getLogger().severe("AN EXCEPTION HAS OCCURED:");
+			PrintWriter writer = null;
+			try {
+				File folder = new File(plugin.getDataFolder(), "errors");
+				if (!folder.exists()) folder.mkdir();
+				writer = new PrintWriter(new File(folder, System.currentTimeMillis() + ".txt"));
+				Throwable t = ex;
+				while (t != null) {
+					plugin.getLogger().severe("    " + t.getMessage() + " (" + t.getClass().getName() + ")");
+					t.printStackTrace(writer);
+					writer.println();
+					t = t.getCause();
+				}
+				plugin.getLogger().severe("This error has been saved in the errors folder");
+			} catch (Exception x) {
+				plugin.getLogger().severe("ERROR HANDLING EXCEPTION");
+			} finally {
+				if (writer != null) writer.close();
+			}
+		} else {
+			ex.printStackTrace();
+		}
+		metricErrors++;
+	}
+	
+	static void profilingReport() {
+		if (profilingTotalTime != null && profilingRuns != null) {
+			PrintWriter writer = null;
+			try {
+				writer = new PrintWriter(new File(plugin.getDataFolder(), "profiling_report_" + System.currentTimeMillis() + ".txt"));
+				long totalTime = 0;
+				writer.println("Key\tRuns\tAvg\tTotal");
+				for (String key : profilingTotalTime.keySet()) {
+					long time = profilingTotalTime.get(key);
+					int runs = profilingRuns.get(key);
+					totalTime += time;
+					writer.println(key + "\t" + runs + "\t" + (time/runs/1000000F) + "ms\t" + (time/1000000F) + "ms");
+				}
+				writer.println();
+				writer.println("TOTAL TIME: " + (totalTime/1000000F) + "ms");
+			} catch (Exception ex) {
+				error("Failed to save profiling report");
+				handleException(ex);
+			} finally {
+				if (writer != null) writer.close();
+			}
+			profilingTotalTime.clear();
+			profilingRuns.clear();
 		}
 	}
 	
@@ -708,20 +989,70 @@ public class MagicSpells extends JavaPlugin {
 	}
 	
 	public void unload() {
+		// turn off spells
 		for (Spell spell : spells.values()) {
 			spell.turnOff();
 		}
+		
+		// save cooldowns
+		if (cooldownsPersistThroughReload) {
+			File file = new File(getDataFolder(), "cooldowns.txt");
+			if (file.exists()) file.delete();
+			try {
+				FileWriter writer = new FileWriter(file);
+				for (Spell spell : spells.values()) {
+					Map<String, Long> cooldowns = spell.getCooldowns();
+					for (String name : cooldowns.keySet()) {
+						long cooldown = cooldowns.get(name);
+						if (cooldown > System.currentTimeMillis()) {
+							writer.append(spell.getInternalName() + ":" + name + ":" + cooldown + "\n");
+						}
+					}
+				}
+				writer.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+				file.delete();
+			}
+		}
+		
+		// turn off buff manager
+		if (buffManager != null) {
+			buffManager.turnOff();
+			buffManager = null;
+		}
+		
+		// clear memory
 		spells.clear();
 		spells = null;
 		spellNames.clear();
 		spellNames = null;
 		spellbooks.clear();
 		spellbooks = null;
+		incantations.clear();
+		incantations = null;
 		if (mana != null) {
 			mana.turnOff();
 			mana = null;
 		}
-		HandlerList.unregisterAll(this);	
+		manaPotionCooldowns.clear();
+		manaPotionCooldowns = null;
+		noMagicZones.turnOff();
+		noMagicZones = null;
+		expBarManager = null;
+		itemNameResolver = null;		
+		
+		// remove star permissions (to allow new spells to be added to them)
+		getServer().getPluginManager().removePermission("magicspells.grant.*");
+		getServer().getPluginManager().removePermission("magicspells.cast.*");
+		getServer().getPluginManager().removePermission("magicspells.learn.*");
+		getServer().getPluginManager().removePermission("magicspells.teach.*");
+		
+		// unregister all listeners
+		HandlerList.unregisterAll(this);
+		
+		// cancel all tasks
+		Bukkit.getScheduler().cancelTasks(this);
 	}
 	
 	@Override

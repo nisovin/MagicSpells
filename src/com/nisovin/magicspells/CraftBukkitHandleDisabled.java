@@ -6,9 +6,12 @@ import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Creature;
+import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.SmallFireball;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -74,8 +77,18 @@ class CraftBukkitHandleDisabled implements CraftBukkitHandle {
 
 	@Override
 	public void setExperienceBar(Player player, int level, float percent) {
-		player.setLevel(level);
-		player.setExp(percent);
+	}
+
+	@Override
+	public Fireball shootSmallFireball(Player player) {
+		return player.launchProjectile(SmallFireball.class);
+	}
+
+	@Override
+	public void setTarget(LivingEntity entity, LivingEntity target) {
+		if (entity instanceof Creature) {
+			((Creature)entity).setTarget(target);
+		}
 	}
 
 }

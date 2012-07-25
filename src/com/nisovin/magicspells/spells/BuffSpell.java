@@ -5,16 +5,24 @@ import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 
+import com.nisovin.magicspells.BuffManager;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.SpellReagents;
+import com.nisovin.magicspells.util.Util;
 
 public abstract class BuffSpell extends Spell {
 	
-	protected ItemStack[] useCost;
 	protected int healthCost = 0;
 	protected int manaCost = 0;
 	protected int hungerCost = 0;
@@ -24,7 +32,10 @@ public abstract class BuffSpell extends Spell {
 	protected int useCostInterval;
 	protected int numUses;
 	protected int duration;
-	protected boolean cancelOnRecast;
+	protected boolean cancelOnGiveDamage;
+	protected boolean cancelOnTakeDamage;
+	protected boolean cancelOnDeath;
+	protected boolean cancelOnLogout;
 	protected String strFade;
 	private boolean castWithItem;
 	private boolean castByCommand;
@@ -37,48 +48,62 @@ public abstract class BuffSpell extends Spell {
 		
 		List<String> costList = getConfigStringList("use-cost", null);
 		if (costList != null && costList.size() > 0) {
-			useCost = new ItemStack [costList.size()];
+			reagents = new SpellReagents();
 			for (int i = 0; i < costList.size(); i++) {
 				if (costList.get(i).contains(" ")) {
 					String [] data = costList.get(i).split(" ");
 					if (data[0].equalsIgnoreCase("health")) {
-						healthCost = Integer.parseInt(data[1]);
+						reagents.setHealth(Integer.parseInt(data[1]));
 					} else if (data[0].equalsIgnoreCase("mana")) {
-						manaCost = Integer.parseInt(data[1]);
+						reagents.setMana(Integer.parseInt(data[1]));
 					} else if (data[0].equalsIgnoreCase("hunger")) {
-						hungerCost = Integer.parseInt(data[1]);
+						reagents.setHunger(Integer.parseInt(data[1]));
 					} else if (data[0].equalsIgnoreCase("experience")) {
-						experienceCost = Integer.parseInt(data[1]);
+						reagents.setExperience(Integer.parseInt(data[1]));
 					} else if (data[0].equalsIgnoreCase("levels")) {
-						levelsCost = Integer.parseInt(data[1]);
-					} else if (data[0].contains(":")) {
-						String [] subdata = data[0].split(":");
-						useCost[i] = new ItemStack(Integer.parseInt(subdata[0]), Integer.parseInt(data[1]), Short.parseShort(subdata[1]));
+						reagents.setLevels(Integer.parseInt(data[1]));
 					} else {
-						useCost[i] = new ItemStack(Integer.parseInt(data[0]), Integer.parseInt(data[1]));
+						ItemStack item = Util.getItemStackFromString(data[0]);
+						if (item != null) {
+							item.setAmount(Integer.parseInt(data[1]));
+							reagents.addItem(item);
+						}
 					}
 				} else {
-					useCost[i] = new ItemStack(Integer.parseInt(costList.get(i)));
+					ItemStack item = Util.getItemStackFromString(costList.get(i));
+					if (item != null) {
+						item.setAmount(1);
+						reagents.addItem(item);
+					}
 				}
 			}
 		} else {
-			useCost = null;
+			reagents = null;
 		}
-		reagents = new SpellReagents(useCost, manaCost, healthCost, hungerCost, experienceCost, levelsCost);
 		useCostInterval = getConfigInt("use-cost-interval", 0);
 		numUses = getConfigInt("num-uses", 0);
 		duration = getConfigInt("duration", 0);
-		cancelOnRecast = getConfigBoolean("cancel-on-recast", true);
+		
+		cancelOnGiveDamage = getConfigBoolean("cancel-on-give-damage", false);
+		cancelOnTakeDamage = getConfigBoolean("cancel-on-take-damage", false);
+		cancelOnDeath = getConfigBoolean("cancel-on-death", false);
+		cancelOnLogout = getConfigBoolean("cancel-on-logout", false);
+		if (cancelOnGiveDamage || cancelOnTakeDamage || cancelOnDeath) {
+			registerEvents(new DamageListener());
+		}
+		if (cancelOnLogout) {
+			registerEvents(new QuitListener());
+		}
 		
 		strFade = getConfigString("str-fade", "");
 		
-		if (numUses > 0 || (useCost != null && useCostInterval > 0)) {
+		if (numUses > 0 || (reagents != null && useCostInterval > 0)) {
 			useCounter = new HashMap<String,Integer>();
 		}
 		if (duration > 0) {
 			durationStartTime = new HashMap<String,Long>();
 		}
-		
+				
 		castWithItem = getConfigBoolean("can-cast-with-item", true);
 		castByCommand = getConfigBoolean("can-cast-by-command", true);
 	}
@@ -106,6 +131,9 @@ public abstract class BuffSpell extends Spell {
 				}
 			}, duration * 20 + 20); // overestimate ticks, since the duration is real-time ms based
 		}
+		BuffManager buffman = MagicSpells.getBuffManager();
+		if (buffman != null) buffman.addBuff(player, this);
+		playSpellEffects(EffectPosition.CASTER, player);
 	}
 	
 	/**
@@ -129,13 +157,20 @@ public abstract class BuffSpell extends Spell {
 	}
 	
 	/**
+	 * Checks if this buff spell is active for the specified player
+	 * @param player the player to check
+	 * @return true if the spell is active, false otherwise
+	 */
+	public abstract boolean isActive(Player player);
+	
+	/**
 	 * Adds a use to the spell for the player. If the number of uses exceeds the amount allowed, the spell will immediately expire.
 	 * This does not automatically charge the use cost.
 	 * @param player the player to add the use for
 	 * @return the player's current number of uses (returns 0 if the use counting feature is disabled)
 	 */
 	protected int addUse(Player player) {
-		if (numUses > 0 || (useCost != null && useCostInterval > 0)) {
+		if (numUses > 0 || (reagents != null && useCostInterval > 0)) {
 			Integer uses = useCounter.get(player.getName());
 			if (uses == null) {
 				uses = 1;
@@ -160,7 +195,7 @@ public abstract class BuffSpell extends Spell {
 	 * @return true if the reagents were removed, or if the use cost is disabled, false otherwise
 	 */
 	protected boolean chargeUseCost(Player player) {
-		if (useCost != null && useCostInterval > 0 && useCounter != null && useCounter.containsKey(player.getName())) {
+		if (reagents != null && useCostInterval > 0 && useCounter != null && useCounter.containsKey(player.getName())) {
 			int uses = useCounter.get(player.getName());
 			if (uses % useCostInterval == 0) {
 				if (hasReagents(player, reagents)) {
@@ -194,10 +229,43 @@ public abstract class BuffSpell extends Spell {
 	public void turnOff(Player player) {
 		if (useCounter != null) useCounter.remove(player.getName());
 		if (durationStartTime != null) durationStartTime.remove(player.getName());
+		BuffManager buffman = MagicSpells.getBuffManager();
+		if (buffman != null) buffman.removeBuff(player, this);
+		playSpellEffects(EffectPosition.DISABLED, player);
 	}
 	
 	@Override
 	protected
 	abstract void turnOff();
+	
+	@Override
+	public boolean isBeneficial() {
+		return true;
+	}
+	
+	public class DamageListener implements Listener {
+		@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
+		public void onPlayerDamage(EntityDamageEvent event) {
+			if ((cancelOnTakeDamage || cancelOnDeath) && event.getEntity() instanceof Player && isActive((Player)event.getEntity())) {
+				if (cancelOnTakeDamage || event.getDamage() >= ((Player)event.getEntity()).getHealth()) {
+					turnOff((Player)event.getEntity());
+				}
+			} else if (cancelOnGiveDamage && event instanceof EntityDamageByEntityEvent) {
+				EntityDamageByEntityEvent evt = (EntityDamageByEntityEvent)event;
+				if (evt.getDamager() instanceof Player && isActive((Player)evt.getDamager())) {
+					turnOff((Player)evt.getDamager());
+				}
+			}
+		}
+	}
+
+	public class QuitListener implements Listener {
+		@EventHandler(priority=EventPriority.MONITOR)
+		public void onPlayerQuit(PlayerQuitEvent event) {
+			if (isActive(event.getPlayer())) {
+				turnOff(event.getPlayer());
+			}
+		}
+	}
 	
 }

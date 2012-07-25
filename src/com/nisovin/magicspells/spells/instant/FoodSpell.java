@@ -2,6 +2,7 @@ package com.nisovin.magicspells.spells.instant;
 
 import org.bukkit.entity.Player;
 
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
@@ -22,6 +23,7 @@ public class FoodSpell extends InstantSpell {
 		if (state == SpellCastState.NORMAL) {
 			player.setFoodLevel(player.getFoodLevel() + food);
 			player.setSaturation(player.getSaturation() + saturation);
+			playSpellEffects(EffectPosition.CASTER, player);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}

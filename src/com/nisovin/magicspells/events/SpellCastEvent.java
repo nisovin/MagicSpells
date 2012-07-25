@@ -19,14 +19,15 @@ public class SpellCastEvent extends SpellEvent implements Cancellable {
 
     private Spell.SpellCastState state;
     private boolean stateChanged;
-	private int cooldown;
+	private float cooldown;
 	private SpellReagents reagents;
 	private boolean reagentsChanged;
 	private float power;
+	private int castTime;
 	private String[] args;
 	private boolean cancelled = false;
 	
-	public SpellCastEvent(Spell spell, Player caster, Spell.SpellCastState state, float power, String[] args, int cooldown, SpellReagents reagents) {
+	public SpellCastEvent(Spell spell, Player caster, Spell.SpellCastState state, float power, String[] args, float cooldown, SpellReagents reagents, int castTime) {
 		super(spell, caster);
 		this.state = state;
 		this.stateChanged = false;
@@ -34,6 +35,7 @@ public class SpellCastEvent extends SpellEvent implements Cancellable {
 		this.reagents = reagents;
 		this.reagentsChanged = false;
 		this.power = power;
+		this.castTime = castTime;
 		this.args = args;
 	}
 	
@@ -66,7 +68,7 @@ public class SpellCastEvent extends SpellEvent implements Cancellable {
 	 * Gets the cooldown that will be triggered after the spell is cast.
 	 * @return the cooldown
 	 */
-	public int getCooldown() {
+	public float getCooldown() {
 		return cooldown;
 	}
 	
@@ -74,7 +76,7 @@ public class SpellCastEvent extends SpellEvent implements Cancellable {
 	 * Sets the cooldown that will be triggered after the spell is cast.
 	 * @param cooldown the cooldown to set
 	 */
-	public void setCooldown(int cooldown) {
+	public void setCooldown(float cooldown) {
 		this.cooldown = cooldown;
 	}
 	
@@ -134,6 +136,22 @@ public class SpellCastEvent extends SpellEvent implements Cancellable {
 	 */
 	public void increasePower(float power) {
 		this.power *= power;
+	}
+	
+	/**
+	 * Gets the cast time for this spell cast, in server ticks.
+	 * @return the cast time
+	 */
+	public int getCastTime() {
+		return castTime;
+	}
+	
+	/**
+	 * Sets the cast time for this spell cast, in server ticks.
+	 * @param castTime the new cast time
+	 */
+	public void setCastTime(int castTime) {
+		this.castTime = castTime;
 	}
 	
 	/**

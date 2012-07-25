@@ -1,6 +1,6 @@
 name: MagicSpells
 main: com.nisovin.magicspells.MagicSpells
-version: 2.7-test
+version: 2.9
 author: nisovin
 softdepend: [BookWorm,WorldGuard,Residence]
 commands:
@@ -12,7 +12,3 @@ commands:
         description: Show mana bar
         usage: /<command>
         aliases: [mana]
-permissions:
-    magicspells.silent:
-        description: Cast spells without spell text messages
-        default: false

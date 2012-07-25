@@ -82,8 +82,8 @@ public class StonevisionSpell extends BuffSpell {
 	
 	@Override
 	public void turnOff(Player player) {
-		super.turnOff(player);
 		if (seers.containsKey(player.getName())) {
+			super.turnOff(player);
 			seers.get(player.getName()).removeTransparency();
 			seers.remove(player.getName());
 			sendMessage(player, strFade);
@@ -209,6 +209,11 @@ public class StonevisionSpell extends BuffSpell {
 				MagicSpells.getVolatileCodeHandler().queueChunksForUpdate(player, chunks);
 			}
 		}
+	}
+
+	@Override
+	public boolean isActive(Player player) {
+		return seers.containsKey(player.getName());
 	}
 
 }

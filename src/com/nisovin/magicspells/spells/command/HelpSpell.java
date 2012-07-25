@@ -8,6 +8,7 @@ import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.Spellbook;
 import com.nisovin.magicspells.spells.CommandSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.Util;
 
 public class HelpSpell extends CommandSpell {
 	
@@ -48,6 +49,15 @@ public class HelpSpell extends CommandSpell {
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+	
+	@Override
+	public String[] tabComplete(CommandSender sender, String partial) {
+		String [] args = Util.splitParams(partial);
+		if (sender instanceof Player && args.length == 1) {
+			return tabCompleteSpellName(sender, partial);
+		}
+		return null;
 	}
 	
 	@Override

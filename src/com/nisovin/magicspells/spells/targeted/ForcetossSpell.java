@@ -36,9 +36,7 @@ public class ForcetossSpell extends TargetedEntitySpell {
 			// get target
 			LivingEntity target = getTargetedEntity(player, range, targetPlayers, obeyLos);
 			if (target == null) {
-				sendMessage(player, strNoTarget);
-				fizzle(player);
-				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				return noTarget(player);
 			}
 			
 			// do damage
@@ -48,9 +46,7 @@ public class ForcetossSpell extends TargetedEntitySpell {
 					EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, target, DamageCause.ENTITY_ATTACK, damage);
 					Bukkit.getServer().getPluginManager().callEvent(event);
 					if (event.isCancelled()) {
-						sendMessage(player, strNoTarget);
-						fizzle(player);
-						return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+						return noTarget(player);
 					}
 					damage = event.getDamage();
 				}
@@ -73,7 +69,7 @@ public class ForcetossSpell extends TargetedEntitySpell {
 				.multiply(hForce*power)
 				.setY(vForce*power);
 		target.setVelocity(v);
-		playGraphicalEffects(player, target);
+		playSpellEffects(player, target);
 	}
 
 	@Override

@@ -23,7 +23,6 @@ public class LightningSpell extends TargetedLocationSpell {
 	private boolean checkPlugins;
 	private int additionalDamage;
 	private boolean noDamage;
-	private String strCastFail;
 	
 	public LightningSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -33,8 +32,7 @@ public class LightningSpell extends TargetedLocationSpell {
 		targetPlayers = getConfigBoolean("target-players", false);
 		checkPlugins = getConfigBoolean("check-plugins", true);
 		additionalDamage = getConfigInt("additional-damage", 0);
-		noDamage = getConfigBoolean("no-damage", false);		
-		strCastFail = getConfigString("str-cast-fail", "");
+		noDamage = getConfigBoolean("no-damage", false);
 	}
 	
 	@Override
@@ -52,7 +50,7 @@ public class LightningSpell extends TargetedLocationSpell {
 			if (requireEntityTarget) {
 				entityTarget = getTargetedEntity(player, range, targetPlayers, obeyLos);
 				if (entityTarget != null && entityTarget instanceof Player && checkPlugins) {
-					EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, entityTarget, DamageCause.ENTITY_ATTACK, 0);
+					EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, entityTarget, DamageCause.ENTITY_ATTACK, 1 + additionalDamage);
 					Bukkit.getServer().getPluginManager().callEvent(event);
 					if (event.isCancelled()) {
 						entityTarget = null;
@@ -64,9 +62,7 @@ public class LightningSpell extends TargetedLocationSpell {
 						entityTarget.damage(Math.round(additionalDamage*power), player);
 					}
 				} else {
-					sendMessage(player, strNoTarget);
-					fizzle(player);
-					return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+					return noTarget(player);
 				}
 			} else {
 				try {
@@ -77,14 +73,13 @@ public class LightningSpell extends TargetedLocationSpell {
 			}
 			if (target != null) {
 				lightning(target.getLocation());
-				playGraphicalEffects(player, target.getLocation());
+				playSpellEffects(player, target.getLocation());
 				if (entityTarget != null) {
 					sendMessages(player, entityTarget);
 					return PostCastAction.NO_MESSAGES;
 				}
 			} else {
-				sendMessage(player, strCastFail);
-				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				return noTarget(player);
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
@@ -101,7 +96,7 @@ public class LightningSpell extends TargetedLocationSpell {
 	@Override
 	public boolean castAtLocation(Player caster, Location target, float power) {
 		lightning(target);
-		playGraphicalEffects(caster, target);
+		playSpellEffects(caster, target);
 		return true;
 	}
 	

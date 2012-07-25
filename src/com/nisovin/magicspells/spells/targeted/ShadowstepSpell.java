@@ -33,14 +33,12 @@ public class ShadowstepSpell extends TargetedEntitySpell {
 			LivingEntity target = getTargetedEntity(player, range, targetPlayers, obeyLos);
 			if (target == null) {
 				// fail
-				sendMessage(player, strNoTarget);
-				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				return noTarget(player);
 			}
 			
 			boolean done = shadowstep(player, target);
 			if (!done) {
-				sendMessage(player, strNoLandingSpot);
-				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				return noTarget(player, strNoLandingSpot);
 			} else {
 				sendMessages(player, target);
 				return PostCastAction.NO_MESSAGES;
@@ -66,7 +64,7 @@ public class ShadowstepSpell extends TargetedEntitySpell {
 		}
 		
 		// ok
-		playGraphicalEffects(player.getLocation(), loc);
+		playSpellEffects(player.getLocation(), loc);
 		player.teleport(loc);
 		
 		return true;

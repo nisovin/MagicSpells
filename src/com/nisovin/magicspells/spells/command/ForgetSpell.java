@@ -2,14 +2,18 @@ package com.nisovin.magicspells.spells.command;
 
 import java.util.List;
 
+import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.Spellbook;
+import com.nisovin.magicspells.events.SpellForgetEvent;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.CommandSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.Util;
 
 public class ForgetSpell extends CommandSpell {
 
@@ -104,8 +108,11 @@ public class ForgetSpell extends CommandSpell {
 				if (!player.equals(target)) {
 					sendMessage(target, formatMessage(strCastTarget, "%a", player.getDisplayName(), "%s", spell.getName(), "%t", target.getDisplayName()));
 					sendMessage(player, formatMessage(strCastSelf, "%a", player.getDisplayName(), "%s", spell.getName(), "%t", target.getDisplayName()));
+					playSpellEffects(EffectPosition.CASTER, player);
+					playSpellEffects(EffectPosition.TARGET, target);
 				} else {
 					sendMessage(player, strCastSelfTarget, "%s", spell.getName());
+					playSpellEffects(EffectPosition.CASTER, player);
 				}
 				return PostCastAction.NO_MESSAGES;
 			} else if (all) {
@@ -114,8 +121,11 @@ public class ForgetSpell extends CommandSpell {
 				targetSpellbook.save();
 				if (!player.equals(target)) {
 					sendMessage(player, strResetTarget, "%t", target.getDisplayName());
+					playSpellEffects(EffectPosition.CASTER, player);
+					playSpellEffects(EffectPosition.TARGET, target);
 				} else {
 					sendMessage(player, strResetSelf);
+					playSpellEffects(EffectPosition.CASTER, player);
 				}
 				return PostCastAction.NO_MESSAGES;
 			}
@@ -129,8 +139,8 @@ public class ForgetSpell extends CommandSpell {
 			// fail: missing args
 			sender.sendMessage(strUsage);
 		} else {
-			List<Player> players = MagicSpells.plugin.getServer().matchPlayer(args[0]);
-			if (players.size() != 1) {
+			Player target = Bukkit.getPlayer(args[0]);
+			if (target == null) {
 				// fail: no player match
 				sender.sendMessage(strNoTarget);
 			} else {
@@ -145,27 +155,44 @@ public class ForgetSpell extends CommandSpell {
 					// fail: no spell match
 					sender.sendMessage(strNoSpell);
 				} else {
-					Spellbook targetSpellbook = MagicSpells.getSpellbook(players.get(0));
+					Spellbook targetSpellbook = MagicSpells.getSpellbook(target);
 					if (targetSpellbook == null || (!all && !targetSpellbook.hasSpell(spell))) {
 						// fail: no spellbook for some reason or can't learn the spell
 						sender.sendMessage(strDoesntKnow);
 					} else {
-						if (!all) {
-							targetSpellbook.removeSpell(spell);
-							targetSpellbook.save();
-							sendMessage(players.get(0), formatMessage(strCastTarget, "%a", getConsoleName(), "%s", spell.getName(), "%t", players.get(0).getDisplayName()));
-							sender.sendMessage(formatMessage(strCastSelf, "%a", getConsoleName(), "%s", spell.getName(), "%t", players.get(0).getDisplayName()));
-						} else {
-							targetSpellbook.removeAllSpells();
-							targetSpellbook.addGrantedSpells();
-							targetSpellbook.save();
-							sender.sendMessage(formatMessage(strResetTarget, "%t", players.get(0).getDisplayName()));
+						SpellForgetEvent forgetEvent = new SpellForgetEvent(spell, target);
+						Bukkit.getPluginManager().callEvent(forgetEvent);
+						if (!forgetEvent.isCancelled()) {
+							if (!all) {
+								targetSpellbook.removeSpell(spell);
+								targetSpellbook.save();
+								sendMessage(target, formatMessage(strCastTarget, "%a", getConsoleName(), "%s", spell.getName(), "%t", target.getDisplayName()));
+								sender.sendMessage(formatMessage(strCastSelf, "%a", getConsoleName(), "%s", spell.getName(), "%t", target.getDisplayName()));
+							} else {
+								targetSpellbook.removeAllSpells();
+								targetSpellbook.addGrantedSpells();
+								targetSpellbook.save();
+								sender.sendMessage(formatMessage(strResetTarget, "%t", target.getDisplayName()));
+							}
 						}
 					}
 				}
 			}
 		}
 		return true;
+	}
+	
+	@Override
+	public String[] tabComplete(CommandSender sender, String partial) {
+		String[] args = Util.splitParams(partial);
+		if (args.length == 1) {
+			// matching player name
+			return tabCompletePlayerName(sender, args[0]);
+		} else if (args.length == 2) {
+			// matching spell name
+			return tabCompleteSpellName(sender, args[1]);
+		}
+		return null;
 	}
 
 }

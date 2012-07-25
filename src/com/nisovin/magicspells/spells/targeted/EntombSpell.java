@@ -52,13 +52,11 @@ public class EntombSpell extends TargetedEntitySpell {
 				target.teleport(loc);
 				
 				createTomb(target, power);
-				playGraphicalEffects(player, target);
+				playSpellEffects(player, target);
 				sendMessages(player, target);
 				return PostCastAction.NO_MESSAGES;
 			} else {
-				sendMessage(player, strNoTarget);
-				fizzle(player);
-				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				return noTarget(player);
 			}
 		}		
 		return PostCastAction.HANDLE_NORMALLY;
@@ -133,7 +131,7 @@ public class EntombSpell extends TargetedEntitySpell {
 			return false;
 		} else {
 			createTomb(target, power);
-			playGraphicalEffects(caster, target);
+			playSpellEffects(caster, target);
 			return true;
 		}
 	}

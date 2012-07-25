@@ -5,6 +5,7 @@ import java.util.List;
 import org.bukkit.entity.Player;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.util.MagicConfig;
 
 public class PermissionSpell extends InstantSpell {
@@ -25,6 +26,7 @@ public class PermissionSpell extends InstantSpell {
 			for (String node : permissionNodes) {
 				player.addAttachment(MagicSpells.plugin, node, true, duration);
 			}
+			playSpellEffects(EffectPosition.CASTER, player);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}

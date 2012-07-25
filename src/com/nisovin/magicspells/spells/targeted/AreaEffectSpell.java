@@ -1,6 +1,7 @@
 package com.nisovin.magicspells.spells.targeted;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.bukkit.Bukkit;
@@ -10,7 +11,6 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
@@ -22,22 +22,29 @@ import com.nisovin.magicspells.util.MagicConfig;
 
 public class AreaEffectSpell extends TargetedLocationSpell {
 
-	private int radius;
+	private int radiusSquared;
 	private int verticalRadius;
 	private boolean pointBlank;
 	private boolean failIfNoTargets;
 	private boolean targetPlayers;
+	private boolean targetNonPlayers;
+	private int maxTargets;
+	private boolean beneficial;
 	private List<String> spellNames;
 	private List<TargetedSpell> spells;
 	
 	public AreaEffectSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		radius = getConfigInt("horizontal-radius", 10);
+		radiusSquared = getConfigInt("horizontal-radius", 10);
+		radiusSquared *= radiusSquared;
 		verticalRadius = getConfigInt("vertical-radius", 5);
 		pointBlank = getConfigBoolean("point-blank", true);
 		failIfNoTargets = getConfigBoolean("fail-if-no-targets", true);
 		targetPlayers = getConfigBoolean("target-players", false);
+		targetNonPlayers = getConfigBoolean("target-non-players", true);
+		maxTargets = getConfigInt("max-targets", 0);
+		beneficial = getConfigBoolean("beneficial", false);
 		spellNames = getConfigStringList("spells", null);
 	}
 	
@@ -105,34 +112,36 @@ public class AreaEffectSpell extends TargetedLocationSpell {
 	
 	private boolean doAoe(Player player, Location location, float power) {
 		int count = 0;
-
-		Entity center = location.getWorld().dropItemNaturally(location, new ItemStack(1, 0));
 		
-		List<Entity> nearbyEntities = center.getNearbyEntities(radius, verticalRadius, radius);
-		for (Entity e : nearbyEntities) {
-			if (e instanceof LivingEntity && !((LivingEntity)e).isDead() && !e.equals(player) && (targetPlayers || !(e instanceof Player))) {
-				LivingEntity target = (LivingEntity)e;
-				SpellTargetEvent event = new SpellTargetEvent(this, player, target);
-				Bukkit.getPluginManager().callEvent(event);
-				if (event.isCancelled()) {
-					continue;
-				} else {
-					target = event.getTarget();
-				}
-				for (TargetedSpell spell : spells) {
-					if (spell instanceof TargetedEntitySpell) {
-						((TargetedEntitySpell)spell).castAtEntity(player, target, power);
-						playGraphicalEffects(player, target);
-					} else if (spell instanceof TargetedLocationSpell) {
-						((TargetedLocationSpell)spell).castAtLocation(player, target.getLocation(), power);
-						playGraphicalEffects(player, target);
+		Collection<Entity> entities = location.getWorld().getEntitiesByClasses(LivingEntity.class);
+		for (Entity e : entities) {
+			if (e.getLocation().distanceSquared(location) <= radiusSquared && Math.abs(e.getLocation().getY() - location.getY()) <= verticalRadius) {
+				boolean isPlayer = (e instanceof Player);
+				if (!((LivingEntity)e).isDead() && !(isPlayer && ((Player)e).getName().equals(player.getName())) && (targetPlayers || !isPlayer) && (targetNonPlayers || isPlayer)) {
+					LivingEntity target = (LivingEntity)e;
+					SpellTargetEvent event = new SpellTargetEvent(this, player, target);
+					Bukkit.getPluginManager().callEvent(event);
+					if (event.isCancelled()) {
+						continue;
+					} else {
+						target = event.getTarget();
+					}
+					for (TargetedSpell spell : spells) {
+						if (spell instanceof TargetedEntitySpell) {
+							((TargetedEntitySpell)spell).castAtEntity(player, target, power);
+							playSpellEffects(player, target);
+						} else if (spell instanceof TargetedLocationSpell) {
+							((TargetedLocationSpell)spell).castAtLocation(player, target.getLocation(), power);
+							playSpellEffects(player, target);
+						}
+					}
+					count++;
+					if (maxTargets > 0 && count >= maxTargets) {
+						break;
 					}
 				}
-				count++;
 			}
 		}
-		
-		center.remove();
 		
 		return count > 0;
 	}
@@ -142,6 +151,9 @@ public class AreaEffectSpell extends TargetedLocationSpell {
 		return doAoe(caster, target, power);
 	}
 
-	
+	@Override
+	public boolean isBeneficial() {
+		return beneficial;
+	}
 	
 }

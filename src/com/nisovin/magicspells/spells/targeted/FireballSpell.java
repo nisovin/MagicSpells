@@ -21,6 +21,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
@@ -31,6 +32,7 @@ public class FireballSpell extends TargetedSpell {
 	private boolean targetPlayers;
 	private boolean checkPlugins;
 	private float damageMultiplier;
+	private float explosionSize;
 	private boolean smallFireball;
 	private boolean noExplosion;
 	private boolean noExplosionEffect;
@@ -48,6 +50,7 @@ public class FireballSpell extends TargetedSpell {
 		targetPlayers = getConfigBoolean("target-players", false);
 		checkPlugins = getConfigBoolean("check-plugins", true);
 		damageMultiplier = getConfigFloat("damage-multiplier", 0);
+		explosionSize = getConfigFloat("explosion-size", 0);
 		smallFireball = getConfigBoolean("small-fireball", false);
 		noExplosion = config.getBoolean("spells." + spellName + ".no-explosion", false);
 		noExplosionEffect = getConfigBoolean("no-explosion-effect", true);
@@ -66,17 +69,13 @@ public class FireballSpell extends TargetedSpell {
 			if (requireEntityTarget) {
 				LivingEntity entity = getTargetedEntity(player, range, targetPlayers, obeyLos);
 				if (entity == null) {
-					sendMessage(player, strNoTarget);
-					fizzle(player);
-					return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+					return noTarget(player);
 				} else if (entity instanceof Player && checkPlugins) {
 					// run a pvp damage check
 					EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, entity, DamageCause.ENTITY_ATTACK, 1);
 					Bukkit.getServer().getPluginManager().callEvent(event);
 					if (event.isCancelled()) {
-						sendMessage(player, strNoTarget);
-						fizzle(player);
-						return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+						return noTarget(player);
 					}
 				}
 				if (entity.equals(player)) {
@@ -93,8 +92,9 @@ public class FireballSpell extends TargetedSpell {
 			}
 			Fireball fireball;
 			if (smallFireball) {
-				fireball = player.getWorld().spawn(loc, SmallFireball.class);
-				player.getWorld().playEffect(player.getLocation(), Effect.BLAZE_SHOOT, 0);
+				//fireball = player.getWorld().spawn(loc, SmallFireball.class);
+				fireball = MagicSpells.getVolatileCodeHandler().shootSmallFireball(player);
+				player.getWorld().playEffect(player.getLocation(), Effect.GHAST_SHOOT, 0);
 			} else {
 				fireball = player.getWorld().spawn(loc, Fireball.class);
 				player.getWorld().playEffect(player.getLocation(), Effect.GHAST_SHOOT, 0);
@@ -102,7 +102,7 @@ public class FireballSpell extends TargetedSpell {
 			fireball.setShooter(player);
 			fireballs.put(fireball,power);
 			
-			playGraphicalEffects(1, player);
+			playSpellEffects(EffectPosition.CASTER, player);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}
@@ -114,9 +114,9 @@ public class FireballSpell extends TargetedSpell {
 		}
 		
 		if (event.getEntity() instanceof Fireball) {
-			Fireball fireball = (Fireball)event.getEntity();
+			final Fireball fireball = (Fireball)event.getEntity();
 			if (fireballs.containsKey(fireball)) {
-				playGraphicalEffects(2, fireball.getLocation());
+				playSpellEffects(EffectPosition.TARGET, fireball.getLocation());
 				if (noExplosion) {
 					event.setCancelled(true);
 					Location loc = fireball.getLocation();
@@ -161,26 +161,39 @@ public class FireballSpell extends TargetedSpell {
 							}, 20);
 						}
 					}
-				} else if (noFire) {
-					event.setFire(false);
 				} else {
-					event.setFire(true);
+					if (noFire) {
+						event.setFire(false);
+					} else {
+						event.setFire(true);
+					}
+					if (explosionSize > 0) {
+						event.setRadius(explosionSize);
+					}
 				}
 				if (noExplosion || (damageMultiplier == 0 && targetPlayers)) {
+					// remove immediately
 					fireballs.remove(fireball);
+				} else {
+					// schedule removal (gotta wait for damage events)
+					Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new Runnable() {
+						public void run() {
+							fireballs.remove(fireball);
+						}
+					}, 1);
 				}
 			}
 		}
 	}
 
-	@EventHandler(priority=EventPriority.HIGH)
+	@EventHandler(priority=EventPriority.HIGH, ignoreCancelled=true)
 	public void onEntityDamage(EntityDamageEvent event) {
-		if ((damageMultiplier > 0 || !targetPlayers) && !event.isCancelled() && event instanceof EntityDamageByEntityEvent && event.getCause() == DamageCause.ENTITY_EXPLOSION) {
+		if ((damageMultiplier > 0 || !targetPlayers) && event.getEntity() instanceof LivingEntity && event instanceof EntityDamageByEntityEvent && (event.getCause() == DamageCause.ENTITY_EXPLOSION || event.getCause() == DamageCause.PROJECTILE)) {
 			EntityDamageByEntityEvent evt = (EntityDamageByEntityEvent)event;
 			if (evt.getDamager() instanceof Fireball || evt.getDamager() instanceof SmallFireball) {
 				Fireball fireball = (Fireball)evt.getDamager();
 				if (fireball.getShooter() instanceof Player && fireballs.containsKey(fireball)) {
-					float power = fireballs.remove(fireball);
+					float power = fireballs.get(fireball);
 					if (event.getEntity() instanceof Player && !targetPlayers) {
 						event.setCancelled(true);
 					} else if (damageMultiplier > 0) {

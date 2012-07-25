@@ -56,15 +56,11 @@ public class ExplodeSpell extends TargetedLocationSpell {
 			}
 			if (target == null || target.getType() == Material.AIR) {
 				// fail: no target
-				sendMessage(player, strNoTarget);
-				fizzle(player);
-				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				return noTarget(player);
 			} else {
 				boolean exploded = explode(player, target.getLocation(), power);
 				if (!exploded && !ignoreCanceled) {
-					sendMessage(player, strNoTarget);
-					fizzle(player);
-					return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+					return noTarget(player);
 				}
 			}
 		}
@@ -92,7 +88,7 @@ public class ExplodeSpell extends TargetedLocationSpell {
 		// cause explosion
 		boolean ret = MagicSpells.getVolatileCodeHandler().createExplosionByPlayer(player, target, explosionSize * power, addFire);
 		if (ret) {
-			playGraphicalEffects(player, target);
+			playSpellEffects(player, target);
 		}
 		return ret;
 	}

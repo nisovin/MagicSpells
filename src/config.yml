@@ -1,6 +1,8 @@
 general:
     debug: false
     debug-level: 3
+    enable-error-logging: true
+    enable-stat-collection: true
     enable-volatile-features: true
     alt-config: altConfig.yml
     str-cast-usage: |
@@ -16,20 +18,29 @@ general:
     str-console-name: Admin
     text-color: 3
     broadcast-range: 20
+    spell-icon-slot: -1
     separate-player-spells-per-world: false
     allow-cycle-to-no-spell: false
+    always-show-message-on-cycle: false
     only-cycle-to-castable-spells: true
     allow-cast-with-fist: false
     ops-have-all-spells: true
+    ops-ignore-reagents: true
+    ops-ignore-cooldowns: true
+    ops-ignore-cast-times: true
     default-all-perms-false: false
     ignore-default-bindings: false
+    ignore-cast-item-enchants: true
     ignore-cast-item-durability: [ 268, 269, 270, 271, 283, 284, 285, 286, 290, 294, 314, 315, 316, 317 ]
+    los-transparent-blocks: [ 0, 27, 28, 31, 32, 37, 38, 39, 40, 50, 51, 55, 63, 65, 66, 68, 69, 70, 72, 75, 76, 77, 78, 93, 94, 106, 111 ]
     global-cooldown: 500
-    cast-on-animate: true
+    cast-on-animate: false
+    use-exp-bar-as-cast-time-bar: true
+    cooldowns-persist-through-reload: true
     
     entity-names:
         zombie: an ugly zombie
-        skeleton: a skeleton
+        skeleton: a scary skeleton
         spider: a spider
         cavespider: a nasty little spider
         creeper: a creepy creeper
@@ -47,47 +58,64 @@ general:
         enderdragon: the ender dragon
         cow: a cow
         sheep: a sheep
-        pig: a pig
+        pig: a smelly pig
         chicken: a duck
         mushroomcow: a deformed cow
-        squid: a squid
+        squid: a slimy squid
+        irongolem: a friendly iron golem
     
-    mana:
-        enable-mana-bars: true
-        max-mana: 100
-        mana-bar-prefix: "Mana:"
-        mana-bar-size: 35
-        color-full: 10
-        color-empty: 0
-        regen-tick-rate: 100
-        regen-amount: 5
-        show-mana-on-use: false
-        show-mana-on-regen: false
-        show-mana-on-wood-tool: true
-        show-mana-on-hunger-bar: false
-        show-mana-on-experience-bar: false
-        tool-slot: 8
-        mana-potion-cooldown: 30
-        str-mana-potion-on-cooldown: You cannot use another mana potion yet (%c seconds).
-        mana-potions:
-            - 351:4 100
-            - 348 60
-            - 331 30
+mana:
+    enable-mana-system: true
+    mana-bar-prefix: "Mana:"
+    mana-bar-size: 35
+    color-full: 10
+    color-empty: 0
+    
+    default-max-mana: 100
+    default-regen-amount: 5
+    regen-interval: 100
+    
+    ranks:
+        master:
+            max-mana: 200
+            regen-amount: 10
+        adept:
+            max-mana: 150
+            regen-amount: 7
+        novice:
+            max-mana: 100
+            regen-amount: 5
+    
+    show-mana-on-use: false
+    show-mana-on-regen: false
+    show-mana-on-wood-tool: false
+    show-mana-on-hunger-bar: false
+    show-mana-on-experience-bar: true
+    tool-slot: 8
+    
+    mana-potion-cooldown: 30
+    str-mana-potion-on-cooldown: You cannot use another mana potion yet (%c seconds).
+    mana-potions:
+        - 351:4 100
+        - 348 60
+        - 331 30
         
 spells:
 
     list:
         spell-class: ".command.ListSpell"
         name: list
+        always-granted: true
         description: List all the spells you know.
         only-show-castable-spells: false
-        reload-granted-spells: false
+        reload-granted-spells: true
         spells-to-hide: []
         str-prefix: "Known spells:"
         str-no-spells: You do not know any spells.
     help:
         spell-class: ".command.HelpSpell"
         name: help
+        always-granted: true
         description: Get information about a specified spell.
         require-known-spell: true
         str-usage: "Usage: /cast help <spell>"
@@ -140,7 +168,7 @@ spells:
     bind:
         spell-class: ".command.BindSpell"
         name: bind
-        enable: true
+        enabled: true
         description: Binds a spell to a wand item.
         allow-bind-to-fist: false
         str-cast-self: "You have successfully bound the %s spell to the \nitem you are holding."
@@ -151,7 +179,7 @@ spells:
     unbind:
         spell-class: ".command.UnbindSpell"
         name: unbind
-        enable: true
+        enabled: true
         description: Unbinds a spell from its assigned wand item.
         str-cast-self: "You have successfully unbound the %s spell."
         str-usage: You must specify a spell name.
@@ -163,24 +191,26 @@ spells:
     armor:
         spell-class: ".buff.ArmorSpell"
         name: armor
-        cast-item: 280
+        spell-icon: iron_chestplate
+        cast-item: book
         duration: 30
         num-uses: 15
-        helmet: 314 protection_explosions:1 oxygen:1
-        chestplate: 315 protection_projectile:1
-        leggings: 316 protection_fire:1
-        boots: 317 protection_fall:1
+        helmet: gold_helmet protection_explosions:1 oxygen:1
+        chestplate: gold_chestplate protection_projectile:1
+        leggings: gold_leggings protection_fire:1
+        boots: gold_boots protection_fall:1
         cost:
-            - 331 1
-            - 371 1
-        str-cost: 1 redstone and 1 gold nugget
+            - mana 25
+            - gold_nugget 1
+        str-cost: 25 mana and 1 golden nugget
         str-cast-self: You have conjured some magic armor!
         str-has-armor: You cannot cast this spell if you are already wearing armor.
     blind:
         spell-class: ".targeted.PotionEffectSpell"
         name: blind
+        spell-icon: ink_sack:0
         description: Blind your target.
-        cast-item: 280
+        cast-item: blaze_rod
         cooldown: 15
         range: 20
         type: 15
@@ -191,15 +221,16 @@ spells:
         target-non-players: false
         obey-los: true
         cost:
-            - 331 2
-        str-cost: 2 redstone dust
+            - mana 10
+        str-cost: 10 mana
         str-cast-self: You have blinded your target!
         str-no-target: No target found.
     blink:
         spell-class: ".targeted.BlinkSpell"
         name: blink
+        spell-icon: ender_pearl
         description: Teleport a short distance.
-        cast-item: 280
+        cast-item: stick
         cooldown: 8
         range: 25
         pass-through-ceiling: false
@@ -208,16 +239,17 @@ spells:
             - pos1 ender
             - pos2 ender
         cost:
-            - 331 2
-        str-cost: 2 redstone dust
+            - mana 15
+        str-cost: 15 mana
         str-cast-self: You blink away!
         str-cast-others: "%a blinks away!"
         str-cant-blink: You cannot blink there.
     build:
         spell-class: ".targeted.BuildSpell"
         name: build
+        spell-icon: stone
         description: Build blocks from far away.
-        cast-item: 294
+        cast-item: stick
         cooldown: 2
         range: 25
         slot: 0
@@ -228,32 +260,50 @@ spells:
         allowed-types: 1,2,3,4,5,12,13,17,20,22,24,35,41,42,43,44,45,47,48,49,50,53,57,65,67,80,85,87,88,89,91,92
         cost:
             - mana 5
+        str-cost: 5 mana
         str-invalid-block: You can't build that block.
         str-cant-build: You can't build there.
     carpet:
         spell-class: ".buff.CarpetSpell"
         name: carpet
+        spell-icon: thin_glass
         description: Lets you walk on a platform of glass.
-        cast-item: 317
+        cast-item: book
         cooldown: 30
         cancel-on-logout: true
         cancel-on-teleport: true
         size: 2
         cost:
-            - 331 5
-            - 288 5
+            - mana 50
+            - feather 5
         use-cost:
-            - 288 1
+            - mana 20
+            - feather 1
         use-cost-interval: 50
-        str-cost: 5 redstone, 5 feathers, plus 1 feather every 50 blocks
+        str-cost: 50 mana, 5 feathers, plus 20 mana and 1 feather every 50 blocks
         str-cast-self: You are now walking on air!
         str-cast-others: "%a is now walking on air!"
         str-fade: You are no longer walking on air.
+    clarity:
+        spell-class: ".buff.ManaRegenSpell"
+        name: clarity
+        spell-icon: potion
+        description: Increase mana regeneration for a time.
+        cast-item: book
+        cooldown: 300
+        duration: 60
+        regen-mod-amt: 3
+        cost:
+            - mana 10
+        str-cost: 10 mana
+        str-cast-self: Your thoughts race and flow with ease!
+        str-fade: Your mind returns to normal.
     combust:
         spell-class: ".targeted.CombustSpell"
         name: combust
+        spell-icon: fire
         description: Set a target on fire.
-        cast-item: 283
+        cast-item: blaze_rod
         cooldown: 10
         range: 20
         obey-los: true
@@ -263,40 +313,47 @@ spells:
         target-players: false
         check-plugins: true
         cost:
-            - 331 1
-            - 263 1
-        str-cost: 1 redstone dust and 1 coal
+            - mana 10
+        str-cost: 10 mana
         str-no-target: No target found.
     confusion:
         spell-class: ".instant.ConfusionSpell"
         name: confusion
+        spell-icon: eye_of_ender
         description: Cause nearby monsters to attack each other.
-        cast-item: 283
+        cast-item: bone
         cooldown: 30
         range: 20
         cost:
-            - 331 4
-        str-cost: 4 redstone dust
+            - mana 30
+        str-cost: 30 mana
         str-cast-self: You cause nearby monsters to become confused and attack each other.
         str-cast-others: "%a causes nearby monsters to attack each other."
     conjure:
         spell-class: ".instant.ConjureSpell"
         name: conjure
-        description: Conjure some magical reagents.
-        cast-item: 280
+        spell-icon: redstone
+        description: Conjure some potion reagents.
+        cast-item: book
         cooldown: 600
+        power-affects-quantity: false
+        power-affects-chance: true
+        calculate-drops-individually: true
+        auto-equip: false
         items:
-            - 331 5-7
-            - 265 1-2 10%
-            - 351:4 1 10%
+            - redstone 1-2 25%
+            - speckled_melon 1 25%
+            - magma_cream 1-2 25%
+            - spider_eye 1-2 25%
         add-to-inventory: false
         str-cost: free
-        str-cast-self: You have conjured some magical reagents!
+        str-cast-self: You have conjured some potion reagents!
     cripple:
         spell-class: ".targeted.CrippleSpell"
         name: cripple
+        spell-icon: web
         description: Slow down a targeted enemy.
-        cast-item: 280
+        cast-item: blaze_rod
         cooldown: 15
         range: 20
         effect-strength: 5
@@ -304,31 +361,35 @@ spells:
         target-players: true
         obey-los: true
         cost:
-            - 331 2
-        str-cost: 2 redstone dust
+            - mana 10
+        str-cost: 10 mana
         str-cast-self: You have crippled your enemy.
         str-no-target: No target found.
     disarm:
         spell-class: ".targeted.DisarmSpell"
         name: disarm
+        spell-icon: stone_sword:130
         description: Disarm your opponent.
-        cast-item: 283
+        cast-item: blaze_rod
         cooldown: 15
         range: 20
         disarmable-items:
-            - 280
-            - 261
-            - 267
-            - 268
-            - 276
-            - 283
+            - blaze_rod
+            - stick
+            - book
+            - bone
+            - wood_sword
+            - stone_sword
+            - iron_sword
+            - diamond_sword
+            - bow
         disarm-duration: 100
         dont-drop: false
         prevent-theft: true
         obey-los: true
         cost:
-            - 331 4
-        str-cost: 4 redstone dust
+            - mana 20
+        str-cost: 20 mana
         str-no-target: No target found.
         str-invalid-item: Your target could not be disarmed.
         str-cast-self: You have disarmed %t.
@@ -336,8 +397,9 @@ spells:
     drainlife:
         spell-class: ".targeted.DrainlifeSpell"
         name: drainlife
+        spell-icon: ghast_tear
         description: Drain life from your enemy and give it to you.
-        cast-item: 283
+        cast-item: blaze_rod
         cooldown: 5
         range: 15
         take-type: health
@@ -350,33 +412,35 @@ spells:
         target-players: false
         check-plugins: true
         cost:
-            - 331 2
-        str-cost: 2 redstone dust
+            - mana 10
+        str-cost: 10 mana
         str-cast-self: You drain life from your enemy.
         str-no-target: No target found.
     empower:
         spell-class: ".buff.EmpowerSpell"
         name: empower
+        spell-icon: glowstone_dust
         description: Makes your spells more powerful.
-        cast-item: 280
+        cast-item: book
         power-multiplier: 1.5
         cooldown: 120
         duration: 30
         num-uses: 10
         cost:
-            - 331 3
+            - mana 15
         use-cost:
-            - 331 2
+            - mana 5
         use-cost-interval: 1
-        str-cost: 3 redstone, plus 2 redstone for each spell cast
+        str-cost: 15 mana, plus 5 mana for each spell cast
         str-cast-self: You feel yourself glowing with magical energy.
         str-cast-others: "%a begins to glow with magical energy."
         str-fade: You are no longer glowing with magical energy.
     entomb:
         spell-class: ".targeted.EntombSpell"
         name: entomb
+        spell-icon: glass
         description: Encase an enemy in glass.
-        cast-item: 280
+        cast-item: blaze_rod
         cooldown: 5
         range: 15
         obey-los: true
@@ -384,15 +448,15 @@ spells:
         tomb-block-type: 20
         tomb-duration: 20
         cost:
-            - 331 3
-            - 20 1
-        str-cost: 3 redstone dust and 1 glass
+            - mana 15
+        str-cost: 15 mana
         str-no-target: No target found.
     explode:
         spell-class: ".targeted.ExplodeSpell"
         name: explode
+        spell-icon: tnt
         description: Create an explosion.
-        cast-item: 283
+        cast-item: blaze_rod
         cooldown: 30
         range: 25
         explosion-size: 4
@@ -404,17 +468,18 @@ spells:
         simulate-tnt: true
         ignore-canceled: false
         cost:
-            - 331 5
-            - 289 1
-        str-cost: 5 redstone dust and 1 gunpowder
+            - mana 40
+            - sulphur 1
+        str-cost: 40 mana and 1 gunpowder
         str-no-target: You cannot create an explosion there.
         str-cast-self: Boom!
         str-cast-others: Boom!
     explosivearrow:
         spell-class: ".instant.ProjectileSpell"
         name: explosivearrow
+        spell-icon: arrow
         description: Cause an explosion where an arrow lands
-        cast-item: 283
+        cast-item: blaze_rod
         cooldown: 30
         projectile: arrow
         velocity: 0
@@ -424,57 +489,74 @@ spells:
         max-distance: 25
         spells: [explode]
         cost:
-            - 331 4
-            - 289 2
-            - 262 1
-        str-cost: 4 redstone, 2 gunpowder, 1 arrow
+            - mana 25
+            - sulpher 1
+            - arrow 1
+        str-cost: 25 mana, 1 gunpowder, and 1 arrow
         str-cast-self: You fire an explosive arrow.
+    farm:
+        spell-class: ".targeted.FarmSpell"
+        name: farm
+        spell-icon: seeds
+        cast-item: book
+        description: Make crops grow nearby.
+        cooldown: 10
+        radius: 3
+        growth: 1
+        targeted: false
+        cost:
+            - mana 75
+            - seeds 2
+        str-cost: 75 mana and 2 seeds
+        str-cast-self: The crops around you grow quickly.
+        str-no-target: There are no crops nearby.
     fireball:
         spell-class: ".targeted.FireballSpell"
         name: fireball
+        spell-icon: fireball
         description: Throw a fiery ball of destruction.
-        cast-item: 283
-        cooldown: 15
+        cast-item: blaze_rod
+        cooldown: 5
         range: 30
         require-entity-target: false
         obey-los: true
         target-players: false
         check-plugins: true
         damage-multiplier: 3
-        small-fireball: false
+        small-fireball: true
         no-fire: false
         no-explosion: false
         no-explosion-effect: true
         no-explosion-damage: 5
         no-explosion-damage-range: 3
         cost: 
-            - 331 3
-            - 263 2
-        str-cost: 3 redstone dust and 2 coal
+            - mana 10
+        str-cost: 10 mana
         str-no-target: You cannot throw a fireball there.
         str-cast-self: You throw a fiery ball of destruction!
         str-cast-others: "%a throws a fiery ball of destruction!"
     firenova:
         spell-class: ".instant.FirenovaSpell"
         name: firenova
+        spell-icon: blaze_powder
         description: Summon an expanding ring of fire.
-        cast-item: 283
+        cast-item: bone
         cooldown: 10
         range: 5
         tick-speed: 10
         burn-tall-grass: true
         check-plugins: true
         cost:
-            - 331 2
-            - 263 1
-        str-cost: 2 redstone dust and 1 coal
+            - mana 15
+        str-cost: 15 mana
         str-cast-self: You summon an expanding ring of fire.
         str-cast-others: "%a summons an expanding ring of fire."
     flamewalk:
         spell-class: ".buff.FlamewalkSpell"
         name: flamewalk
+        spell-icon: fire
         description: Burn your enemies around you as you walk.
-        cast-item: 317
+        cast-item: book
         cooldown: 30
         range: 8
         fire-ticks: 100
@@ -482,31 +564,33 @@ spells:
         target-players: false
         duration: 120
         cost:
-            - 331 5
+            - mana 25
             - 263 2
         use-cost:
-            - 331 1
-        use-cost-interval: 15
-        str-cost: 5 redstone, 2 coal, plus 1 redstone occasionally
+            - mana 10
+        use-cost-interval: 10
+        str-cost: 25 mana, 2 coal, plus 10 mana occasionally
         str-cast-self: You begin to burn your enemies around you.
         str-fade: You are no longer burning your enemies.
     food:
         spell-class: ".instant.FoodSpell"
         name: food
+        spell-icon: cooked_beef
         description: Makes you less hungry.
-        cast-item: 280
+        cast-item: book
         cooldown: 30
         food: 4
         saturation: 2.5
         cost:
-            - 331 2
-        str-cost: 2 redstone dust
+            - 25 mana
+        str-cost: 25 mana
         str-cast-self: You feel less hungry.
     forcepush:
         spell-class: ".instant.ForcepushSpell"
         name: forcepush
+        spell-icon: record_3
         description: Push back your enemies.
-        cast-item: 280
+        cast-item: bone
         cooldown: 8
         range: 10
         pushback-force: 30
@@ -514,15 +598,16 @@ spells:
         max-vertical-force: 20
         target-players: false
         cost:
-            - 331 3
-        str-cost: 3 redstone dust
+            - mana 30
+        str-cost: 30 mana
         str-cast-self: You push back your enemies!
         str-cast-others: "%a pushes back his enemies."
     forcetoss:
         spell-class: ".targeted.ForcetossSpell"
         name: forcetoss
+        spell-icon: piston_base
         description: Magically throw an enemy into the air.
-        cast-item: 283
+        cast-item: blaze_rod
         cooldown: 5
         range: 15
         damage: 0
@@ -532,16 +617,17 @@ spells:
         target-players: false
         check-plugins: true
         cost:
-            - 331 2
-        str-cost: 2 redstone dust
+            - mana 10
+        str-cost: 10 mana
         str-no-target: No target found.
         str-cast-self: You push back your enemy!
         str-cast-others: "%a pushes back his enemy."
     freeze:
         spell-class: ".instant.FreezeSpell"
         name: freeze
+        spell-icon: snow_ball
         description: Spray your enemies with cold snowballs.
-        cast-item: 280
+        cast-item: blaze_rod
         snowballs: 25
         horizontal-spread: 15
         vertical-spread: 5
@@ -551,29 +637,31 @@ spells:
         target-players: false
         cooldown: 5
         cost:
-            - 331 1
-            - 332 1
-        str-cost: 1 redstone dust and 1 snowball
+            - mana 10
+            - snow_ball 1
+        str-cost: 10 mana and 1 snowball
     frostwalk:
         spell-class: ".buff.FrostwalkSpell"
         name: frostwalk
+        spell-icon: ice
         description: Lets you walk on water.
-        cast-item: 317
+        cast-item: book
         size: 2
         leave-frozen: false
         cooldown: 30
         cost:
-            - 331 6
+            - mana 50
         use-cost:
-            - 331 1
-        use-cost-interval: 50
-        str-cost: 6 redstone, plus 1 redstone every 50 blocks
+            - snow_ball 1
+        use-cost-interval: 25
+        str-cost: 50 mana, plus 1 snowball every 25 blocks
         str-cast-self: You can now walk on water!
         str-cast-others: "%a can now walk on water!"
         str-fade: You can no longer walk on water.
     gate:
         spell-class: ".instant.GateSpell"
         name: gate
+        spell-icon: portal
         description: Teleport to spawn.
         can-cast-with-item: false
         world: CURRENT
@@ -581,21 +669,19 @@ spells:
         effects:
             - pos1 ender
             - pos2 ender
-        cast-time: 0
         cost:
-            - 331 1
-            - 265 1
+            - mana 50
+            - iron_ingot 1
         str-cost: 1 redstone dust and 1 iron bar
         str-cast-self: You have teleported to spawn.
         str-cast-others: "%a teleports!"
         str-gate-failed: Unable to teleport.
-        str-cast-done: ""
-        str-cast-interrupted: ""
     geyser:
         spell-class: ".targeted.GeyserSpell"
         name: geyser
+        spell-icon: water
         description: Create a geyser of water at your enemy's feet.
-        cast-item: 283
+        cast-item: blaze_rod
         range: 20
         damage: 0
         velocity: 10
@@ -607,46 +693,50 @@ spells:
         target-players: false
         check-plugins: true
         cost:
-            - 331 2
-        str-cost: 2 redstone dust
+            - mana 10
+        str-cost: 10 mana
         str-cast-self: You create a geyser at your enemy's feet.
         str-no-target: No target found.
     gills:
         spell-class: ".buff.GillsSpell"
         name: gills
+        spell-icon: gold_helmet
         description: Allows you to breath underwater.
-        cast-item: 294
+        cast-item: book
         glass-head-effect: true
         cooldown: 60
         duration: 300
         num-uses: 5
         cost:
-            - 331 3
+            - mana 50
+            - sugar_cane 1
         use-cost:
-            - 331 1
+            - sugar_cane 1
         use-cost-interval: 1
-        str-cost: 3 redstone dust, plus 1 every few seconds
+        str-cost: 50 mana and 1 sugar cane, plus 1 sugar cane few seconds
         str-cast-self: You form gills on your neck!
         str-fade: Your gills disappear.
     haste:
         spell-class: ".buff.HasteSpell"
         name: haste
+        spell-icon: gold_boots
         description: Sprint faster for a time.
-        cast-item: 294
+        cast-item: book
         effect-strength: 3
         boost-duration: 300
         duration: 60
         cost:
-            - 331 3
-        str-cost: 3 redstone
+            - mana 25
+        str-cost: 25 mana
         str-cast-self: You gain unnatural speed!
         str-cast-others: "%a gains unnatural speed!"
         str-fade: You lose your unnatural speed.
     haze:
         spell-class: ".targeted.PotionEffectSpell"
         name: haze
+        spell-icon: slime_ball
         description: Makes your target's vision hazey.
-        cast-item: 280
+        cast-item: blaze_rod
         cooldown: 15
         range: 20
         type: 9
@@ -657,15 +747,16 @@ spells:
         target-non-players: false
         obey-los: true
         cost:
-            - 331 2
-        str-cost: 2 redstone dust
+            - mana 10
+        str-cost: 10 mana
         str-cast-self: You have confuzzled your target!
         str-no-target: No target found.
     heal:
         spell-class: ".targeted.HealSpell"
         name: heal
+        spell-icon: red_rose
         description: Heals a target player.
-        cast-item: 280
+        cast-item: stick
         heal-amount: 10
         cancel-if-full: true
         effects:
@@ -674,8 +765,8 @@ spells:
         cooldown: 0
         range: 12
         cost:
-            - 331 2
-        str-cost: 2 redstone dust
+            - mana 10
+        str-cost: 10 mana
         str-cast-self: You have healed %t.
         str-cast-target: "%a has healed you."
         str-no-target: No target to heal.
@@ -683,30 +774,33 @@ spells:
     invisibility:
         spell-class: ".buff.InvisibilitySpell"
         name: invisibility
+        spell-icon: record_11
         description: Makes you invisible to players and monsters.
-        cast-item: 280
+        cast-item: bone
         cooldown: 60
         effects:
             - caster spawn
             - disabled spawn
         toggle: true
         prevent-pickups: true
-        cancel-on-attack: true
+        cancel-on-give-damage: true
+        cancel-on-logout: true
         duration: 15
         cost:
-            - 331 2
+            - mana 25
         use-cost:
-            - 331 1
+            - mana 15
         use-cost-interval: 3
-        str-cost: 2 redstone dust, plus 1 every 3 seconds
+        str-cost: 25 mana, plus 15 mana every 3 seconds
         str-cast-self: You vanish!
         str-cast-others: "%a vanishes!"
         str-fade: You are visible again.
     invulnerability:
         spell-class: ".buff.InvulnerabilitySpell"
         name: invulnerability
+        spell-icon: gold_chestplate
         description: Makes you invulnerable to damage.
-        cast-item: 280
+        cast-item: book
         damage-causes:
             - block explosion
             - contact
@@ -720,52 +814,60 @@ spells:
             - lightning
             - projectile
             - suffocation
+            - magic
             - void
         duration: 60
         cooldown: 300
         cost: 
-            - 331 5
+            - mana 30
         use-cost: 
-            - 331 1
+            - mana 15
         use-cost-interval: 5
-        str-cost: 5 redstone dust, plus 1 occasionally
+        str-cost: 30 mana, plus 15 mana when taking damage
         str-cast-self: You feel your skin harden.
         str-cast-others: "%a's skin hardens."
         str-fade: You feel your skin return to normal.
     leap:
         spell-class: ".instant.LeapSpell"
         name: leap
+        spell-icon: diamond_boots
         description: Leap forward.
-        cast-item: 280
+        cast-item: stick
         forward-velocity: 40
         upward-velocity: 15
         cancel-damage: true
         cooldown: 10
         cost:
-            - 331 2
-        str-cost: 2 redstone dust
+            - mana 15
+        str-cost: mana 15
         str-cast-self: You leap forward.
         str-cast-others: "%a leaps forward."
     levitate:
         spell-class: ".targeted.LevitateSpell"
         name: levitate
+        spell-icon: feather
         description: Cause your target to fly through the air.
-        cast-item: 280
+        cast-item: bone
         tick-rate: 5
         duration: 15
         cooldown: 30
         range: 12
+        cancel-on-item-switch: true
+        cancel-on-spell-cast: true
+        target-players: false
+        obey-los: true
         cost:
-            - 331 2
-            - 288 1
-        str-cost: 2 redstone and 1 feather
+            - mana 30
+            - feather 2
+        str-cost: 30 mana and 2 feathers
         str-cast-self: You are levitating %t!
         str-cast-target: "%a is levitating you!"
     lifewalk:
         spell-class: ".buff.LifewalkSpell"
         name: lifewalk
+        spell-icon: sapling:2
         description: Flowers grow in your footsteps!
-        cast-item: 317
+        cast-item: book
         tick-interval: 15
         red-flower-chance: 15
         yellow-flower-chance: 15
@@ -773,20 +875,22 @@ spells:
         tallgrass-chance: 25
         fern-chance: 15
         cost:
-            - 331 2
-            - 38 1
+            - mana 25
+            - red_rose 1
+            - yellow_flower 1
         use-cost:
-            - 331 1
-        use-cost-interval: 20
-        str-cost: 2 redstone and 1 rose, plus 1 redstone every few seconds
+            - yellow_flower 1
+        use-cost-interval: 25
+        str-cost: 25 mana, 1 rose, 1 yellow flower, plus 1 flower every so often
         str-cast-self: Flowers grow in your footsteps!
         str-cast-others: Flowers grow in %a's footsteps!
         str-fade: Flowers no longer grow in your footsteps.
     lightning:
         spell-class: ".targeted.LightningSpell"
         name: lightning
+        spell-icon: gold_sword
         description: Call down lightning.
-        cast-item: 283
+        cast-item: blaze_rod
         cooldown: 15
         range: 20
         additional-damage: 0
@@ -796,31 +900,50 @@ spells:
         target-players: false
         check-plugins: true
         cost:
-            - 331 2
-        str-cost: 2 redstone dust
+            - mana 15
+        str-cost: 15 mana
         str-cast-self: You call down lightning.
         str-cast-others: "%a calls down lightning."
         str-no-target: Unable to find target.
     lightwalk:
         spell-class: ".buff.LightwalkSpell"
         name: lightwalk
+        spell-icon: glowstone
         description: Light your path.
         cast-item: 317
         cost:
-            - 331 3
-            - 50 3
+            - mana 25
+            - torch 3
         use-cost:
-            - 331 1
+            - torch 1
         use-cost-interval: 25
-        str-cost: 3 redstone and 3 torches, plus 1 redstone occasionally
+        str-cost: 25 mana and 3 torches, plus 1 torch occasionally
         str-cast-self: Light appears at your feet.
         str-fade: The light at your feet goes out.
+    lilywalk:
+        spell-class: ".buff.LilywalkSpell"
+        name: lilywalk
+        spell-icon: water_lily
+        description: Lets you walk on water on lily pads.
+        cast-item: book
+        cooldown: 30
+        cost:
+            - mana 40
+            - water_lily 1
+        use-cost:
+            - water_lily 1
+        use-cost-interval: 25
+        str-cost: 40 mana and 1 lilypad, plus 1 lilypad every 50 blocks
+        str-cast-self: You can now walk on water!
+        str-cast-others: "%a can now walk on water!"
+        str-fade: You can no longer walk on water.
     mana:
         spell-class: ".instant.ManaSpell"
         name: lifetap
+        spell-icon: potion:8193
         description: Restores mana at the cost of life.
+        cast-item: bone
         cooldown: 3
-        cast-item: 280
         mana: 25
         cost:
             - health 4
@@ -829,19 +952,23 @@ spells:
     mark:
         spell-class: ".instant.MarkSpell"
         name: mark
+        spell-icon: bed
         description: Marks your location for later recall.
+        cast-item: stick
         cooldown: 43200
         permanent-marks: true
         cost:
-            - 331 5
-            - 265 5
-        str-cost: 5 redstone dust and 5 iron bars
+            - mana 75
+            - redstone 5
+            - iron_ingot 5
+        str-cost: 75 mana, 5 redstone dust and 5 iron bars
         str-cast-self: You have marked your location.
     minion:
         spell-class: ".buff.MinionSpell"
         name: minion
+        spell-icon: monster_egg:54
         description: Summons an undead minion to aid you.
-        cast-item: 280
+        cast-item: bone
         cooldown: 60
         duration: 60
         mob-chances:
@@ -850,46 +977,50 @@ spells:
         prevent-sun-burn: true
         target-players: false
         cost:
-            - 331 2
-            - 352 1
-        str-cost: 2 redstone dust and 1 bone
+            - mana 30
+            - bone 2
+        str-cost: 30 mana and 2 bones
         str-cast-self: You summon an undead minion.
         str-cast-others: "%a has summoned an undead minion."
         str-fade: Your undead minion dies.
     pain:
         spell-class: ".targeted.PainSpell"
         name: pain
+        spell-icon: bone
         description: Cause your enemy pain.
-        cast-item: 283
+        cast-item: blaze_rod
         cooldown: 5
-        damage: 3
+        damage: 4
         range: 15
         ignore-armor: false
         obey-los: true
         target-players: false
         check-plugins: true
         cost:
-            - 331 1
+            - mana 10
             - health 1
-        str-cost: 1 redstone dust and a half heart
+        str-cost: 10 mana and a half heart
         str-no-target: No target found.
     phase:
         spell-class: ".instant.PhaseSpell"
         name: phase
+        spell-icon: diamond
         description: Phase through solid matter.
-        cast-item: 280
+        cast-item: stick
         cooldown: 10
         range: 5
         max-distance: 15
+        allowed-pass-thru-blocks: []
         cost:
-            - 331 2
-        str-cost: 2 redstone dust
+            - mana 15
+        str-cost: 15 mana
         str-cant-phase: Unable to find place to phase to.
     poison:
         spell-class: ".targeted.PotionEffectSpell"
         name: poison
+        spell-icon: spider_eye
         description: Poison your target.
-        cast-item: 280
+        cast-item: blaze_rod
         cooldown: 15
         range: 20
         type: 19
@@ -900,39 +1031,42 @@ spells:
         target-non-players: true
         obey-los: true
         cost:
-            - 331 2
-        str-cost: 2 redstone dust
+            - mana 12
+        str-cost: 12 mana
         str-cast-self: You have poisoned your target!
         str-no-target: No target found.
     prayer:
         spell-class: ".instant.PrayerSpell"
         name: prayer
+        spell-icon: yellow_flower
         description: Heals yourself for five hearts.
-        cast-item: 38
+        cast-item: stick
         cooldown: 15
         amount-healed: 10
         cost:
-            - 331 1
-        str-cost: 1 redstone dust
+            - mana 10
+        str-cost: 10 mana
         str-cast-self: You have healed yourself.
         str-at-full-health: You are already at full health.
     purge:
         spell-class: ".instant.PurgeSpell"
         name: purge
+        spell-icon: potion:16396
         description: Kill all monsters and animals around you.
-        cast-item: 283
+        cast-item: bone
         cooldown: 60
-        range: 15
+        range: 8
         cost:
-            - 331 3
-        str-cost: 3 redstone dust
+            - mana 50
+        str-cost: 50 mana
         str-cast-self: You purge all life around you.
         str-cast-others: "%a purges all nearby life."
     reach:
         spell-class: ".buff.ReachSpell"
         name: reach
+        spell-icon: dispenser
         description: Place and destroy blocks from far away.
-        cast-item: 280
+        cast-item: stick
         cooldown: 120
         duration: 60
         range: 15
@@ -941,50 +1075,52 @@ spells:
         disallowed-break-blocks: [0,7]
         disallowed-place-blocks: [0,7]
         cost:
-            - 331 3
-        str-cost: 3 redstone dust
+            - mana 50
+        str-cost: 50 mana
         str-cast-self: You gain the ability to manipulate the world around you.
         str-fade: You can no longer manipulate the world around you.        
     recall:
         spell-class: ".instant.RecallSpell"
         name: recall
+        spell-icon: compass
         description: Teleports you to your marked location.
+        cast-item: stick
         cooldown: 300
         mark-spell: mark
         max-range: -1
-        cast-time: 0
         allow-cross-world: true
         use-bed-location: false
         cost:
-            - 331 1
-            - 265 1
-        str-cost: 1 redstone dust and 1 iron bar
+            - mana 75
+            - iron_ingot 1
+        str-cost: 75 mana and 1 iron bar
         str-cast-self: You teleport to your marked location.
         str-no-mark: You have not marked a location to recall to.
         str-other-world: You cannot recall to another world.
         str-too-far: Your marked location is too far away.
         str-cast-others: "%a disappears!"
-        str-cast-done: ""
-        str-cast-interrupted: ""
     reflect:
         spell-class: ".buff.ReflectSpell"
         name: reflect
+        spell-icon: thin_glass
         description: Reflect spells cast at you.
         cooldown: 30
-        num-uses: 5
+        num-uses: 3
         cost:
-            - 331 3
+            - mana 30
         use-cost:
-            - 331 1
+            - mana 20
         use-cost-interval: 1
-        str-cost: 3 redstone dust plus 1 redstone per spell reflected
+        str-cost: 30 mana, plus 20 mana per spell reflected
         str-cast-self: You feel a magical barrier surround you.
         str-cast-others: A magical barrier surrounds %a.
         str-fade: Your magical barrier fades.
     repair:
         spell-class: ".instant.RepairSpell"
         name: repair
+        spell-icon: workbench
         description: Repairs your gear.
+        cast-item: book
         cooldown: 120
         repair-amount: 300
         to-repair:
@@ -999,35 +1135,41 @@ spells:
             - 259
             - 346
         cost:
-            - 331 3
-            - 265 1
-        str-cost: 3 redstone dust and 1 iron bar
+            - mana 50
+            - iron_ingot 2
+        str-cost: 50 mana and 2 iron bars
         str-cast-self: You've repaired your gear!
         str-nothing-to-repair: You have nothing to repair.
     roar:
         spell-class: ".instant.RoarSpell"
         name: roar
+        spell-icon: mob_spawner
         description: Forces nearby enemies to attack you.
+        cast-item: book
         cooldown: 15
         range: 8
+        cost:
+            - mana 10
+        str-cost: 10 mana
         str-cast-self: "You roar, causing nearby enemies to attack you."
         str-cast-others: "%a roars loudly!"
     safefall:
         spell-class: ".buff.InvulnerabilitySpell"
         name: safefall
+        spell-icon: feather
         description: Allows you to fall without taking damage.
-        cast-item: 294
+        cast-item: book
         cooldown: 60
         damage-causes:
             - fall
         duration: 300
         num-uses: 5
         cost:
-            - 331 2
+            - mana 20
         use-cost:
             - 288 1
         use-cost-interval: 1
-        str-cost: 2 redstone dust, plus 1 feather each time you fall
+        str-cost: 20 mana, plus 1 feather each time you fall
         str-cast-self: You feel lighter.
         str-fade: Your normal weight returns.
     scroll:
@@ -1042,6 +1184,7 @@ spells:
         left-click-cast: false
         ignore-cast-perm: false
         set-unstackable: true
+        remove-scroll-when-depleted: true
         charge-reagents-for-spell-per-charge: false
         require-teach-perm: true
         require-scroll-cast-perm-on-use: true
@@ -1059,7 +1202,8 @@ spells:
     shadowstep:
         spell-class: ".targeted.ShadowstepSpell"
         name: shadowstep
-        cast-item: 280
+        spell-icon: leather_boots
+        cast-item: stick
         effects:
             - caster spawner
             - target spawner
@@ -1067,76 +1211,99 @@ spells:
         obey-los: true
         range: 15
         cost:
-            - 331 2
-        str-cost: 2 redstone dust
+            - mana 10
+        str-cost: 10 mana
         str-no-target: No target.
         str-no-landing-spot: Cannot shadowstep there.
     silence:
         spell-class: ".targeted.SilenceSpell"
         name: silence
+        spell-icon: raw_fish
         description: Prevent a player from casting spells for a time.
-        cast-item: 280
+        cast-item: blaze_rod
         range: 10
+        prevent-cast: true
+        prevent-chat: false
+        prevent-commands: false
         duration: 200
+        allowed-spells:
+            - list
+            - help
         cost:
-            - 331 2
-        str-cost: 2 redstone dust
+            - mana 15
+        str-cost: 15 mana
         str-cast-self: You have silenced %t.
         str-cast-target: "%a has silenced you."
         str-silenced: You are silenced.
+    spellhaste:
+        spell-class: ".buff.SpellHasteSpell"
+        name: spellhaste
+        spell-icon: ink_sack:4
+        description: Reduces the cast time and cooldown of your spells.
+        cast-item: book
+        cooldown: 60
+        duration: 15
+        cast-time-mod-amt: -50
+        cooldown-mod-amt: -50
+        cost:
+            - mana 25
+        str-cost: 25 mana
+        str-cast-self: Your mind quickens, allowing you to cast faster!
+        str-fade: Your mind slows again.
     stealth:
         spell-class: ".buff.StealthSpell"
         name: stealth
+        spell-icon: leather_boots
         description: Become invisible to monsters.
-        cast-item: 280
+        cast-item: bone
         cooldown: 60
         duration: 20
         cost:
-            - 331 3
-        str-cost: 3 redstone dust
+            - mana 15
+        str-cost: 15 mana
         str-cast-self: You become invisble to monsters.
         str-fade: You are no longer invisible to monsters.
     stonevision:
         spell-class: ".buff.StonevisionSpell"
         name: stonevision
+        spell-icon: stone
         description: See through stone.
-        cast-item: 317
+        cast-item: book
         range: 4
         transparent-type: 1
         unobfuscate: false
         cooldown: 60
         duration: 30
         cost: 
-            - 331 4
-            - 1 2
-            - 20 2
-        str-cost: 4 redstone dust, 2 stone and 2 glass
+            - mana 50
+            - stone 2
+            - glass 2
+        str-cost: 50 mana, 2 stone, and 2 glass
         str-cast-self: You can see through stone!
         str-fade: You can no longer see through stone.
     storm:
         spell-class: ".targeted.AreaEffectSpell"
         name: storm
+        spell-icon: gold_sword
         description: Strike lightning upon all nearby enemies.
-        cast-item: 280
+        cast-item: bone
         horizontal-radius: 10
         vertical-radius: 5
         point-blank: true
         fail-if-no-targets: true
+        target-players: false
+        target-non-players: true
         spells:
             - lightning
         cooldown: 15
         cost:
-            - 331 5
-        str-cost: 5 redstone dust
+            - mana 35
+        str-cost: 35 mana
         str-cast-self: You call down a lightning storm!
-    summon:
-        spell-class: ".channeled.SummonSpell"
-        name: summon
-        description: Summon another player to your position.
-        channel-time: 30
-        req-participants: 3
-        req-percent: 0
-        max-distance: 10
+    summon_helper:
+        spell-class: ".targeted.SummonSpell"
+        can-cast-with-item: false
+        can-cast-by-command: false
         require-exact-name: false
         require-acceptance: true
         max-accept-delay: 90
@@ -1145,41 +1312,65 @@ spells:
             Usage: /cast summon <playername>, or /cast summon 
             while looking at a sign with a player name on the first line.
         str-no-target: Target player not found.
-        str-too-far-away: You are too far away from the summoning ritual.
-        str-start-channel: You begin to channel a summoning spell.
-        str-moved: You have stopped channeling.
-        str-spell-success: You have successfully summoned %k.
         str-summon-pending: You are being summoned! Type /accept to teleport.
         str-summon-accepted: You have been summoned.
         str-summon-expired: The summon has expired.
+    summon:
+        spell-class: ".instant.RitualSpell"
+        name: summon
+        spell-icon: portal
+        description: Summon another player to your position. This ritual requires 3 participants.
+        cast-item: stick
+        cooldown: 300
+        ritual-duration: 200
+        req-participants: 3
+        charge-reagents-immediately: true
+        set-cooldown-immediately: true
+        set-cooldown-for-all: true
+        spell: summon_helper
+        tick-interval: 5
+        effect-interval: 20
+        cost:
+            - mana 75
+            - redstone 3
+            - iron_ingot 3
+        str-cost: 75 mana, 3 redstone, and 3 iron bars
+        str-cast-self: You begin a summoning ritual.
+        str-cast-others: "%a has begun a summoning ritual. Right-click to participate."
+        str-ritual-joined: You have joined the summoning ritual.
+        str-ritual-success: The summoning ritual is a success!
+        str-ritual-interrupted: The summoning ritual has been interrupted.
+        str-ritual-fail: The summoning ritual has failed.
     sun:
-        spell-class: ".channeled.SunSpell"
+        spell-class: ".instant.TimeSpell"
         name: sun
+        spell-icon: watch
         description: Changes the time to morning.
-        channel-time: 30
-        req-participants: 2
-        req-percent: 35
-        max-distance: 20
+        cast-item: book
+        cooldown: 1800
+        cost:
+            - mana 75
+            - redstone 8
+            - clock 1
+        str-cost: 75 mana, 5 redstone dust and a clock
         time-to-set: 0
-        str-too-far-away: You are too far away from the ritual.
-        str-start-channel: You begin to channel the sun spell.
-        str-moved: You have stopped channeling.
-        str-spell-success: You have successfully called the sun.
-        str-announce: The sun has suddenly appeared in the sky!        
+        str-announce: The sun has suddenly appeared in the sky!
     telekinesis:
         spell-class: ".targeted.TelekinesisSpell"
         name: telekinesis
+        spell-icon: lever
         description: Manipulate switches and buttons remotely.
-        cast-item: 280
+        cast-item: stick
         cooldown: 15
         range: 20
         cost:
-            - 331 1
-        str-cost: 1 redstone dust
+            - mana 5
+        str-cost: 5 mana
         str-no-target: You must target a switch or button.
     tome:
         spell-class: ".command.TomeSpell"
         name: tome
+        spell-icon: book
         enabled: false
         description: Create a tome that teaches a spell.
         cancel-read-on-learn: true
@@ -1200,106 +1391,119 @@ spells:
     tree:
         spell-class: ".targeted.TreeSpell"
         name: tree
+        spell-icon: sapling
         range: 15
         cooldown: 5
         tree-type: tree
         animation-speed: 20
         cost:
-            - 6 1
-        str-cost: 1 sapling
+            - mana 10
+            - sapling 1
+        str-cost: 10 mana and 1 sapling
         str-no-target: You cannot grow a tree there.
     volley:
         spell-class: ".targeted.VolleySpell"
         name: volley
+        spell-icon: bow
         description: Send a volley of arrows at your targeted location.
-        cast-item: 283
+        cast-item: blaze_rod
         cooldown: 45
         range: 30
         arrows: 10
         speed: 20
         spread: 150
+        shoot-interval: 0
         cost:
-            - 331 3
-            - 262 2
-        str-cost: 3 redstone dust and 2 arrows
+            - mana 20
+            - arrow 2
+        str-cost: 20 mana and 2 arrows
         str-cast-self: You fire a volley of magic arrows.
         str-cast-others: "%a fires a volley of arrows."
         str-no-target: No target found.
     walkway:
         spell-class: ".buff.WalkwaySpell"
         name: walkway
+        spell-icon: wood_stairs
         description: Summon a moving magical walkway to take you places.
-        cast-item: 280
+        cast-item: book
         cooldown: 60
         platform-type: 5
         size: 6
         cancel-on-logout: true
         cancel-on-teleport: true
         cost:
-            - 331 4
+            - mana 50
+            - wood 1
         use-cost:
-            - 331 1
-        use-cost-interval: 25
-        str-cost: 4 redstone, plus 1 redstone every 25 blocks
+            - mana 15
+            - wood 1 
+        use-cost-interval: 15
+        str-cost: 50 mana, plus 15 mana and 1 wood every 15 blocks
         str-cast-self: You summon a magical walkway.
         str-fade: Your magical walkway disappears.
     wall:
         spell-class: ".instant.WallSpell"
         name: wall
+        spell-icon: brick
         description: Creates a temporary wall to block your enemies.
-        cast-item: 280
+        cast-item: stick
         cooldown: 15
         range: 3
         wall-width: 5
         wall-height: 3
-        wall-type: 45
+        wall-type: brick
         wall-duration: 15
         cost:
-            - 331 2
-            - 1 2
-        str-cost: 2 redstone dust and 2 stone
+            - mana 12
+            - stone 2
+        str-cost: 12 mana and 2 stone
         str-no-target: Unable to create a wall.
     water:
         spell-class: ".targeted.MaterializeSpell"
         name: water
+        spell-icon: water_bucket
         description: Summons a water spring into existence.
-        cast-item: 280
+        cast-item: stick
         cooldown: 120
         range: 8
-        block-type: 8
+        block-type: water
+        reset-delay: 200
         apply-physics: true
         check-plugins: true
         cost:
-            - 331 2
-        str-cost: 2 redstone dust
+            - mana 10
+        str-cost: 10 mana
         str-no-target: No target.
         str-failed: ""
     windwalk:
         spell-class: ".buff.WindwalkSpell"
         name: windwalk
+        spell-icon: feather
         enabled: true
         description: Fly through the air.
-        cast-item: 280
+        cast-item: book
         launch-speed: 1
         cancel-on-land: false
         cancel-on-logout: true
         cancel-on-teleport: true
+        cancel-on-damage: false
         duration: 120
         cost:
-            - 331 3
-            - 288 1
+            - mana 25
+            - feather 2
         use-cost:
-            - 288 1
+            - feather 1
         use-cost-interval: 15
-        str-cost: 3 redstone, 2 feathers, plus 1 feather every 15 seconds
+        str-cost: 25 mana, 2 feathers, plus 1 feather every 15 seconds
         str-cast-self: You can now walk on the wind!
         str-cast-others: "%a is now walking on the wind!"
         str-fade: You are no longer walking on the wind.
     zap:
         spell-class: ".targeted.ZapSpell"
         name: zap
+        spell-icon: gold_pickaxe
         description: Instantly destroys a block.
-        cast-item: 294
+        cast-item: stick
         cooldown: 1
         allowed-block-types: ""
         disallowed-block-types: 0,7
@@ -1310,14 +1514,15 @@ spells:
         check-plugins: true
         range: 15
         cost:
-            - 331 1
-        str-cost: 1 redstone dust
+            - mana 5
+        str-cost: 5 mana
         str-cast-self: You zapped a block.
         str-cant-zap: You can't zap that.
         
     gianttree:
         spell-class: ".ExternalCommandSpell"
         name: gianttree
+        spell-icon: sapling:3
         enabled: false
         description: Create a giant tree!
         cooldown: 300
@@ -1334,17 +1539,19 @@ spells:
         obey-los: true
         range: 20
         cost:
-            - 331 10
-            - 6 5
-        str-cost: 10 redstone dust and 5 saplings
+            - mana 50
+            - sapling 5
+        str-cost: 50 mana and 5 saplings
         str-cast-self: You grow a tree!
         str-cant-use-command: "&4You don't have permission to do that."
         
     torcharrow:
         spell-class: ".PermissionSpell"
         name: torcharrow
+        spell-icon: torch
         enabled: false
-        description: Shoot a torch arrow.
+        description: Shoot torch arrows.
+        cast-item: book
         cooldown: 10
         can-cast-by-command: true
         can-cast-with-item: true
@@ -1352,19 +1559,21 @@ spells:
             - "torcharrow.tArrow"
         duration: 600
         cost:
-            - 331 2
-            - 50 1
-        str-cost: 2 redstone dust and 1 torch
+            - mana 25
+            - torch 3
+        str-cost: 25 mana and 3 torches
         str-cast-self: You can now fire torch arrows.
         
     zeus:
         spell-class: ".MultiSpell"
         name: zeus
+        spell-icon: gold_axe
         cooldown: 30
+        cast-item: blaze_rod
         check-individual-cooldowns: false
         cost:
-            - 331 5
-        str-cost: 5 redstone dust
+            - mana 30
+        str-cost: 30 mana
         spells:
             - lightning
             - DELAY 5

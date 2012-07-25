@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 
 import com.nisovin.magicspells.MagicSpells;
@@ -26,7 +27,7 @@ public class ListSpell extends CommandSpell {
 		super(config, spellName);
 		
 		onlyShowCastableSpells = getConfigBoolean("only-show-castable-spells", false);
-		reloadGrantedSpells = getConfigBoolean("reload-granted-spells", false);
+		reloadGrantedSpells = getConfigBoolean("reload-granted-spells", true);
 		spellsToHide = getConfigStringList("spells-to-hide", null);
 		strNoSpells = getConfigString("str-no-spells", "You do not know any spells.");
 		strPrefix = getConfigString("str-prefix", "Known spells:");
@@ -75,6 +76,16 @@ public class ListSpell extends CommandSpell {
 		return PostCastAction.HANDLE_NORMALLY;
 	}
 	
+	@Override
+	public String[] tabComplete(CommandSender sender, String partial) {
+		if (sender instanceof ConsoleCommandSender) {
+			if (!partial.contains(" ")) {
+				return tabCompletePlayerName(sender, partial);
+			}
+		}
+		return null;
+	}
+
 	@Override
 	public boolean castFromConsole(CommandSender sender, String[] args) {
 		StringBuilder s = new StringBuilder();

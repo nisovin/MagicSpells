@@ -8,6 +8,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
@@ -43,11 +44,11 @@ public class PurgeSpell extends InstantSpell {
 				if (entity instanceof LivingEntity && !(entity instanceof Player) && (entityTypes == null || entityTypes.contains(entity.getType()))) {
 					((LivingEntity)entity).setHealth(0);
 					killed = true;
-					playGraphicalEffects(2, entity);
+					playSpellEffects(EffectPosition.TARGET, entity);
 				}
 			}
 			if (killed) {
-				playGraphicalEffects(1, player);
+				playSpellEffects(EffectPosition.CASTER, player);
 			} else {
 				return PostCastAction.ALREADY_HANDLED;
 			}

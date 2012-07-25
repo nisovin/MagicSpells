@@ -4,11 +4,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.util.Vector;
@@ -21,7 +23,6 @@ public class WindwalkSpell extends BuffSpell {
 
 	private int launchSpeed;
     private boolean cancelOnLand;
-	private boolean cancelOnLogout;
 	private boolean cancelOnTeleport;
 	
 	private HashSet<Player> flyers;
@@ -32,12 +33,26 @@ public class WindwalkSpell extends BuffSpell {
 
 		launchSpeed = getConfigInt("launch-speed", 1);
         cancelOnLand = getConfigBoolean("cancel-on-land", true);
-		cancelOnLogout = getConfigBoolean("cancel-on-logout", true);
 		cancelOnTeleport = getConfigBoolean("cancel-on-teleport", true);
 		
 		flyers = new HashSet<Player>();
 		if (useCostInterval > 0) {
 			tasks = new HashMap<Player, Integer>();
+		}
+	}
+	
+	@Override
+	public void initialize() {
+		super.initialize();
+		
+		if (cancelOnLand) {
+			registerEvents(new SneakListener());
+		}
+		if (cancelOnLogout) {
+			registerEvents(new QuitListener());
+		}
+		if (cancelOnTeleport) {
+			registerEvents(new TeleportListener());
 		}
 	}
 
@@ -54,16 +69,8 @@ public class WindwalkSpell extends BuffSpell {
 			if (launchSpeed > 0) {
 				player.setVelocity(new Vector(0,launchSpeed,0));
 			}
-			// set duration limit
-			if (duration > 0) {
-				Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new Runnable() {
-					public void run() {
-						turnOff(player);
-					}
-				}, duration*20);
-			}
 			// set cost interval
-			if (useCostInterval > 0) {
+			if (useCostInterval > 0 || numUses > 0) {
 				int taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(MagicSpells.plugin, new Runnable() {
 					public void run() {
 						addUseAndChargeCost(player);
@@ -71,31 +78,35 @@ public class WindwalkSpell extends BuffSpell {
 				}, useCostInterval*20, useCostInterval*20);
 				tasks.put(player, taskId);
 			}
+			startSpellDuration(player);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}
     
-    @EventHandler(priority=EventPriority.MONITOR)
-    public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
-        if (cancelOnLand && flyers.contains(event.getPlayer())) {
-            if (event.getPlayer().getLocation().subtract(0,1,0).getBlock().getType() != Material.AIR) {
-                turnOff(event.getPlayer());
-            }
-        }
-    }
-
-	@EventHandler(priority=EventPriority.MONITOR)
-	public void onPlayerQuit(PlayerQuitEvent event) {
-		if (cancelOnLogout) {
-			turnOff(event.getPlayer());
-		}
+	public class SneakListener implements Listener {
+	    @EventHandler(priority=EventPriority.MONITOR)
+	    public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
+	        if (flyers.contains(event.getPlayer())) {
+	            if (event.getPlayer().getLocation().subtract(0,1,0).getBlock().getType() != Material.AIR) {
+	                turnOff(event.getPlayer());
+	            }
+	        }
+	    }
 	}
 
-	@EventHandler(priority=EventPriority.MONITOR)
-	public void onPlayerTeleport(PlayerTeleportEvent event) {
-		if (event.isCancelled()) return;
-		if (cancelOnTeleport && flyers.contains(event.getPlayer())) {
-			if (!event.getFrom().getWorld().getName().equals(event.getTo().getWorld().getName()) || event.getFrom().toVector().distanceSquared(event.getTo().toVector()) > 50*50) {
+	public class TeleportListener implements Listener {
+		@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
+		public void onPlayerTeleport(PlayerTeleportEvent event) {
+			if (flyers.contains(event.getPlayer())) {
+				if (!event.getFrom().getWorld().getName().equals(event.getTo().getWorld().getName()) || event.getFrom().toVector().distanceSquared(event.getTo().toVector()) > 50*50) {
+					turnOff(event.getPlayer());
+				}
+			}
+		}
+		
+		@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
+		public void onPlayerPortal(PlayerPortalEvent event) {
+			if (flyers.contains(event.getPlayer())) {
 				turnOff(event.getPlayer());
 			}
 		}
@@ -103,10 +114,13 @@ public class WindwalkSpell extends BuffSpell {
 
 	@Override
 	public void turnOff(final Player player) {
-		super.turnOff(player);
 		if (flyers.contains(player)) {
+			super.turnOff(player);
 			player.setFlying(false);
-			player.setAllowFlight(false);
+			if (player.getGameMode() != GameMode.CREATIVE) {
+				player.setAllowFlight(false);
+			}
+			player.setFallDistance(0);
 			flyers.remove(player);
 			sendMessage(player, strFade);
 		}
@@ -123,6 +137,11 @@ public class WindwalkSpell extends BuffSpell {
 			turnOff(player);
 		}
 		this.flyers.clear();
+	}
+
+	@Override
+	public boolean isActive(Player player) {
+		return flyers.contains(player);
 	}
 
 }

@@ -145,6 +145,11 @@ public class LifewalkSpell extends BuffSpell {
 		}
 	}
 
+	@Override
+	public boolean isActive(Player player) {
+		return lifewalkers.contains(player.getName());
+	}
+
 
 
 }

@@ -56,20 +56,17 @@ public class GeyserSpell extends TargetedEntitySpell {
 			LivingEntity target = getTargetedEntity(player, range, targetPlayers, obeyLos);
 			if (target == null) {
 				// fail -- no target
-				sendMessage(player, strNoTarget);
-				fizzle(player);
-				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				return noTarget(player);
 			}
 			
 			int dam = Math.round(damage*power);
 			
 			// check plugins
 			if (target instanceof Player && checkPlugins) {
-				EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, target, DamageCause.CUSTOM, dam);
+				EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, target, DamageCause.ENTITY_ATTACK, dam);
 				Bukkit.getServer().getPluginManager().callEvent(event);
 				if (event.isCancelled()) {
-					sendMessage(player, strNoTarget);
-					return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+					return noTarget(player);
 				}
 				dam = event.getDamage();
 			}
@@ -88,7 +85,7 @@ public class GeyserSpell extends TargetedEntitySpell {
 			
 			// do geyser action + animation
 			geyser(target, power);
-			playGraphicalEffects(player, target);
+			playSpellEffects(player, target);
 			
 			sendMessages(player, target);
 			return PostCastAction.NO_MESSAGES;
@@ -121,7 +118,7 @@ public class GeyserSpell extends TargetedEntitySpell {
 			return false;
 		} else {
 			geyser(target, power);
-			playGraphicalEffects(caster, target);
+			playSpellEffects(caster, target);
 			return true;
 		}
 	}

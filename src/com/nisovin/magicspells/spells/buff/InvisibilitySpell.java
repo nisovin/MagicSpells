@@ -8,14 +8,14 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.events.SpellCastEvent;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.BuffSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
@@ -23,24 +23,35 @@ public class InvisibilitySpell extends BuffSpell {
 
 	private boolean toggle;
 	private boolean preventPickups;
-	private boolean cancelOnAttack;
+	private boolean cancelOnSpellCast;
 	
-	private HashMap<Player,CostCharger> invisibles = new HashMap<Player, InvisibilitySpell.CostCharger>();
+	private HashMap<String,CostCharger> invisibles = new HashMap<String, InvisibilitySpell.CostCharger>();
 	
 	public InvisibilitySpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
 		toggle = getConfigBoolean("toggle", true);
 		preventPickups = getConfigBoolean("prevent-pickups", true);
-		cancelOnAttack = getConfigBoolean("cancel-on-attack", true);
+		cancelOnSpellCast = getConfigBoolean("cancel-on-spell-cast", false);
+	}
+	
+	@Override
+	public void initialize() {
+		super.initialize();
+		if (cancelOnSpellCast) {
+			registerEvents(new SpellCastListener());
+		}
 	}
 
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
-		if (toggle && invisibles.containsKey(player)) {
+		if (invisibles.containsKey(player.getName())) {
 			turnOff(player);
-			return PostCastAction.ALREADY_HANDLED;
-		} else if (state == SpellCastState.NORMAL) {
+			if (toggle) {
+				return PostCastAction.ALREADY_HANDLED;
+			}
+		}
+		if (state == SpellCastState.NORMAL) {
 			// make player invisible
 			for (Player p : Bukkit.getOnlinePlayers()) {
 				p.hidePlayer(player);
@@ -57,16 +68,16 @@ public class InvisibilitySpell extends BuffSpell {
 			}
 			// start buff stuff
 			startSpellDuration(player);
-			invisibles.put(player, new CostCharger(player));
+			invisibles.put(player.getName(), new CostCharger(player));
 			// spell effect
-			playGraphicalEffects(1, player);
+			playSpellEffects(EffectPosition.CASTER, player);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}
 	
 	@EventHandler
 	public void onPlayerItemPickup(PlayerPickupItemEvent event) {
-		if (preventPickups && invisibles.containsKey(event.getPlayer())) {
+		if (preventPickups && invisibles.containsKey(event.getPlayer().getName())) {
 			event.setCancelled(true);
 		}
 	}
@@ -74,47 +85,41 @@ public class InvisibilitySpell extends BuffSpell {
 	@EventHandler
 	public void onEntityTarget(EntityTargetEvent event) {
 		if (!event.isCancelled() && event.getTarget() instanceof Player) {
-			if (invisibles.containsKey((Player)event.getTarget())) {
+			if (invisibles.containsKey(((Player)event.getTarget()).getName())) {
 				event.setCancelled(true);
 			}
 		}
 	}
 	
 	@EventHandler(priority=EventPriority.MONITOR)
-	public void onEntityDamage(EntityDamageEvent event) {
-		if (event.isCancelled() || !cancelOnAttack || !(event instanceof EntityDamageByEntityEvent)) return;
-		EntityDamageByEntityEvent evt = (EntityDamageByEntityEvent)event;
-		if (evt.getDamager() instanceof Player && invisibles.containsKey((Player)evt.getDamager())) {
-			turnOff((Player)evt.getDamager());
-		}
-	}
-	
-	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPlayerJoin(PlayerJoinEvent event) {
 		Player player = event.getPlayer();
-		for (Player p : invisibles.keySet()) {
-			player.hidePlayer(p);
+		for (String name : invisibles.keySet()) {
+			Player p = Bukkit.getPlayerExact(name);
+			if (p != null && !name.equals(player.getName())) {
+				player.hidePlayer(p);
+			}
 		}
-	}
-	
-	@EventHandler(priority=EventPriority.MONITOR)
-	public void onPlayerQuit(PlayerQuitEvent event) {
-		turnOff(event.getPlayer());
+		if (invisibles.containsKey(player.getName())) {
+			for (Player p : Bukkit.getOnlinePlayers()) {
+				p.hidePlayer(player);
+			}
+		}
 	}
 	
 	@Override
 	public void turnOff(Player player) {
-		if (invisibles.containsKey(player)) {
+		if (invisibles.containsKey(player.getName())) {
 			super.turnOff(player);
 			// stop charge ticker
-			CostCharger c = invisibles.remove(player);
+			CostCharger c = invisibles.remove(player.getName());
 			c.stop();
 			// force visible
 			for (Player p : Bukkit.getOnlinePlayers()) {
 				p.showPlayer(player);
 			}
 			// spell effect
-			playGraphicalEffects(4, player);
+			playSpellEffects(EffectPosition.DISABLED, player);
 			sendMessage(player, strFade);
 		}
 	}
@@ -125,6 +130,15 @@ public class InvisibilitySpell extends BuffSpell {
 			c.stop();
 		}
 		invisibles.clear();
+	}
+	
+	public class SpellCastListener implements Listener {
+		@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
+		public void onSpellCast(SpellCastEvent event) {
+			if (isActive(event.getCaster()) && !event.getSpell().getInternalName().equals(internalName)) {
+				turnOff(event.getCaster());
+			}
+		}
 	}
 	
 	private class CostCharger implements Runnable {
@@ -147,6 +161,11 @@ public class InvisibilitySpell extends BuffSpell {
 				Bukkit.getScheduler().cancelTask(taskId);
 			}
 		}
+	}
+
+	@Override
+	public boolean isActive(Player player) {
+		return invisibles.containsKey(player.getName());
 	}
 
 }

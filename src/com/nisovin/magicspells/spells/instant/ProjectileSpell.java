@@ -34,11 +34,13 @@ import org.bukkit.util.Vector;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.events.SpellTargetEvent;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.Util;
 
 public class ProjectileSpell extends InstantSpell {
 
@@ -54,6 +56,7 @@ public class ProjectileSpell extends InstantSpell {
 	private int aoeRadius;
 	private boolean targetPlayers;
 	private boolean allowTargetChange;
+	private boolean beneficial;
 	private String strHitCaster;
 	private String strHitTarget;
 	
@@ -74,14 +77,12 @@ public class ProjectileSpell extends InstantSpell {
 			projectileClass = EnderPearl.class;
 		} else if (projectileType.equalsIgnoreCase("potion")) {
 			projectileClass = ThrownPotion.class;
-		} else if (projectileType.matches("[0-9]+(:[0-9]+)?")) {
-			String[] s = projectileType.split(":");
-			int type = Integer.parseInt(s[0]);
-			short data = 0;
-			if (s.length > 1) {
-				data = Short.parseShort(s[1]);
+		} else {
+			ItemStack item = Util.getItemStackFromString(projectileType);
+			if (item != null) {
+				item.setAmount(0);
+				projectileItem = item;
 			}
-			projectileItem = new ItemStack(type, 0, data);
 		}
 		if (projectileClass == null && projectileItem == null) {
 			MagicSpells.error("Invalid projectile type on spell '" + internalName + "'");
@@ -96,6 +97,7 @@ public class ProjectileSpell extends InstantSpell {
 		aoeRadius = getConfigInt("aoe-radius", 0);
 		targetPlayers = getConfigBoolean("target-players", false);
 		allowTargetChange = getConfigBoolean("allow-target-change", true);
+		beneficial = getConfigBoolean("beneficial", false);
 		strHitCaster = getConfigString("str-hit-caster", "");
 		strHitTarget = getConfigString("str-hit-target", "");
 		
@@ -132,6 +134,7 @@ public class ProjectileSpell extends InstantSpell {
 			} else if (projectileClass == ThrownPotion.class) {
 				registerEvents(new PotionListener());
 			}
+			registerEvents(new ProjectileListener());
 		} else if (projectileItem != null) {
 			registerEvents(new PickupListener());
 		}
@@ -146,13 +149,13 @@ public class ProjectileSpell extends InstantSpell {
 					projectile.setVelocity(player.getLocation().getDirection().multiply(velocity));
 				}
 				projectiles.put(projectile, new ProjectileInfo(player, power));
-				playGraphicalEffects(1, projectile);
+				playSpellEffects(EffectPosition.CASTER, projectile);
 			} else if (projectileItem != null) {
 				Item item = player.getWorld().dropItem(player.getEyeLocation(), projectileItem.clone());
 				item.setVelocity(player.getLocation().getDirection().multiply(velocity > 0 ? velocity : 1));
 				item.setPickupDelay(10);
 				itemProjectiles.put(item, new ProjectileInfo(player, power, new ItemProjectileMonitor(item)));
-				playGraphicalEffects(1, item);
+				playSpellEffects(EffectPosition.CASTER, item);
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
@@ -178,10 +181,10 @@ public class ProjectileSpell extends InstantSpell {
 				for (TargetedSpell spell : spells) {
 					if (spell instanceof TargetedEntitySpell) {
 						((TargetedEntitySpell)spell).castAtEntity(info.player, target, info.power);
-						playGraphicalEffects(2, target);
+						playSpellEffects(EffectPosition.TARGET, target);
 					} else if (spell instanceof TargetedLocationSpell) {
 						((TargetedLocationSpell)spell).castAtLocation(info.player, target.getLocation(), info.power);
-						playGraphicalEffects(2, target.getLocation());
+						playSpellEffects(EffectPosition.TARGET, target.getLocation());
 					}
 				}
 				
@@ -216,7 +219,7 @@ public class ProjectileSpell extends InstantSpell {
 				for (TargetedSpell spell : spells) {
 					if (spell instanceof TargetedLocationSpell) {
 						((TargetedLocationSpell)spell).castAtLocation(info.player, projectile.getLocation(), info.power);
-						playGraphicalEffects(2, projectile.getLocation());
+						playSpellEffects(EffectPosition.TARGET, projectile.getLocation());
 					}
 				}
 				sendMessage(info.player, strHitCaster);
@@ -227,48 +230,9 @@ public class ProjectileSpell extends InstantSpell {
 		}
 		return true;
 	}
-	
-	@EventHandler(priority=EventPriority.HIGHEST)
-	public void onEntityDamage(EntityDamageByEntityEvent event) {
-		if (!(event.getDamager() instanceof Projectile)) return;
 		
-		Projectile projectile = (Projectile)event.getDamager();
-		ProjectileInfo info = projectiles.get(projectile);
-		if (info == null || event.isCancelled()) return;
-		
-		if (!(event.getEntity() instanceof LivingEntity)) {
-			return;
-		}
-		
-		boolean ok = projectileHitEntity(projectile, (LivingEntity)event.getEntity(), info);		
-		
-		if (ok && cancelDamage) {
-			event.setCancelled(true);
-		}
-	}
-	
-	@EventHandler
-	public void onProjectileHit(ProjectileHitEvent event) {
-		final Projectile projectile = (Projectile)event.getEntity();
-		ProjectileInfo info = projectiles.get(projectile);
-		if (info != null) {
-			projectileHitLocation(projectile, info);
-			
-			// remove it from world
-			if (removeProjectile) {
-				projectile.remove();
-			}
-			// remove it at end of tick
-			Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new Runnable() {
-				public void run() {
-					projectiles.remove(projectile);
-				}
-			}, 0);
-		}
-	}
-	
 	private void aoe(Entity projectile, ProjectileInfo info) {
-		playGraphicalEffects(4, projectile.getLocation());
+		playSpellEffects(EffectPosition.SPECIAL, projectile.getLocation());
 		List<Entity> entities = projectile.getNearbyEntities(aoeRadius, aoeRadius, aoeRadius);
 		for (Entity entity : entities) {
 			if (entity instanceof LivingEntity && (targetPlayers || !(entity instanceof Player)) && !entity.equals(info.player)) {
@@ -287,10 +251,10 @@ public class ProjectileSpell extends InstantSpell {
 				for (TargetedSpell spell : spells) {
 					if (spell instanceof TargetedEntitySpell) {
 						((TargetedEntitySpell)spell).castAtEntity(info.player, target, info.power);
-						playGraphicalEffects(2, target);
+						playSpellEffects(EffectPosition.TARGET, target);
 					} else if (spell instanceof TargetedLocationSpell) {
 						((TargetedLocationSpell)spell).castAtLocation(info.player, target.getLocation(), info.power);
-						playGraphicalEffects(2, target.getLocation());
+						playSpellEffects(EffectPosition.TARGET, target.getLocation());
 					}
 				}
 				
@@ -301,6 +265,48 @@ public class ProjectileSpell extends InstantSpell {
 			}
 		}
 		sendMessage(info.player, strHitCaster);
+	}
+	
+	public class ProjectileListener implements Listener {
+		
+		@EventHandler(priority=EventPriority.HIGHEST)
+		public void onEntityDamage(EntityDamageByEntityEvent event) {
+			if (!(event.getDamager() instanceof Projectile)) return;
+			
+			Projectile projectile = (Projectile)event.getDamager();
+			ProjectileInfo info = projectiles.get(projectile);
+			if (info == null || event.isCancelled()) return;
+			
+			if (!(event.getEntity() instanceof LivingEntity)) {
+				return;
+			}
+			
+			projectileHitEntity(projectile, (LivingEntity)event.getEntity(), info);		
+			
+			if (cancelDamage) {
+				event.setCancelled(true);
+			}
+		}
+		
+		@EventHandler
+		public void onProjectileHit(ProjectileHitEvent event) {
+			final Projectile projectile = (Projectile)event.getEntity();
+			ProjectileInfo info = projectiles.get(projectile);
+			if (info != null) {
+				projectileHitLocation(projectile, info);
+				
+				// remove it from world
+				if (removeProjectile) {
+					projectile.remove();
+				}
+				// remove it at end of tick
+				Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new Runnable() {
+					public void run() {
+						projectiles.remove(projectile);
+					}
+				}, 0);
+			}
+		}
 	}
 	
 	public class EnderTpListener implements Listener {
@@ -360,6 +366,11 @@ public class ProjectileSpell extends InstantSpell {
 				Math.abs(loc1.getX() - loc2.getX()) < 0.1
 				&& Math.abs(loc1.getY() - loc2.getY()) < 0.1
 				&& Math.abs(loc1.getZ() - loc2.getZ()) < 0.1;
+	}
+	
+	@Override
+	public boolean isBeneficial() {
+		return beneficial;
 	}
 	
 	private class ProjectileInfo {

@@ -189,6 +189,11 @@ public class KeybindSpell extends CommandSpell {
 		return false;
 	}
 	
+	@Override
+	public String[] tabComplete(CommandSender sender, String partial) {
+		return null;
+	}
+	
 	protected void sendFakeSlotUpdate(Player player, int slot, ItemStack item) {
 		MagicSpells.getVolatileCodeHandler().sendFakeSlotUpdate(player, slot, item);
 	}

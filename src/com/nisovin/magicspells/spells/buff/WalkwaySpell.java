@@ -10,9 +10,10 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.util.Vector;
 
@@ -23,23 +24,29 @@ public class WalkwaySpell extends BuffSpell {
 
 	private Material material;
 	private int size;
-	private boolean cancelOnLogout;
 	private boolean cancelOnTeleport;
 	
 	private HashMap<Player,Platform> platforms;
+	private WalkwayListener listener;
 	
 	public WalkwaySpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
 		material = Material.getMaterial(getConfigInt("platform-type", Material.WOOD.getId()));
 		size = getConfigInt("size", 6);
-		cancelOnLogout = getConfigBoolean("cancel-on-logout", true);
 		cancelOnTeleport = getConfigBoolean("cancel-on-teleport", true);
 		
 		platforms = new HashMap<Player,Platform>();
 		
 	}
 
+	public void initialize() {
+		super.initialize();
+		if (cancelOnTeleport) {
+			registerEvents(new TeleportListener());
+		}
+	}
+	
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (platforms.containsKey(player)) {
@@ -48,45 +55,63 @@ public class WalkwaySpell extends BuffSpell {
 		} else if (state == SpellCastState.NORMAL) {
 			platforms.put(player, new Platform(player, material, size));
 			startSpellDuration(player);
+			registerListener();
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}
 	
-	@EventHandler(priority=EventPriority.MONITOR)
-	public void onPlayerMove(PlayerMoveEvent event) {
-		Platform carpet = platforms.get(event.getPlayer());
-		if (carpet != null) {
-			boolean moved = carpet.move();
-			if (moved) {
-				addUseAndChargeCost(event.getPlayer());
+	private void registerListener() {
+		if (listener == null) {
+			listener = new WalkwayListener();
+			registerEvents(listener);
+		}
+	}
+	
+	private void unregisterListener() {
+		if (listener != null && platforms.size() == 0) {
+			unregisterEvents(listener);
+			listener = null;
+		}
+	}
+	
+	public class WalkwayListener implements Listener {
+	
+		@EventHandler(priority=EventPriority.MONITOR)
+		public void onPlayerMove(PlayerMoveEvent event) {
+			Platform carpet = platforms.get(event.getPlayer());
+			if (carpet != null) {
+				boolean moved = carpet.move();
+				if (moved) {
+					addUseAndChargeCost(event.getPlayer());
+				}
 			}
 		}
-	}
-
-	@EventHandler(priority=EventPriority.MONITOR)
-	public void onPlayerQuit(PlayerQuitEvent event) {
-		if (cancelOnLogout) {
-			turnOff(event.getPlayer());
+	
+		@EventHandler(ignoreCancelled=true)
+		public void onBlockBreak(BlockBreakEvent event) {
+			for (Platform platform : platforms.values()) {
+				if (platform.blockInPlatform(event.getBlock())) {
+					event.setCancelled(true);
+					return;
+				}
+			}
 		}
+		
 	}
 
-	@EventHandler(priority=EventPriority.MONITOR)
-	public void onPlayerTeleport(PlayerTeleportEvent event) {
-		if (event.isCancelled()) return;
-		if (cancelOnTeleport && platforms.containsKey(event.getPlayer())) {
-			if (!event.getFrom().getWorld().getName().equals(event.getTo().getWorld().getName()) || event.getFrom().toVector().distanceSquared(event.getTo().toVector()) > 50*50) {
+	public class TeleportListener implements Listener {
+		@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
+		public void onPlayerTeleport(PlayerTeleportEvent event) {
+			if (platforms.containsKey(event.getPlayer())) {
+				if (!event.getFrom().getWorld().getName().equals(event.getTo().getWorld().getName()) || event.getFrom().toVector().distanceSquared(event.getTo().toVector()) > 50*50) {
+					turnOff(event.getPlayer());
+				}
+			}
+		}
+		@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
+		public void onPlayerPortal(PlayerPortalEvent event) {
+			if (platforms.containsKey(event.getPlayer())) {
 				turnOff(event.getPlayer());
-			}
-		}
-	}
-
-	@EventHandler
-	public void onBlockBreak(BlockBreakEvent event) {
-		if (event.isCancelled()) return;
-		for (Platform platform : platforms.values()) {
-			if (platform.blockInPlatform(event.getBlock())) {
-				event.setCancelled(true);
-				return;
 			}
 		}
 	}
@@ -99,7 +124,7 @@ public class WalkwaySpell extends BuffSpell {
 			platform.remove();
 			platforms.remove(player);
 			sendMessage(player, strFade);
-			//removeListeners();
+			unregisterListener();
 		}
 	}
 
@@ -109,7 +134,7 @@ public class WalkwaySpell extends BuffSpell {
 			platform.remove();
 		}
 		platforms.clear();
-		//removeListeners();
+		unregisterListener();
 	}
 	
 	private class Platform {
@@ -287,6 +312,11 @@ public class WalkwaySpell extends BuffSpell {
 			}
 		}
 		
+	}
+
+	@Override
+	public boolean isActive(Player player) {
+		return platforms.containsKey(player);
 	}
 
 }

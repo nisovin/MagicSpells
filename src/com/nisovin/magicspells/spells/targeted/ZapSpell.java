@@ -11,6 +11,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
@@ -65,9 +66,7 @@ public class ZapSpell extends TargetedSpell {
 			if (target != null) {
 				// check for disallowed block
 				if (disallowedBlockTypes.contains(target.getTypeId()) || (allowedBlockTypes.size() > 0 && !allowedBlockTypes.contains(target.getTypeId()))) {
-					sendMessage(player, strCantZap);
-					fizzle(player);
-					return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+					return noTarget(player, strCantZap);
 				}
 				
 				// check for protection
@@ -76,9 +75,7 @@ public class ZapSpell extends TargetedSpell {
 					MagicSpells.plugin.getServer().getPluginManager().callEvent(event);
 					if (event.isCancelled()) {
 						// a plugin cancelled the event
-						sendMessage(player, strCantZap);
-						fizzle(player);
-						return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+						return noTarget(player, strCantZap);
 					}
 				}
 				
@@ -92,16 +89,15 @@ public class ZapSpell extends TargetedSpell {
 				}
 				
 				// show animation
-				playGraphicalEffects(1, player);
-				playGraphicalEffects(2, target.getLocation(), target.getTypeId() + "");
+				playSpellEffects(EffectPosition.CASTER, player);
+				playSpellEffects(EffectPosition.TARGET, target.getLocation(), target.getTypeId() + "");
+				playSpellEffectsTrail(player.getLocation(), target.getLocation(), null);
 				
 				// remove block
 				target.setType(Material.AIR);
 				
 			} else {
-				sendMessage(player, strCantZap);
-				fizzle(player);
-				return PostCastAction.ALREADY_HANDLED;
+				return noTarget(player, strCantZap);
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;

@@ -1,7 +1,9 @@
 package com.nisovin.magicspells.spells.targeted;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -15,10 +17,11 @@ import org.bukkit.inventory.ItemStack;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.Util;
 
 public class DisarmSpell extends TargetedEntitySpell {
 
-	private List<Integer> disarmable;
+	private Set<Material> disarmable;
 	private int disarmDuration;
 	private boolean dontDrop;
 	private boolean preventTheft;
@@ -30,7 +33,16 @@ public class DisarmSpell extends TargetedEntitySpell {
 	public DisarmSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		disarmable = getConfigIntList("disarmable-items", null);
+		List<String> disarmableIds = getConfigStringList("disarmable-items", null);
+		if (disarmableIds != null && disarmableIds.size() > 0) {
+			disarmable = new HashSet<Material>();
+			for (String itemName : disarmableIds) {
+				ItemStack item = Util.getItemStackFromString(itemName);
+				if (item != null) {
+					disarmable.add(item.getType());
+				}
+			}
+		}
 		
 		disarmDuration = getConfigInt("disarm-duration", 100);
 		dontDrop = getConfigBoolean("dont-drop", false);
@@ -51,21 +63,18 @@ public class DisarmSpell extends TargetedEntitySpell {
 			Player target = getTargetedPlayer(player, range, obeyLos);
 			if (target == null) {
 				// fail
-				sendMessage(player, strNoTarget);
-				fizzle(player);
-				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				return noTarget(player);
 			}
 			
 			boolean disarmed = disarm(target);
 			if (disarmed) {
-				playGraphicalEffects(player, target);
+				playSpellEffects(player, target);
 				// send messages
 				sendMessages(player, target);
 				return PostCastAction.NO_MESSAGES;
 			} else {
 				// fail
-				sendMessage(player, strInvalidItem);
-				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				return noTarget(player, strInvalidItem);
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
@@ -73,7 +82,7 @@ public class DisarmSpell extends TargetedEntitySpell {
 	
 	private boolean disarm(final Player target) {
 		final ItemStack inHand = target.getItemInHand();
-		if (disarmable == null || disarmable.contains(inHand.getTypeId())) {
+		if (disarmable == null || disarmable.contains(inHand.getType())) {
 			if (dontDrop) {
 				// hide item
 				target.setItemInHand(null);
@@ -117,7 +126,7 @@ public class DisarmSpell extends TargetedEntitySpell {
 		if (target instanceof Player) {
 			boolean disarmed =  disarm((Player)target);
 			if (disarmed) {
-				playGraphicalEffects(caster, target);
+				playSpellEffects(caster, target);
 			}
 			return disarmed;
 		} else {

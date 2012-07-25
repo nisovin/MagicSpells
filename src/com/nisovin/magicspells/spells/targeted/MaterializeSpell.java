@@ -11,13 +11,17 @@ import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockPlaceEvent;
 
+import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
+import com.nisovin.magicspells.util.ItemNameResolver.ItemTypeAndData;
 import com.nisovin.magicspells.util.MagicConfig;
 
 public class MaterializeSpell extends TargetedLocationSpell {
 
 	private int type;
 	private byte data;
+	private int resetDelay;
 	private boolean applyPhysics;
 	private boolean checkPlugins;
 	private String strFailed;
@@ -26,14 +30,12 @@ public class MaterializeSpell extends TargetedLocationSpell {
 		super(config, spellName);
 		
 		String s = getConfigString("block-type", "1");
-		if (s.contains(":")) {
-			String[] s2 = s.split(":");
-			type = Integer.parseInt(s2[0]);
-			data = Byte.parseByte(s2[1]);
-		} else {
-			type = Integer.parseInt(s);
-			data = 0;
+		ItemTypeAndData typeAndData = MagicSpells.getItemNameResolver().resolve(s);
+		if (typeAndData != null) {
+			type = typeAndData.id;
+			data = (byte)typeAndData.data;
 		}
+		resetDelay = getConfigInt("reset-delay", 0);
 		applyPhysics = getConfigBoolean("apply-physics", true);
 		checkPlugins = getConfigBoolean("check-plugins", true);
 		strFailed = getConfigString("str-failed", "");
@@ -51,21 +53,17 @@ public class MaterializeSpell extends TargetedLocationSpell {
 			if (lastTwo != null && lastTwo.size() == 2 && lastTwo.get(1).getType() != Material.AIR && lastTwo.get(0).getType() == Material.AIR) {
 				boolean done = materialize(player, lastTwo.get(0), lastTwo.get(1));
 				if (!done) {
-					sendMessage(player, strFailed);
-					fizzle(player);
-					return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+					return noTarget(player, strFailed);
 				}
 			} else {
 				// fail no target
-				sendMessage(player, strNoTarget);
-				fizzle(player);
-				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				return noTarget(player);
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}
 
-	private boolean materialize(Player player, Block block, Block against) {
+	private boolean materialize(Player player, final Block block, Block against) {
 		BlockState blockState = block.getState();
 		
 		if (checkPlugins) {
@@ -82,8 +80,20 @@ public class MaterializeSpell extends TargetedLocationSpell {
 			block.setTypeIdAndData(type, data, applyPhysics);
 		}
 		
-		playGraphicalEffects(1, player);
-		playGraphicalEffects(2, block.getLocation(), block.getTypeId() + "");
+		playSpellEffects(EffectPosition.CASTER, player);
+		playSpellEffects(EffectPosition.TARGET, block.getLocation(), type + "");
+		playSpellEffectsTrail(player.getLocation(), block.getLocation(), null);
+		
+		if (resetDelay > 0) {
+			Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new Runnable() {
+				public void run() {
+					if (block.getTypeId() == type && block.getData() == data) {
+						block.setType(Material.AIR);
+						playSpellEffects(EffectPosition.DELAYED, block.getLocation(), type + "");
+					}
+				}
+			}, resetDelay);
+		}
 		
 		return true;
 	}

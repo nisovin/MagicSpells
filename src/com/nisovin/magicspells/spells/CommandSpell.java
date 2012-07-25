@@ -22,4 +22,7 @@ public abstract class CommandSpell extends Spell {
 	@Override
 	public abstract boolean castFromConsole(CommandSender sender, String[] args);
 
+	@Override
+	public abstract String[] tabComplete(CommandSender sender, String partial);
+	
 }

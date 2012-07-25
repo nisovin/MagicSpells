@@ -47,6 +47,8 @@ public class TreeSpell extends TargetedLocationSpell {
 			// check if failed
 			if (!grown) {
 				return noTarget(player);
+			} else {
+				playSpellEffects(player, target.getLocation());
 			}
 			
 		}
@@ -78,7 +80,11 @@ public class TreeSpell extends TargetedLocationSpell {
 	
 	@Override
 	public boolean castAtLocation(Player caster, Location target, float power) {
-		return growTree(target.getBlock());
+		boolean ret = growTree(target.getBlock());
+		if (ret) {
+			playSpellEffects(caster, target);
+		}
+		return ret;
 	}
 	
 	private class GrowAnimation extends SpellAnimation {
@@ -103,8 +109,10 @@ public class TreeSpell extends TargetedLocationSpell {
 						int dist2 = Math.abs(o2.getX() - centerX) + Math.abs(o2.getZ() - centerZ);
 						if (dist1 > dist2) {
 							return 1;
-						} else {
+						} else if (dist1 < dist2) {
 							return -1;
+						} else {
+							return 0;
 						}
 					}
 				}

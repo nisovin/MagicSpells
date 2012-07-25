@@ -62,5 +62,10 @@ public class StealthSpell extends BuffSpell {
 	protected void turnOff() {
 		stealthy.clear();
 	}
+
+	@Override
+	public boolean isActive(Player player) {
+		return stealthy.contains(player.getName());
+	}
 	
 }

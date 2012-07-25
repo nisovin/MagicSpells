@@ -5,6 +5,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
@@ -20,6 +21,7 @@ public class PotionEffectSpell extends TargetedEntitySpell {
 	private boolean targetPlayers;
 	private boolean targetNonPlayers;
 	private boolean obeyLos;
+	private boolean beneficial;
 	
 	public PotionEffectSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -31,6 +33,7 @@ public class PotionEffectSpell extends TargetedEntitySpell {
 		targetPlayers = getConfigBoolean("target-players", false);
 		targetNonPlayers = getConfigBoolean("target-non-players", true);
 		obeyLos = getConfigBoolean("obey-los", true);
+		beneficial = getConfigBoolean("beneficial", false);
 	}
 
 	@Override
@@ -38,19 +41,21 @@ public class PotionEffectSpell extends TargetedEntitySpell {
 		if (state == SpellCastState.NORMAL) {
 			LivingEntity target;
 			if (targeted) {
-				target = getTargetedEntity(player, range, targetPlayers, targetNonPlayers, obeyLos);
+				target = getTargetedEntity(player, range, targetPlayers, targetNonPlayers, obeyLos, true);
 			} else {
 				target = player;
 			}
 			if (target == null) {
 				// fail no target
-				sendMessage(player, strNoTarget);
-				fizzle(player);
-				return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;
+				return noTarget(player);
 			}
 			
 			target.addPotionEffect(new PotionEffect(PotionEffectType.getById(type), Math.round(duration*power), amplifier));
-			playGraphicalEffects(player, target);
+			if (targeted) {
+				playSpellEffects(player, target);
+			} else {
+				playSpellEffects(EffectPosition.CASTER, player);
+			}
 			sendMessages(player, target);
 			return PostCastAction.NO_MESSAGES;
 		}		
@@ -64,10 +69,21 @@ public class PotionEffectSpell extends TargetedEntitySpell {
 		} else if (!(target instanceof Player) && !targetNonPlayers) {
 			return false;
 		} else {
-			target.addPotionEffect(new PotionEffect(PotionEffectType.getById(type), Math.round(duration*power), amplifier));
-			playGraphicalEffects(caster, target);
+			PotionEffect effect = new PotionEffect(PotionEffectType.getById(type), Math.round(duration*power), amplifier);
+			if (targeted) {
+				target.addPotionEffect(effect);
+				playSpellEffects(caster, target);
+			} else {
+				caster.addPotionEffect(effect);
+				playSpellEffects(EffectPosition.CASTER, caster);
+			}
 			return true;
 		}
+	}
+	
+	@Override
+	public boolean isBeneficial() {
+		return beneficial;
 	}
 
 }

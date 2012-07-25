@@ -10,7 +10,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 
 import com.nisovin.magicspells.spells.BuffSpell;
 import com.nisovin.magicspells.util.BlockPlatform;
@@ -85,11 +84,6 @@ public class FrostwalkSpell extends BuffSpell {
 			}
 		}
 	}
-
-	@EventHandler(priority=EventPriority.MONITOR)
-	public void onPlayerQuit(PlayerQuitEvent event) {
-		turnOff(event.getPlayer());
-	}
 	
 	@Override
 	public void turnOff(Player player) {
@@ -108,6 +102,11 @@ public class FrostwalkSpell extends BuffSpell {
 			platform.destroyPlatform();
 		}
 		frostwalkers.clear();
+	}
+
+	@Override
+	public boolean isActive(Player player) {
+		return frostwalkers.containsKey(player.getName());
 	}
 
 }

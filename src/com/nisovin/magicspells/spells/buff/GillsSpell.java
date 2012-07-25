@@ -108,4 +108,9 @@ public class GillsSpell extends BuffSpell {
 		fishes.clear();
 	}
 
+	@Override
+	public boolean isActive(Player player) {
+		return fishes.contains(player.getName());
+	}
+
 }

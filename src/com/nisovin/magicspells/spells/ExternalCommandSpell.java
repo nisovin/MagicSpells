@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.util.MagicConfig;
 
 public class ExternalCommandSpell extends TargetedEntitySpell {
@@ -22,6 +23,7 @@ public class ExternalCommandSpell extends TargetedEntitySpell {
 	private int commandDelay;
 	private List<String> commandToBlock;
 	private List<String> temporaryPermissions;
+	private boolean temporaryOp;
 	private boolean requirePlayerTarget;
 	private boolean executeAsTargetInstead;
 	private boolean executeOnConsoleInstead;
@@ -39,6 +41,7 @@ public class ExternalCommandSpell extends TargetedEntitySpell {
 		commandDelay = getConfigInt("command-delay", 0);
 		commandToBlock = getConfigStringList("command-to-block", null);
 		temporaryPermissions = getConfigStringList("temporary-permissions", null);
+		temporaryOp = getConfigBoolean("temporary-op", false);
 		requirePlayerTarget = getConfigBoolean("require-player-target", false);
 		executeAsTargetInstead = getConfigBoolean("execute-as-target-instead", false);
 		executeOnConsoleInstead = getConfigBoolean("execute-on-console-instead", false);
@@ -49,10 +52,7 @@ public class ExternalCommandSpell extends TargetedEntitySpell {
 
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
-		if (commandToExecute.equals("")) {
-			Bukkit.getServer().getLogger().severe("MagicSpells: External command spell '" + name + "' has no command to execute.");
-			return PostCastAction.ALREADY_HANDLED;
-		} else if (state == SpellCastState.NORMAL) {
+		if (state == SpellCastState.NORMAL) {
 			// get target if necessary
 			Player target = null;
 			if (requirePlayerTarget) {
@@ -73,39 +73,56 @@ public class ExternalCommandSpell extends TargetedEntitySpell {
 			for (String perm : temporaryPermissions) {
 				if (!executeAsTargetInstead) {
 					if (!player.hasPermission(perm)) {
-						player.addAttachment(MagicSpells.plugin, perm, true, 5);
+						player.addAttachment(MagicSpells.plugin, perm.trim(), true, 5);
 					}
 				} else {
 					if (!target.hasPermission(perm)) {
-						target.addAttachment(MagicSpells.plugin, perm, true, 5);
+						target.addAttachment(MagicSpells.plugin, perm.trim(), true, 5);
 					}
 				}
 			}
 		}
+		// temp op
+		boolean opped = false;
+		if (temporaryOp && !player.isOp()) {
+			opped = true;
+			player.setOp(true);
+		}
 		// perform commands
-		for (String comm : commandToExecute) {
-			if (args != null && args.length > 0) {
-				for (int i = 0; i < args.length; i++) {
-					comm = comm.replace("%"+(i+1), args[i]);
+		try {
+			if (commandToExecute != null && commandToExecute.size() > 0) {
+				for (String comm : commandToExecute) {
+					if (args != null && args.length > 0) {
+						for (int i = 0; i < args.length; i++) {
+							comm = comm.replace("%"+(i+1), args[i]);
+						}
+					}
+					comm = comm.replace("%a", player.getName());
+					if (target != null) {
+						comm = comm.replace("%t", target.getName());
+					}
+					if (executeAsTargetInstead) {
+						target.performCommand(comm);
+					} else if (executeOnConsoleInstead) {
+						Bukkit.dispatchCommand(Bukkit.getConsoleSender(), comm);
+					} else {
+						player.performCommand(comm);
+					}
 				}
 			}
-			comm = comm.replace("%a", player.getName());
-			if (target != null) {
-				comm = comm.replace("%t", target.getName());
-			}
-			if (executeAsTargetInstead) {
-				target.performCommand(comm);
-			} else if (executeOnConsoleInstead) {
-				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), comm);
-			} else {
-				player.performCommand(comm);
-			}
+		} catch (Exception e) {
+			// catch all exceptions to make sure we don't leave someone opped
+			e.printStackTrace();
+		}
+		// deop
+		if (opped) {
+			player.setOp(false);
 		}
 		// effects
 		if (target != null) {
-			playGraphicalEffects(player, target);
+			playSpellEffects(player, target);
 		} else {
-			playGraphicalEffects(1, player);
+			playSpellEffects(EffectPosition.CASTER, player);
 		}
 		// add delayed command
 		if (commandToExecuteLater != null && commandToExecuteLater.size() > 0 && !commandToExecuteLater.get(0).isEmpty()) {
@@ -174,24 +191,39 @@ public class ExternalCommandSpell extends TargetedEntitySpell {
 					}
 				}
 			}
+			// temporary op
+			boolean opped = false;
+			if (temporaryOp && !player.isOp()) {
+				opped = true;
+				player.setOp(true);
+			}
 			// run commands
-			for (String comm : commandToExecuteLater) {
-				if (comm != null && !comm.isEmpty()) {
-					comm = comm.replace("%a", player.getName());
-					if (target != null) {
-						comm = comm.replace("%t", target.getName());
-					}
-					if (executeAsTargetInstead) {
-						target.performCommand(comm);
-					} else if (executeOnConsoleInstead) {
-						Bukkit.dispatchCommand(Bukkit.getConsoleSender(), comm);
-					} else {
-						player.performCommand(comm);
+			try {
+				for (String comm : commandToExecuteLater) {
+					if (comm != null && !comm.isEmpty()) {
+						comm = comm.replace("%a", player.getName());
+						if (target != null) {
+							comm = comm.replace("%t", target.getName());
+						}
+						if (executeAsTargetInstead) {
+							target.performCommand(comm);
+						} else if (executeOnConsoleInstead) {
+							Bukkit.dispatchCommand(Bukkit.getConsoleSender(), comm);
+						} else {
+							player.performCommand(comm);
+						}
 					}
 				}
+			} catch (Exception e) {
+				// catch exceptions to make sure we don't leave someone opped
+				e.printStackTrace();
+			}
+			// deop
+			if (opped) {
+				player.setOp(false);
 			}
 			// graphical effect
-			playGraphicalEffects(4, player);
+			playSpellEffects(EffectPosition.DISABLED, player);
 		}
 		
 	}

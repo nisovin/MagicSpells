@@ -36,6 +36,7 @@ public class ScrollSpell extends CommandSpell {
 	private boolean leftClickCast;
 	private boolean ignoreCastPerm;
 	private boolean setUnstackable;
+	private boolean removeScrollWhenDepleted;
 	private boolean chargeReagentsForSpellPerCharge;
 	private boolean requireTeachPerm;
 	private boolean requireScrollCastPermOnUse;
@@ -64,6 +65,7 @@ public class ScrollSpell extends CommandSpell {
 		leftClickCast = getConfigBoolean("left-click-cast", false);
 		ignoreCastPerm = getConfigBoolean("ignore-cast-perm", false);
 		setUnstackable = getConfigBoolean("set-unstackable", true);
+		removeScrollWhenDepleted = getConfigBoolean("remove-scroll-when-depleted", true);
 		chargeReagentsForSpellPerCharge = getConfigBoolean("charge-reagents-for-spell-per-charge", false);
 		requireTeachPerm = getConfigBoolean("require-teach-perm", true);
 		requireScrollCastPermOnUse = getConfigBoolean("require-scroll-cast-perm-on-use", true);
@@ -204,6 +206,11 @@ public class ScrollSpell extends CommandSpell {
 		return true;
 	}
 	
+	@Override
+	public String[] tabComplete(CommandSender sender, String partial) {
+		return null;
+	}
+	
 	private void createBaseScroll(String[] args, CommandSender sender) {
 		// get spell
 		Spell spell = MagicSpells.getSpellByInGameName(args[1]);
@@ -313,7 +320,12 @@ public class ScrollSpell extends CommandSpell {
 							} else {
 								scrollSpells.remove(id);
 								scrollUses.remove(id);
-								player.setItemInHand(null);
+								if (removeScrollWhenDepleted) {
+									player.setItemInHand(null);
+								} else {
+									inHand.setDurability((short)0);
+									player.setItemInHand(inHand);
+								}
 							}
 							dirtyData = true;
 						}
@@ -336,6 +348,8 @@ public class ScrollSpell extends CommandSpell {
 	
 	@EventHandler(ignoreCancelled=true)
 	public void onInventoryClick(InventoryClickEvent event) {
+		if (event.getRawSlot() < 0) return; 
+		
 		ItemStack clicked = event.getCurrentItem();
 		ItemStack cursor = event.getCursor();
 		
