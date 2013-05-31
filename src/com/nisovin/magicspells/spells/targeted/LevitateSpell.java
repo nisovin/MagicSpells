@@ -1,5 +1,6 @@
 package com.nisovin.magicspells.spells.targeted;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.bukkit.Bukkit;
@@ -9,6 +10,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.util.Vector;
 
@@ -25,6 +28,7 @@ public class LevitateSpell extends TargetedEntitySpell {
 	private boolean obeyLos;
 	private boolean cancelOnItemSwitch;
 	private boolean cancelOnSpellCast;
+	private boolean cancelOnTakeDamage;
 	
 	private HashMap<Player,Levitator> levitating;
 	
@@ -37,6 +41,7 @@ public class LevitateSpell extends TargetedEntitySpell {
 		obeyLos = getConfigBoolean("obey-los", true);
 		cancelOnItemSwitch = getConfigBoolean("cancel-on-item-switch", true);
 		cancelOnSpellCast = getConfigBoolean("cancel-on-spell-cast", false);
+		cancelOnTakeDamage = getConfigBoolean("cancel-on-take-damage", true);
 		
 		levitating = new HashMap<Player,Levitator>();
 	}
@@ -50,6 +55,9 @@ public class LevitateSpell extends TargetedEntitySpell {
 		if (cancelOnSpellCast) {
 			registerEvents(new SpellCastListener());
 		}
+		if (cancelOnTakeDamage) {
+			registerEvents(new DamageListener());
+		}
 	}
 
 	@Override
@@ -58,7 +66,7 @@ public class LevitateSpell extends TargetedEntitySpell {
 			levitating.remove(player).stop();
 			return PostCastAction.ALREADY_HANDLED;
 		} else if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, range, targetPlayers, obeyLos);
+			LivingEntity target = getTargetedEntity(player, minRange, range, targetPlayers, obeyLos);
 			if (target == null) {
 				return noTarget(player);
 			}
@@ -84,6 +92,12 @@ public class LevitateSpell extends TargetedEntitySpell {
 		return true;
 	}
 	
+	public void onPlayerDeath(PlayerDeathEvent event) {
+		if (levitating.containsKey(event.getEntity())) {
+			levitating.remove(event.getEntity()).stop();
+		}
+	}
+	
 	public class ItemSwitchListener implements Listener {
 		@EventHandler
 		public void onItemSwitch(PlayerItemHeldEvent event) {
@@ -102,9 +116,17 @@ public class LevitateSpell extends TargetedEntitySpell {
 		}
 	}
 	
+	public class DamageListener implements Listener {
+		public void onEntityDamage(EntityDamageByEntityEvent event) {
+			if (event.getEntity() instanceof Player && levitating.containsKey(event.getEntity())) {
+				levitating.remove(event.getEntity()).stop();
+			}
+		}
+	}
+	
 	@Override
 	public void turnOff() {
-		for (Levitator l : levitating.values()) {
+		for (Levitator l : new ArrayList<Levitator>(levitating.values())) {
 			l.stop();
 		}
 		levitating.clear();
@@ -133,15 +155,19 @@ public class LevitateSpell extends TargetedEntitySpell {
 		@Override
 		public void run() {
 			if (!stopped) {
-				target.setFallDistance(0);
-				Vector casterLocation = caster.getEyeLocation().toVector();
-				Vector targetLocation = target.getLocation().toVector();
-				Vector wantedLocation = casterLocation.add(caster.getLocation().getDirection().multiply(distance));
-				Vector v = wantedLocation.subtract(targetLocation).multiply(tickRate/25F + .1);
-				target.setVelocity(v);
-				counter++;
-				if (duration > 0 && counter > duration) {
+				if (caster.isDead() || !caster.isOnline()) {
 					stop();
+				} else {
+					target.setFallDistance(0);
+					Vector casterLocation = caster.getEyeLocation().toVector();
+					Vector targetLocation = target.getLocation().toVector();
+					Vector wantedLocation = casterLocation.add(caster.getLocation().getDirection().multiply(distance));
+					Vector v = wantedLocation.subtract(targetLocation).multiply(tickRate/25F + .1);
+					target.setVelocity(v);
+					counter++;
+					if (duration > 0 && counter > duration) {
+						stop();
+					}
 				}
 			}
 		}
@@ -149,6 +175,7 @@ public class LevitateSpell extends TargetedEntitySpell {
 		public void stop() {
 			Bukkit.getScheduler().cancelTask(taskId);
 			stopped = true;
+			levitating.remove(caster);
 		}
 		
 	}

@@ -58,7 +58,7 @@ class SmokeSwirlEffect extends SpellEffect {
 			this.interval = interval;
 			this.duration = duration;
 			this.iteration = 0;
-			this.taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(MagicSpells.plugin, this, 0, interval);			
+			this.taskId = MagicSpells.scheduleRepeatingTask(this, 0, interval);
 		}
 		
 		public void run() {

@@ -33,6 +33,11 @@ public class NoMagicZoneManager {
 			for (String node : zoneNodes) {
 				ConfigurationSection zoneConfig = config.getSection("no-magic-zones." + node);
 				
+				// check enabled
+				if (!zoneConfig.getBoolean("enabled", true)) {
+					continue;
+				}
+				
 				// get zone type
 				String type = zoneConfig.getString("type", "");
 				if (type.isEmpty()) {
@@ -51,12 +56,16 @@ public class NoMagicZoneManager {
 					zone = clazz.newInstance();
 				} catch (Exception e) {
 					MagicSpells.error("Failed to create no-magic zone '" + node + "'");
+					e.printStackTrace();
 					continue;
 				}
 				zone.create(zoneConfig);
 				zones.put(node, zone);
+				MagicSpells.debug(3, "Loaded no-magic zone: " + node);
 			}
 		}
+		
+		MagicSpells.debug(1, "No-magic zones loaded: " + zones.size());
 	}
 	
 	public boolean willFizzle(Player player, Spell spell) {

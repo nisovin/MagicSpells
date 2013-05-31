@@ -22,16 +22,23 @@ import com.nisovin.magicspells.util.MagicConfig;
 public class WindwalkSpell extends BuffSpell {
 
 	private int launchSpeed;
+	private float flySpeed;
+	private int maxY;
+	private int maxAltitude;
     private boolean cancelOnLand;
 	private boolean cancelOnTeleport;
 	
 	private HashSet<Player> flyers;
 	private HashMap<Player, Integer> tasks;
+	private HeightMonitor heightMonitor = null;
 	
 	public WindwalkSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 
 		launchSpeed = getConfigInt("launch-speed", 1);
+		flySpeed = getConfigFloat("fly-speed", 0.1F);
+		maxY = getConfigInt("max-y", 260);
+		maxAltitude = getConfigInt("max-altitude", 100);
         cancelOnLand = getConfigBoolean("cancel-on-land", true);
 		cancelOnTeleport = getConfigBoolean("cancel-on-teleport", true);
 		
@@ -60,23 +67,32 @@ public class WindwalkSpell extends BuffSpell {
 	public PostCastAction castSpell(final Player player, SpellCastState state, float power, String[] args) {
 		if (flyers.contains(player)) {
 			turnOff(player);
-			return PostCastAction.ALREADY_HANDLED;
-		} else if (state == SpellCastState.NORMAL) {
+			if (toggle) {
+				return PostCastAction.ALREADY_HANDLED;
+			}
+		}
+		if (state == SpellCastState.NORMAL) {
 			// set flying
 			flyers.add(player);
 			player.setAllowFlight(true);
-			player.setFlying(true);
+			player.setFlySpeed(flySpeed);
 			if (launchSpeed > 0) {
+				player.teleport(player.getLocation().add(0, .25, 0));
 				player.setVelocity(new Vector(0,launchSpeed,0));
 			}
+			player.setFlying(true);
 			// set cost interval
 			if (useCostInterval > 0 || numUses > 0) {
 				int taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(MagicSpells.plugin, new Runnable() {
 					public void run() {
 						addUseAndChargeCost(player);
 					}
-				}, useCostInterval*20, useCostInterval*20);
+				}, useCostInterval, useCostInterval);
 				tasks.put(player, taskId);
+			}
+			// start height monitor
+			if (heightMonitor == null && (maxY > 0 || maxAltitude > 0)) {
+				heightMonitor = new HeightMonitor();
 			}
 			startSpellDuration(player);
 		}
@@ -111,6 +127,37 @@ public class WindwalkSpell extends BuffSpell {
 			}
 		}
 	}
+	
+	public class HeightMonitor implements Runnable {
+		
+		int taskId;
+		
+		public HeightMonitor() {
+			taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(MagicSpells.plugin, this, 20, 20);
+		}
+		
+		public void run() {
+			for (Player p : flyers) {
+				if (maxY > 0) {
+					int ydiff = p.getLocation().getBlockY() - maxY;
+					if (ydiff > 0) {
+						p.setVelocity(p.getVelocity().setY(-ydiff * 1.5));
+						continue;
+					}
+				}
+				if (maxAltitude > 0) {
+					int ydiff = p.getLocation().getBlockY() - p.getWorld().getHighestBlockYAt(p.getLocation()) - maxAltitude;
+					if (ydiff > 0) {
+						p.setVelocity(p.getVelocity().setY(-ydiff * 1.5));
+					}
+				}				
+			}
+		}
+		
+		public void stop() {
+			Bukkit.getScheduler().cancelTask(taskId);
+		}
+	}
 
 	@Override
 	public void turnOff(final Player player) {
@@ -120,6 +167,7 @@ public class WindwalkSpell extends BuffSpell {
 			if (player.getGameMode() != GameMode.CREATIVE) {
 				player.setAllowFlight(false);
 			}
+			player.setFlySpeed(0.1F);
 			player.setFallDistance(0);
 			flyers.remove(player);
 			sendMessage(player, strFade);
@@ -127,6 +175,10 @@ public class WindwalkSpell extends BuffSpell {
 		if (tasks != null && tasks.containsKey(player)) {
 			int taskId = tasks.remove(player);
 			Bukkit.getScheduler().cancelTask(taskId);
+		}
+		if (heightMonitor != null && flyers.size() == 0) {
+			heightMonitor.stop();
+			heightMonitor = null;
 		}
 	}
 	

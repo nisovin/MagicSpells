@@ -31,7 +31,7 @@ public class PainSpell extends TargetedEntitySpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, range, targetPlayers, obeyLos);
+			LivingEntity target = getTargetedEntity(player, minRange, range, targetPlayers, obeyLos);
 			if (target == null) {
 				// fail -- no target
 				return noTarget(player);
@@ -49,6 +49,7 @@ public class PainSpell extends TargetedEntitySpell {
 	}
 	
 	private boolean causePain(Player player, LivingEntity target, float power) {
+		if (target.isDead()) return false;
 		int dam = Math.round(damage*power);
 		if (target instanceof Player && checkPlugins) {
 			// handle the event myself so I can detect cancellation properly
@@ -58,6 +59,7 @@ public class PainSpell extends TargetedEntitySpell {
 				return false;
 			}
 			dam = event.getDamage();
+			target.setLastDamageCause(event);
 		}
 		if (ignoreArmor) {
 			int health = target.getHealth() - dam;
@@ -65,7 +67,7 @@ public class PainSpell extends TargetedEntitySpell {
 			target.setHealth(health);
 			target.playEffect(EntityEffect.HURT);
 		} else {
-			target.damage(dam);
+			target.damage(dam, player);
 		}
 		playSpellEffects(player, target);
 		return true;

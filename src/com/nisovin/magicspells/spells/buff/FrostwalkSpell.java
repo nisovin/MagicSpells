@@ -35,8 +35,11 @@ public class FrostwalkSpell extends BuffSpell {
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (frostwalkers.containsKey(player.getName())) {
 			turnOff(player);
-			return PostCastAction.ALREADY_HANDLED;
-		} else if (state == SpellCastState.NORMAL) {
+			if (toggle) {
+				return PostCastAction.ALREADY_HANDLED;
+			}
+		}
+		if (state == SpellCastState.NORMAL) {
 			frostwalkers.put(player.getName(), new BlockPlatform(Material.ICE.getId(), Material.STATIONARY_WATER.getId(), player.getLocation().getBlock().getRelative(0,-1,0), size, !leaveFrozen, "square"));
 			startSpellDuration(player);
 		}

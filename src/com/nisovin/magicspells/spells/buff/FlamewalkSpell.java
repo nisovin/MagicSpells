@@ -41,8 +41,11 @@ public class FlamewalkSpell extends BuffSpell {
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (flamewalkers.containsKey(player.getName())) {
 			turnOff(player);
-			return PostCastAction.ALREADY_HANDLED;
-		} else if (state == SpellCastState.NORMAL) {
+			if (toggle) {
+				return PostCastAction.ALREADY_HANDLED;
+			}
+		}
+		if (state == SpellCastState.NORMAL) {
 			flamewalkers.put(player.getName(),power);
 			if (burner == null) {
 				burner = new Burner();

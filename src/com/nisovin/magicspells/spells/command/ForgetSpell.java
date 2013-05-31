@@ -1,5 +1,6 @@
 package com.nisovin.magicspells.spells.command;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Bukkit;
@@ -183,11 +184,22 @@ public class ForgetSpell extends CommandSpell {
 	}
 	
 	@Override
-	public String[] tabComplete(CommandSender sender, String partial) {
+	public List<String> tabComplete(CommandSender sender, String partial) {
 		String[] args = Util.splitParams(partial);
 		if (args.length == 1) {
-			// matching player name
-			return tabCompletePlayerName(sender, args[0]);
+			// matching player name or spell name
+			List<String> options = new ArrayList<String>();
+			List<String> players = tabCompletePlayerName(sender, args[0]);
+			List<String> spells = tabCompleteSpellName(sender, args[0]);
+			if (players != null) {
+				options.addAll(players);
+			}
+			if (spells != null) {
+				options.addAll(spells);
+			}
+			if (options.size() > 0) {
+				return options;
+			}
 		} else if (args.length == 2) {
 			// matching spell name
 			return tabCompleteSpellName(sender, args[1]);

@@ -1,21 +1,23 @@
 package com.nisovin.magicspells.mana;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import com.nisovin.magicspells.events.ManaChangeEvent;
 
 public class ManaBar {
 
-	private Player player;
 	private String playerName;
 	private int maxMana;
 	private int regenAmount;
+	private String prefix;
+	private ChatColor colorFull;
+	private ChatColor colorEmpty;
 	
 	private int mana;
 	
 	public ManaBar(Player player, int maxMana, int regenAmount) {
-		this.player = player;
 		this.playerName = player.getName().toLowerCase();
 		this.maxMana = maxMana;
 		this.regenAmount = regenAmount;
@@ -24,9 +26,6 @@ public class ManaBar {
 	}
 	
 	public Player getPlayer() {
-		if (player != null && player.isOnline()) {
-			return player;
-		}
 		return Bukkit.getPlayerExact(playerName);
 	}
 	
@@ -44,10 +43,29 @@ public class ManaBar {
 	
 	public void setMaxMana(int max) {
 		this.maxMana = max;
+		if (mana > maxMana) {
+			mana = maxMana;
+		}
 	}
 	
 	public void setRegenAmount(int amount) {
 		this.regenAmount = amount;
+	}
+	
+	public void setDisplayData(String prefix, ChatColor colorFull, ChatColor colorEmpty) {
+		this.prefix = prefix;
+		this.colorFull = colorFull;
+		this.colorEmpty = colorEmpty;
+	}
+	
+	public String getPrefix() {
+		return prefix;
+	}
+	public ChatColor getColorFull() {
+		return colorFull;
+	}
+	public ChatColor getColorEmpty() {
+		return colorEmpty;
 	}
 	
 	public boolean has(int amount) {

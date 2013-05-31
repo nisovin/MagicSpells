@@ -13,6 +13,7 @@ import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.CommandSpell;
 import com.nisovin.magicspells.util.CastItem;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.Util;
 
 public class BindSpell extends CommandSpell {
 	
@@ -43,11 +44,11 @@ public class BindSpell extends CommandSpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			if (args == null || args.length != 1) {
+			if (args == null || args.length == 0) {
 				sendMessage(player, strUsage);
 				return PostCastAction.ALREADY_HANDLED;
 			} else {
-				Spell spell = MagicSpells.getSpellByInGameName(args[0]);
+				Spell spell = MagicSpells.getSpellByInGameName(Util.arrayJoin(args, ' '));
 				Spellbook spellbook = MagicSpells.getSpellbook(player);
 				if (spell == null || spellbook == null) {
 					// fail - no such spell, or no spellbook
@@ -91,7 +92,7 @@ public class BindSpell extends CommandSpell {
 	}
 
 	@Override
-	public String[] tabComplete(CommandSender sender, String partial) {
+	public List<String> tabComplete(CommandSender sender, String partial) {
 		if (sender instanceof Player) {
 			// only one arg
 			if (partial.contains(" ")) {

@@ -13,7 +13,7 @@ import com.nisovin.magicspells.util.MagicConfig;
 
 public class ManaRegenSpell extends BuffSpell { 
 
-	int regenModAmt;
+	private int regenModAmt;
 
 	private HashSet<Player> regenning;
 
@@ -25,8 +25,11 @@ public class ManaRegenSpell extends BuffSpell {
 
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
-		if(regenning.contains(player)){
+		if (regenning.contains(player)){
 			turnOff(player);
+			if (toggle) {
+				return PostCastAction.ALREADY_HANDLED;
+			}
 		}
 		if (state == SpellCastState.NORMAL) {
 			regenning.add(player);

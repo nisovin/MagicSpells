@@ -82,7 +82,7 @@ public final class TargetedMultiSpell extends TargetedSpell {
 			Location locTarget = null;
 			LivingEntity entTarget = null;
 			if (requireEntityTarget) {
-				entTarget = getTargetedEntity(player, range, targetPlayers, obeyLos);
+				entTarget = getTargetedEntity(player, minRange, range, targetPlayers, obeyLos);
 			} else {
 				Block b = null;
 				try {
@@ -216,9 +216,12 @@ public final class TargetedMultiSpell extends TargetedSpell {
 					delayedSpells.remove(this);
 				} else {
 					for (DelayedSpell ds : delayedSpells) {
-						ds.cancel();
+						if (ds != this) {
+							ds.cancel();
+						}
 					}
 					delayedSpells.clear();
+					cancel();
 				}
 			}
 			delayedSpells = null;

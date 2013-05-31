@@ -1,5 +1,7 @@
 package com.nisovin.magicspells.spells;
 
+import java.util.List;
+
 import org.bukkit.command.CommandSender;
 
 import com.nisovin.magicspells.Spell;
@@ -23,6 +25,6 @@ public abstract class CommandSpell extends Spell {
 	public abstract boolean castFromConsole(CommandSender sender, String[] args);
 
 	@Override
-	public abstract String[] tabComplete(CommandSender sender, String partial);
+	public abstract List<String> tabComplete(CommandSender sender, String partial);
 	
 }

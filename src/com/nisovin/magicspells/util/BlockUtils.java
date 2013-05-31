@@ -49,7 +49,7 @@ public class BlockUtils {
 		return 
 				isPathable(location.getBlock()) && 
 				isPathable(location.add(0, 1, 0).getBlock()) && 
-				(!isPathable(location.subtract(0, 1, 0).getBlock()) || !isPathable(location.subtract(0, 2, 0).getBlock()));
+				(!isPathable(location.subtract(0, 2, 0).getBlock()) || !isPathable(location.subtract(0, 1, 0).getBlock()));
 	}
 	
 }

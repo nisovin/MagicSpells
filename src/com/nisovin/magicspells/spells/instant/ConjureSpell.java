@@ -10,18 +10,23 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
+import com.nisovin.magicspells.spells.command.ScrollSpell;
+import com.nisovin.magicspells.spells.command.TomeSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.Util;
 
 public class ConjureSpell extends InstantSpell {
 
 	private boolean addToInventory;
+	private boolean addToEnderChest;
 	private boolean powerAffectsQuantity;
 	private boolean powerAffectsChance;
 	private boolean calculateDropsIndividually;
 	private boolean autoEquip;
+	List<String> itemList;
 	private ItemStack[] itemTypes;
 	private int[] itemMinQuantities;
 	private int[] itemMaxQuantities;
@@ -31,27 +36,48 @@ public class ConjureSpell extends InstantSpell {
 		super(config, spellName);
 		
 		addToInventory = getConfigBoolean("add-to-inventory", false);
+		addToEnderChest = getConfigBoolean("add-to-ender-chest", false);
 		powerAffectsQuantity = getConfigBoolean("power-affects-quantity", false);
 		powerAffectsChance = getConfigBoolean("power-affects-chance", true);
 		calculateDropsIndividually = getConfigBoolean("calculate-drops-individually", true);
 		autoEquip = getConfigBoolean("auto-equip", false);
-		List<String> list = getConfigStringList("items", null);
-		if (list != null && list.size() > 0) {
-			itemTypes = new ItemStack[list.size()];
-			itemMinQuantities = new int[list.size()];
-			itemMaxQuantities = new int[list.size()];
-			itemChances = new int[list.size()];
+		itemList = getConfigStringList("items", null);
+	}
+	
+	@Override
+	public void initialize() {
+		super.initialize();
+
+		if (itemList != null && itemList.size() > 0) {
+			itemTypes = new ItemStack[itemList.size()];
+			itemMinQuantities = new int[itemList.size()];
+			itemMaxQuantities = new int[itemList.size()];
+			itemChances = new int[itemList.size()];
 			
-			for (int i = 0; i < list.size(); i++) {
+			for (int i = 0; i < itemList.size(); i++) {
 				try {
-					String[] data = list.get(i).split(" ");
-					String[] quantityData = data[1].split("-");
+					String[] data = Util.splitParams(itemList.get(i));
+					String[] quantityData = data.length == 1 ? new String[]{"1"} : data[1].split("-");
 					
-					itemTypes[i] = Util.getItemStackFromString(data[0]);
+					if (data[0].startsWith("TOME:")) {
+						String[] tomeData = data[0].split(":");
+						TomeSpell tomeSpell = (TomeSpell)MagicSpells.getSpellByInternalName(tomeData[1]);
+						Spell spell = MagicSpells.getSpellByInternalName(tomeData[2]);
+						int uses = tomeData.length > 3 ? Integer.parseInt(tomeData[3]) : -1;
+						itemTypes[i] = tomeSpell.createTome(spell, uses, null);
+					} else if (data[0].startsWith("SCROLL:")) {
+						String[] scrollData = data[0].split(":");
+						ScrollSpell scrollSpell = (ScrollSpell)MagicSpells.getSpellByInternalName(scrollData[1]);
+						Spell spell = MagicSpells.getSpellByInternalName(scrollData[2]);
+						int uses = scrollData.length > 3 ? Integer.parseInt(scrollData[3]) : -1;
+						itemTypes[i] = scrollSpell.createScroll(spell, uses, null);
+					} else {
+						itemTypes[i] = Util.getItemStackFromString(data[0]);
+					}
 					if (itemTypes[i] == null) {
-						MagicSpells.error("Conjure spell '" + spellName + "' has specified invalid item: " + list.get(i));
+						MagicSpells.error("Conjure spell '" + internalName + "' has specified invalid item (e1): " + itemList.get(i));
 						continue;
-					}					
+					}
 					
 					if (quantityData.length == 1) {
 						itemMinQuantities[i] = Integer.parseInt(quantityData[0]);
@@ -67,11 +93,12 @@ public class ConjureSpell extends InstantSpell {
 						itemChances[i] = 100;
 					}
 				} catch (Exception e) {
-					MagicSpells.error("Conjure spell '" + spellName + "' has specified invalid item: " + list.get(i));
+					MagicSpells.error("Conjure spell '" + internalName + "' has specified invalid item (e2): " + itemList.get(i));
 					itemTypes[i] = null;
 				}
 			}
 		}
+		itemList = null;
 	}
 
 	@SuppressWarnings("deprecation")
@@ -111,11 +138,15 @@ public class ConjureSpell extends InstantSpell {
 					}
 				}
 				if (!added) {
-					if (addToInventory && inv.firstEmpty() >= 0) {
-						inv.addItem(item);
-						updateInv = true;
-					} else {
-						player.getWorld().dropItem(loc, item);
+					if (addToEnderChest) {
+						added = Util.addToInventory(player.getEnderChest(), item);
+					}
+					if (!added && addToInventory) {
+						added = Util.addToInventory(inv, item);
+						if (added) updateInv = true;
+					}
+					if (!added) {
+						player.getWorld().dropItem(loc, item).setItemStack(item);
 					}
 				} else {
 					updateInv = true;
@@ -126,7 +157,7 @@ public class ConjureSpell extends InstantSpell {
 			}
 			
 			playSpellEffects(EffectPosition.CASTER, player);
-		}		
+		}
 		return PostCastAction.HANDLE_NORMALLY;
 		
 	}

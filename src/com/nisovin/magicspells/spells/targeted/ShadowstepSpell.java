@@ -30,7 +30,7 @@ public class ShadowstepSpell extends TargetedEntitySpell {
 		if (state == SpellCastState.NORMAL) {
 			int range = Math.round(this.range * power);
 			
-			LivingEntity target = getTargetedEntity(player, range, targetPlayers, obeyLos);
+			LivingEntity target = getTargetedEntity(player, minRange, range, targetPlayers, obeyLos);
 			if (target == null) {
 				// fail
 				return noTarget(player);

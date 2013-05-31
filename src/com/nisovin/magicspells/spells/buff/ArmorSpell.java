@@ -1,26 +1,35 @@
 package com.nisovin.magicspells.spells.buff;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType.SlotType;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.ItemMeta;
 
+import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.spells.BuffSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.Util;
 
 public class ArmorSpell extends BuffSpell {
 
-	private boolean toggle;
 	private boolean permanent;
 	
 	private ItemStack helmet;
@@ -29,14 +38,16 @@ public class ArmorSpell extends BuffSpell {
 	private ItemStack boots;
 	
 	private String strHasArmor;
+	private String strLoreText;
 	
-	private Set<Player> armored;
+	private Set<String> armored;
 	
 	public ArmorSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		toggle = getConfigBoolean("toggle", false);
 		permanent = getConfigBoolean("permanent", false);
+		
+		strLoreText = ChatColor.translateAlternateColorCodes('&', getConfigString("str-lore-text", "Conjured"));
 		
 		helmet = getItem(getConfigString("helmet", ""));
 		chestplate = getItem(getConfigString("chestplate", ""));
@@ -45,7 +56,7 @@ public class ArmorSpell extends BuffSpell {
 		
 		strHasArmor = getConfigString("str-has-armor", "You cannot cast this spell if you are wearing armor.");
 		
-		armored = new HashSet<Player>();
+		armored = new HashSet<String>();
 	}
 	
 	@Override
@@ -63,8 +74,20 @@ public class ArmorSpell extends BuffSpell {
 				// get type and data
 				ItemStack item = Util.getItemStackFromString(info[0]);
 				item.setAmount(1);
+				if (!permanent) {
+					ItemMeta meta = item.getItemMeta();
+					List<String> lore;
+					if (meta.hasLore()) {
+						lore = meta.getLore();
+					} else {
+						lore = new ArrayList<String>();
+					}
+					lore.add(strLoreText);
+					meta.setLore(lore);
+					item.setItemMeta(meta);
+				}
 				
-				// get enchantments
+				// get enchantments (left for backwards compatibility)
 				if (info.length > 1) {
 					for (int i = 1; i < info.length; i++) {
 						String[] enchinfo = info[i].split(":");
@@ -109,39 +132,52 @@ public class ArmorSpell extends BuffSpell {
 				return PostCastAction.ALREADY_HANDLED;
 			}
 			
-			if (helmet != null) {
-				inv.setHelmet(helmet.clone());
-			}
-			if (chestplate != null) {
-				inv.setChestplate(chestplate.clone());
-			}
-			if (leggings != null) {
-				inv.setLeggings(leggings.clone());
-			}
-			if (boots != null) {
-				inv.setBoots(boots.clone());
-			}
+			setArmor(inv);
 			
 			if (!permanent) {
-				armored.add(player);
+				armored.add(player.getName());
 				startSpellDuration(player);
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}
 	
+	private void setArmor(PlayerInventory inv) {
+		if (helmet != null) {
+			inv.setHelmet(helmet.clone());
+		}
+		if (chestplate != null) {
+			inv.setChestplate(chestplate.clone());
+		}
+		if (leggings != null) {
+			inv.setLeggings(leggings.clone());
+		}
+		if (boots != null) {
+			inv.setBoots(boots.clone());
+		}
+	}
+	
+	private void removeArmor(PlayerInventory inv) {
+		if (helmet != null && inv.getHelmet() != null && inv.getHelmet().getType() == helmet.getType()) {
+			inv.setHelmet(null);
+		}
+		if (chestplate != null && inv.getChestplate() != null && inv.getChestplate().getType() == chestplate.getType()) {
+			inv.setChestplate(null);
+		}
+		if (leggings != null && inv.getLeggings() != null && inv.getLeggings().getType() == leggings.getType()) {
+			inv.setLeggings(null);
+		}
+		if (boots != null && inv.getBoots() != null && inv.getBoots().getType() == boots.getType()) {
+			inv.setBoots(null);
+		}
+	}
+	
 	@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
 	public void onEntityDamage(EntityDamageEvent event) {
 		if (event.getEntity() instanceof Player) {
 			Player p = (Player)event.getEntity();
-			if (armored.contains(p)) {
-				if (event.getDamage() >= p.getHealth()) {
-					// killing blow, turn off the spell
-					turnOff(p);
-				} else {
-					// add a use per attack
-					addUseAndChargeCost(p);
-				}
+			if (isActive(p) && p.getNoDamageTicks() < 10) {
+				addUseAndChargeCost(p);
 			}
 		}
 	}
@@ -150,44 +186,73 @@ public class ArmorSpell extends BuffSpell {
 	public void onInventoryClick(InventoryClickEvent event) {
 		if (event.getSlotType() == SlotType.ARMOR && event.getWhoClicked() instanceof Player) {
 			Player p = (Player)event.getWhoClicked();
-			if (armored.contains(p)) {
+			if (isActive(p)) {
 				event.setCancelled(true);
 			}
 		}
 	}
 	
 	@EventHandler
+	public void onPlayerDeath(PlayerDeathEvent event) {
+		Iterator<ItemStack> drops = event.getDrops().iterator();
+		while (drops.hasNext()) {
+			ItemStack drop = drops.next();
+			List<String> lore = drop.getItemMeta().getLore();
+			if (lore != null && lore.size() > 0 && lore.get(lore.size()-1).equals(strLoreText)) {
+				drops.remove();
+			}
+		}
+	}
+	
+	@EventHandler
+	public void onPlayerRespawn(PlayerRespawnEvent event) {
+		if (isActive(event.getPlayer()) && !isExpired(event.getPlayer())) {
+			final PlayerInventory inv = event.getPlayer().getInventory();
+			Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new Runnable() {
+				public void run() {
+					setArmor(inv);
+				}
+			});
+		}
+	}
+	
+	@EventHandler
 	public void onPlayerQuit(PlayerQuitEvent event) {
-		if (armored.contains(event.getPlayer())) {
-			turnOff(event.getPlayer());
+		if (isActive(event.getPlayer())) {
+			if (cancelOnLogout) {
+				turnOff(event.getPlayer());
+			} else {
+				removeArmor(event.getPlayer().getInventory());
+			}
+		}
+	}
+	
+	@EventHandler
+	public void onPlayerJoin(PlayerJoinEvent event) {
+		if (isActive(event.getPlayer())) {
+			if (!isExpired(event.getPlayer())) {
+				setArmor(event.getPlayer().getInventory());
+			} else {
+				turnOff(event.getPlayer());
+			}
 		}
 	}
 	
 	@Override
 	public void turnOff(Player player) {
-		if (armored.contains(player)) {
+		if (armored.contains(player.getName())) {
 			super.turnOff(player);
-			armored.remove(player);
+			armored.remove(player.getName());
 			PlayerInventory inv = player.getInventory();
-			if (helmet != null && inv.getHelmet() != null && inv.getHelmet().getType() == helmet.getType()) {
-				inv.setHelmet(null);
-			}
-			if (chestplate != null && inv.getChestplate() != null && inv.getChestplate().getType() == chestplate.getType()) {
-				inv.setChestplate(null);
-			}
-			if (leggings != null && inv.getLeggings() != null && inv.getLeggings().getType() == leggings.getType()) {
-				inv.setLeggings(null);
-			}
-			if (boots != null && inv.getBoots() != null && inv.getBoots().getType() == boots.getType()) {
-				inv.setBoots(null);
-			}
+			removeArmor(inv);
 		}
 	}
 
 	@Override
 	protected void turnOff() {
-		for (Player p : new HashSet<Player>(armored)) {
-			if (p.isOnline()) {
+		for (String name : new HashSet<String>(armored)) {
+			Player p = Bukkit.getPlayerExact(name);
+			if (p != null && p.isOnline()) {
 				turnOff(p);
 			}
 		}
@@ -195,7 +260,7 @@ public class ArmorSpell extends BuffSpell {
 
 	@Override
 	public boolean isActive(Player player) {
-		return armored.contains(player);
+		return armored.contains(player.getName());
 	}
 
 }

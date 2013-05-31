@@ -1,33 +1,32 @@
 package com.nisovin.magicspells;
 
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerChatEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 
 public class MagicChatListener implements Listener {
 
-	private MagicSpells plugin;
+	MagicSpells plugin;
 	
 	public MagicChatListener(MagicSpells plugin) {
 		this.plugin = plugin;
 	}
 	
 	@EventHandler(ignoreCancelled=true)
-	public void onPlayerChat(PlayerChatEvent event) {
-		final Spell spell = MagicSpells.incantations.get(event.getMessage().toLowerCase());
-		if (spell != null) {
-			final Player player = event.getPlayer();
-			Spellbook spellbook = MagicSpells.getSpellbook(player);
-			if (spellbook.hasSpell(spell)) {
-				Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-					public void run() {
+	public void onPlayerChat(final AsyncPlayerChatEvent event) {
+		MagicSpells.scheduleDelayedTask(new Runnable() {
+			public void run() {
+				Spell spell = MagicSpells.incantations.get(event.getMessage().toLowerCase());
+				if (spell != null) {
+					Player player = event.getPlayer();
+					Spellbook spellbook = MagicSpells.getSpellbook(player);
+					if (spellbook.hasSpell(spell)) {
 						spell.cast(player);
 					}
-				});
+				}
 			}
-		}
+		}, 0);
 	}
 	
 }

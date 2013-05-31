@@ -53,7 +53,7 @@ public class GeyserSpell extends TargetedEntitySpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, range, targetPlayers, obeyLos);
+			LivingEntity target = getTargetedEntity(player, minRange, range, targetPlayers, obeyLos);
 			if (target == null) {
 				// fail -- no target
 				return noTarget(player);
@@ -79,7 +79,7 @@ public class GeyserSpell extends TargetedEntitySpell {
 					target.setHealth(health);
 					target.playEffect(EntityEffect.HURT);
 				} else {
-					target.damage(dam);
+					target.damage(dam, player);
 				}
 			}
 			
@@ -102,6 +102,7 @@ public class GeyserSpell extends TargetedEntitySpell {
 		// create animation
 		if (geyserHeight > 0) {
 			List<Entity> allNearby = target.getNearbyEntities(50, 50, 50);
+			allNearby.add(target);
 			List<Player> playersNearby = new ArrayList<Player>();
 			for (Entity e : allNearby) {
 				if (e instanceof Player) {

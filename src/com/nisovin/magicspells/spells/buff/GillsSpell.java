@@ -36,8 +36,11 @@ public class GillsSpell extends BuffSpell {
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (fishes.contains(player.getName())) {
 			turnOff(player);
-			return PostCastAction.ALREADY_HANDLED;
-		} else if (state == SpellCastState.NORMAL) {
+			if (toggle) {
+				return PostCastAction.ALREADY_HANDLED;
+			}
+		}
+		if (state == SpellCastState.NORMAL) {
 			fishes.add(player.getName());
 			if (glassHeadEffect) {
 				ItemStack helmet = player.getInventory().getHelmet();

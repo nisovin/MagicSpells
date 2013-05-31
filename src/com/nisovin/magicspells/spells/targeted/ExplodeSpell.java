@@ -9,7 +9,6 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.entity.EntityDamageByBlockEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
@@ -70,7 +69,7 @@ public class ExplodeSpell extends TargetedLocationSpell {
 	private boolean explode(Player player, Location target, float power) {
 		// check plugins
 		if (simulateTnt) {
-			boolean cancelled = MagicSpells.getVolatileCodeHandler().simulateTnt(target, explosionSize * power, addFire);
+			boolean cancelled = MagicSpells.getVolatileCodeHandler().simulateTnt(target, player, explosionSize * power, addFire);
 			if (cancelled) {
 				return false;
 			}
@@ -86,7 +85,7 @@ public class ExplodeSpell extends TargetedLocationSpell {
 		currentTick = Bukkit.getWorlds().get(0).getFullTime();
 		currentPower = power;
 		// cause explosion
-		boolean ret = MagicSpells.getVolatileCodeHandler().createExplosionByPlayer(player, target, explosionSize * power, addFire);
+		boolean ret = MagicSpells.getVolatileCodeHandler().createExplosionByPlayer(player, target, explosionSize * power, addFire, !preventBlockDamage);
 		if (ret) {
 			playSpellEffects(player, target);
 		}
@@ -102,8 +101,7 @@ public class ExplodeSpell extends TargetedLocationSpell {
 	public void onEntityDamage(EntityDamageEvent event) {
 		if ((damageMultiplier > 0 || preventPlayerDamage) 
 				&& !event.isCancelled() 
-				&& event.getCause() == DamageCause.BLOCK_EXPLOSION
-				&& event instanceof EntityDamageByBlockEvent
+				&& (event.getCause() == DamageCause.BLOCK_EXPLOSION || event.getCause() == DamageCause.ENTITY_EXPLOSION)
 				&& currentTick == Bukkit.getWorlds().get(0).getFullTime()) {
 			if (preventPlayerDamage && event.getEntity() instanceof Player) {
 				event.setCancelled(true);

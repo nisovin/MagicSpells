@@ -39,7 +39,7 @@ public class CombustSpell extends TargetedEntitySpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, range>0?range:100, targetPlayers, obeyLos);
+			LivingEntity target = getTargetedEntity(player, minRange, range>0?range:100, targetPlayers, obeyLos);
 			if (target == null) {
 				return noTarget(player);
 			} else {

@@ -2,7 +2,6 @@ package com.nisovin.magicspells.spelleffects;
 
 import java.util.ArrayList;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -50,7 +49,7 @@ class SmokeTrailEffect extends SpellEffect {
 		}
 		
 		public void start(int interval) {
-			this.id = Bukkit.getScheduler().scheduleSyncRepeatingTask(MagicSpells.plugin, this, interval, interval);
+			this.id = MagicSpells.scheduleRepeatingTask(this, interval, interval);
 		}
 
 		public void showNoAnimation() {
@@ -61,7 +60,7 @@ class SmokeTrailEffect extends SpellEffect {
 		
 		public void run() {
 			if (i > locationsForProjection.size()-1) {
-				Bukkit.getScheduler().cancelTask(id);
+				MagicSpells.cancelTask(id);
 				return;
 			}
 			Location loc = locationsForProjection.get(i);

@@ -47,8 +47,11 @@ public class LilywalkSpell extends BuffSpell {
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (lilywalkers.containsKey(player.getName())) {
 			turnOff(player);
-			return PostCastAction.ALREADY_HANDLED;
-		} else if (state == SpellCastState.NORMAL) {
+			if (toggle) {
+				return PostCastAction.ALREADY_HANDLED;
+			}
+		}
+		if (state == SpellCastState.NORMAL) {
 			Lilies lilies = new Lilies();
 			lilies.move(player.getLocation().getBlock());
 			lilywalkers.put(player.getName(), lilies);

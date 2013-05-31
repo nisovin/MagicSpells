@@ -44,8 +44,11 @@ public class LifewalkSpell extends BuffSpell {
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (lifewalkers.contains(player.getName())) {
 			turnOff(player);
-			return PostCastAction.ALREADY_HANDLED;
-		} else if (state == SpellCastState.NORMAL) {
+			if (toggle) {
+				return PostCastAction.ALREADY_HANDLED;
+			}
+		}
+		if (state == SpellCastState.NORMAL) {
 			lifewalkers.add(player.getName());
 			if (grower == null) {
 				grower = new Grower();

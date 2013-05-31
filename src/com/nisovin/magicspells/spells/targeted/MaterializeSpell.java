@@ -22,6 +22,7 @@ public class MaterializeSpell extends TargetedLocationSpell {
 	private int type;
 	private byte data;
 	private int resetDelay;
+	private boolean falling;
 	private boolean applyPhysics;
 	private boolean checkPlugins;
 	private String strFailed;
@@ -36,6 +37,7 @@ public class MaterializeSpell extends TargetedLocationSpell {
 			data = (byte)typeAndData.data;
 		}
 		resetDelay = getConfigInt("reset-delay", 0);
+		falling = getConfigBoolean("falling", false);
 		applyPhysics = getConfigBoolean("apply-physics", true);
 		checkPlugins = getConfigBoolean("check-plugins", true);
 		strFailed = getConfigString("str-failed", "");
@@ -70,21 +72,22 @@ public class MaterializeSpell extends TargetedLocationSpell {
 			block.setTypeIdAndData(type, data, false);
 			BlockPlaceEvent event = new BlockPlaceEvent(block, blockState, against, player.getItemInHand(), player, true);
 			Bukkit.getPluginManager().callEvent(event);
-			blockState.update();
+			blockState.update(true);
 			if (event.isCancelled()) {
 				return false;
-			} else {
-				block.setTypeIdAndData(type, data, applyPhysics);
 			}
-		} else {
+		}
+		if (!falling) {
 			block.setTypeIdAndData(type, data, applyPhysics);
+		} else {
+			block.getWorld().spawnFallingBlock(block.getLocation().add(.5, 0, .5), type, data);
 		}
 		
 		playSpellEffects(EffectPosition.CASTER, player);
 		playSpellEffects(EffectPosition.TARGET, block.getLocation(), type + "");
 		playSpellEffectsTrail(player.getLocation(), block.getLocation(), null);
 		
-		if (resetDelay > 0) {
+		if (resetDelay > 0 && !falling) {
 			Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new Runnable() {
 				public void run() {
 					if (block.getTypeId() == type && block.getData() == data) {

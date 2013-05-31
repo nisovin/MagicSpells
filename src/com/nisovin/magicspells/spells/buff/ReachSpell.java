@@ -55,7 +55,7 @@ public class ReachSpell extends BuffSpell {
 		return PostCastAction.HANDLE_NORMALLY;
 	}
 
-	@EventHandler(priority=EventPriority.MONITOR)
+	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onPlayerInteract(PlayerInteractEvent event) {
 		if (reaching.contains(event.getPlayer())) {
 			Player player = event.getPlayer();
@@ -121,7 +121,7 @@ public class ReachSpell extends BuffSpell {
 							prevState.update(true);
 						} else {
 							// remove item from hand
-							if (consumeBlocks && player.getGameMode() == GameMode.SURVIVAL) {
+							if (consumeBlocks && player.getGameMode() != GameMode.CREATIVE) {
 								if (inHand.getAmount() > 1) {
 									inHand.setAmount(inHand.getAmount() - 1);
 									player.setItemInHand(inHand);
@@ -130,6 +130,7 @@ public class ReachSpell extends BuffSpell {
 								}
 							}
 							addUseAndChargeCost(player);
+							event.setCancelled(true);
 						}
 					}
 				}

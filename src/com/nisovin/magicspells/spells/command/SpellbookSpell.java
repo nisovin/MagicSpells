@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 import org.bukkit.Bukkit;
@@ -193,7 +194,7 @@ public class SpellbookSpell extends CommandSpell {
 		if (event.getBlock().getType() == spellbookBlock) {
 			MagicLocation loc = new MagicLocation(event.getBlock().getLocation());
 			if (bookLocations.contains(loc)) {
-				if (event.getPlayer().isOp()) {
+				if (event.getPlayer().isOp() || event.getPlayer().hasPermission("magicspells.advanced.spellbook")) {
 					// remove the bookcase
 					int i = bookLocations.indexOf(loc);
 					removeSpellbook(i);
@@ -221,7 +222,7 @@ public class SpellbookSpell extends CommandSpell {
 	}
 	
 	@Override
-	public String[] tabComplete(CommandSender sender, String partial) {
+	public List<String> tabComplete(CommandSender sender, String partial) {
 		if (sender instanceof Player && !partial.contains(" ")) {
 			return tabCompleteSpellName(sender, partial);
 		}

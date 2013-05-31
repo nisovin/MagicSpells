@@ -62,12 +62,15 @@ public class ManaSystem extends ManaHandler {
 				r.name = key;
 				r.maxMana = config.getInt("mana.ranks." + key + ".max-mana", defaultMaxMana);
 				r.regenAmount = config.getInt("mana.ranks." + key + ".regen-amount", defaultRegenAmount);
+				r.prefix = config.getString("mana.ranks." + key + ".prefix", manaBarPrefix);
+				r.colorFull = ChatColor.getByChar(config.getString("mana.ranks." + key + ".color-full", manaBarColorFull.getChar() + ""));
+				r.colorEmpty = ChatColor.getByChar(config.getString("mana.ranks." + key + ".color-empty", manaBarColorEmpty.getChar() + ""));
 				ranks.add(r);
 			}
 		}
 		
 		manaBars = new HashMap<String, ManaBar>();
-		taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(MagicSpells.plugin, new Regenerator(), regenInterval, regenInterval);
+		taskId = MagicSpells.scheduleRepeatingTask(new Regenerator(), regenInterval, regenInterval);
 	}
 	
 	private ManaBar getManaBar(Player player) {
@@ -77,9 +80,11 @@ public class ManaSystem extends ManaHandler {
 			ManaRank rank = getRank(player);
 			if (rank != null) {
 				bar = new ManaBar(player, rank.maxMana, rank.regenAmount);
+				bar.setDisplayData(rank.prefix, rank.colorFull, rank.colorEmpty);
 				MagicSpells.debug(1, "Creating mana bar for player " + player.getName() + " with rank " + rank.name);
 			} else {
 				bar = new ManaBar(player, defaultMaxMana, defaultRegenAmount);
+				bar.setDisplayData(manaBarPrefix, manaBarColorFull, manaBarColorEmpty);
 				MagicSpells.debug(1, "Creating mana bar for player " + player.getName() + " with default rank");
 			}
 			manaBars.put(player.getName().toLowerCase(), bar);
@@ -98,10 +103,12 @@ public class ManaSystem extends ManaHandler {
 					MagicSpells.debug(1, "Creating mana bar for player " + player.getName() + " with rank " + rank.name);
 					bar.setMaxMana(rank.maxMana);
 					bar.setRegenAmount(rank.regenAmount);
+					bar.setDisplayData(rank.prefix, rank.colorFull, rank.colorEmpty);
 				} else {
 					MagicSpells.debug(1, "Creating mana bar for player " + player.getName() + " with default rank");
 					bar.setMaxMana(defaultMaxMana);
 					bar.setRegenAmount(defaultRegenAmount);
+					bar.setDisplayData(manaBarPrefix, manaBarColorFull, manaBarColorEmpty);
 				}
 			}
 			showMana(player);
@@ -197,12 +204,12 @@ public class ManaSystem extends ManaHandler {
 	
 	private void showManaInChat(Player player, ManaBar bar) {
 		int segments = (int)(((double)bar.getMana()/(double)bar.getMaxMana()) * manaBarSize);
-		String text = MagicSpells.getTextColor() + manaBarPrefix + " {" + manaBarColorFull;
+		String text = MagicSpells.getTextColor() + bar.getPrefix() + " {" + bar.getColorFull();
 		int i = 0;
 		for (; i < segments; i++) {
 			text += "=";
 		}
-		text += manaBarColorEmpty;
+		text += bar.getColorEmpty();
 		for (; i < manaBarSize; i++) {
 			text += "=";
 		}
@@ -253,6 +260,9 @@ public class ManaSystem extends ManaHandler {
 		String name;
 		int maxMana;
 		int regenAmount;
+		String prefix;
+		ChatColor colorFull;
+		ChatColor colorEmpty;
 	}
 	
 	public class Regenerator implements Runnable {

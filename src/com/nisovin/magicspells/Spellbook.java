@@ -95,23 +95,25 @@ public class Spellbook {
 				String line = scanner.nextLine();
 				if (!line.equals("")) {
 					if (!line.contains(":")) {
-						Spell spell = MagicSpells.spells.get(line);
+						Spell spell = MagicSpells.getSpellByInternalName(line);
 						if (spell != null) {
 							addSpell(spell);
 						}
 					} else {
-						String[] data = line.split(":",2);
-						Spell spell = MagicSpells.spells.get(data[0]);
+						String[] data = line.split(":", 2);
+						Spell spell = MagicSpells.getSpellByInternalName(data[0]);
 						if (spell != null) {
-							CastItem[] items = null;
-							if (data[1].matches("^(-?[0-9]+(:-?[0-9]+)?(;[0-9]+-[0-9]+(\\+[0-9]+-[0-9]+)*)?)(,(-?[0-9]+(:-?[0-9]+)?(;[0-9]+-[0-9]+(\\+[0-9]+-[0-9]+)*)?))*$")) {
-								String[] s = data[1].split(",");
-								items = new CastItem[s.length];
-								for (int i = 0; i < s.length; i++) {
-									items[i] = new CastItem(s[i]);
+							ArrayList<CastItem> items = new ArrayList<CastItem>();
+							String[] s = data[1].split(",");
+							for (int i = 0; i < s.length; i++) {
+								try {
+									CastItem castItem = new CastItem(s[i]);
+									items.add(castItem);
+								} catch (Exception e) {
+									e.printStackTrace();
 								}
 							}
-							addSpell(spell, items);
+							addSpell(spell, items.toArray(new CastItem[items.size()]));
 						}
 					}
 				}
@@ -175,11 +177,11 @@ public class Spellbook {
 		return this.allSpells;
 	}
 	
-	public String[] tabComplete(String partial) {
+	public List<String> tabComplete(String partial) {
 		String[] data = Util.splitParams(partial, 2);
 		if (data.length == 1) {
 			// complete spell name
-			partial = data[0];
+			partial = data[0].toLowerCase();
 			List<String> options = new ArrayList<String>();
 			for (Spell spell : allSpells) {
 				if (spell.canCastByCommand()) {
@@ -198,7 +200,7 @@ public class Spellbook {
 				}
 			}
 			if (options.size() > 0) {
-				return options.toArray(new String[options.size()]);
+				return options;
 			} else {
 				return null;
 			}
@@ -208,8 +210,8 @@ public class Spellbook {
 			if (spell == null) {
 				return null;
 			} else {
-				String[] ret = spell.tabComplete(player, data[1]);
-				if (ret == null || ret.length == 0) {
+				List<String> ret = spell.tabComplete(player, data[1]);
+				if (ret == null || ret.size() == 0) {
 					return null;
 				} else {
 					return ret;
@@ -218,13 +220,30 @@ public class Spellbook {
 		}
 	}
 	
-	protected Spell nextSpell(ItemStack item) {
+	protected CastItem getCastItemForCycling(ItemStack item) {
 		CastItem castItem;
 		if (item != null) {
 			castItem = new CastItem(item);
 		} else {
 			castItem = new CastItem(0);
 		}
+		ArrayList<Spell> spells = itemSpells.get(castItem);
+		if (spells != null && (spells.size() > 1 || (spells.size() == 1 && MagicSpells.allowCycleToNoSpell))) {
+			return castItem;
+		} else {
+			return null;
+		}
+	}
+	
+	protected Spell nextSpell(ItemStack item) {
+		CastItem castItem = getCastItemForCycling(item);
+		if (castItem != null) {
+			return nextSpell(castItem);
+		}
+		return null;
+	}
+	
+	protected Spell nextSpell(CastItem castItem) {
 		Integer i = activeSpells.get(castItem); // get the index of the active spell for the cast item
 		if (i != null) {
 			ArrayList<Spell> spells = itemSpells.get(castItem); // get all the spells for the cast item
@@ -258,12 +277,14 @@ public class Spellbook {
 	}
 	
 	protected Spell prevSpell(ItemStack item) {
-		CastItem castItem;
-		if (item != null) {
-			castItem = new CastItem(item);
-		} else {
-			castItem = new CastItem(0);
+		CastItem castItem = getCastItemForCycling(item);
+		if (castItem != null) {
+			return prevSpell(castItem);
 		}
+		return null;
+	}
+	
+	protected Spell prevSpell(CastItem castItem) {
 		Integer i = activeSpells.get(castItem); // get the index of the active spell for the cast item
 		if (i != null) {
 			ArrayList<Spell> spells = itemSpells.get(castItem); // get all the spells for the cast item
@@ -298,12 +319,16 @@ public class Spellbook {
 	
 	public Spell getActiveSpell(ItemStack item) {
 		CastItem castItem = new CastItem(item);
+		return getActiveSpell(castItem);
+	}
+	
+	public Spell getActiveSpell(CastItem castItem) {
 		Integer i = activeSpells.get(castItem);
 		if (i != null && i != -1) {
 			return itemSpells.get(castItem).get(i);
 		} else {
 			return null;
-		}		
+		}
 	}
 	
 	public boolean hasSpell(Spell spell) {
@@ -354,8 +379,6 @@ public class Spellbook {
 			}
 			for (CastItem i : items) {
 				MagicSpells.debug(3, "        Cast item: " + i + (castItems!=null?" (custom)":" (default)"));
-			}
-			for (CastItem i : items) {
 				if (i != null) {
 					ArrayList<Spell> temp = itemSpells.get(i);
 					if (temp != null) {
@@ -484,6 +507,12 @@ public class Spellbook {
 		return removed;
 	}
 	
+	public void removeAllCustomBindings() {
+		customBindings.clear();
+		save();
+		reload();
+	}
+	
 	public void removeAllSpells() {
 		for (Spell spell : allSpells) {
 			if (spell instanceof BuffSpell) {
@@ -533,6 +562,7 @@ public class Spellbook {
 			MagicSpells.debug(2, "Saved spellbook file: " + playerName.toLowerCase());
 		} catch (Exception e) {
 			plugin.getServer().getLogger().severe("Error saving player spellbook: " + playerName);
+			e.printStackTrace();
 		}		
 	}
 	

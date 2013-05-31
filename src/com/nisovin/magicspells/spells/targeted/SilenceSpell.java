@@ -3,14 +3,16 @@ package com.nisovin.magicspells.spells.targeted;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerChatEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 
 import com.nisovin.magicspells.MagicSpells;
@@ -30,7 +32,7 @@ public class SilenceSpell extends TargetedEntitySpell {
 	private Set<Spell> allowedSpells;
 	private String strSilenced;
 	
-	private HashMap<String,Unsilencer> silenced;
+	private Map<String,Unsilencer> silenced;
 	
 	public SilenceSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -43,7 +45,11 @@ public class SilenceSpell extends TargetedEntitySpell {
 		allowedSpellNames = getConfigStringList("allowed-spells", null);
 		strSilenced = getConfigString("str-silenced", "You are silenced!");
 		
-		silenced = new HashMap<String,Unsilencer>();
+		if (preventChat) {
+			silenced = new ConcurrentHashMap<String, Unsilencer>();
+		} else {
+			silenced = new HashMap<String, Unsilencer>();
+		}
 	}
 	
 	@Override
@@ -78,7 +84,7 @@ public class SilenceSpell extends TargetedEntitySpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			Player target = getTargetedPlayer(player, range, obeyLos);
+			Player target = getTargetedPlayer(player, minRange, range, obeyLos);
 			if (target == null) {
 				return noTarget(player);
 			}
@@ -116,17 +122,21 @@ public class SilenceSpell extends TargetedEntitySpell {
 	
 	public class CastListener implements Listener {
 		@EventHandler(ignoreCancelled=true)
-		public void onSpellCast(SpellCastEvent event) {
+		public void onSpellCast(final SpellCastEvent event) {
 			if (silenced.containsKey(event.getCaster().getName()) && (allowedSpells == null || !allowedSpells.contains(event.getSpell()))) {
 				event.setCancelled(true);
-				sendMessage(event.getCaster(), strSilenced);
+				Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new Runnable() {
+					public void run() {
+						sendMessage(event.getCaster(), strSilenced);
+					}
+				});
 			}
 		}
 	}
 	
 	public class ChatListener implements Listener {
 		@EventHandler(ignoreCancelled=true)
-		public void onChat(PlayerChatEvent event) {
+		public void onChat(AsyncPlayerChatEvent event) {
 			if (silenced.containsKey(event.getPlayer().getName())) {
 				event.setCancelled(true);
 				sendMessage(event.getPlayer(), strSilenced);

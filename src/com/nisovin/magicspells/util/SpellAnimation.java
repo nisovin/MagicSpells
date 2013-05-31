@@ -1,7 +1,5 @@
 package com.nisovin.magicspells.util;
 
-import org.bukkit.Bukkit;
-
 import com.nisovin.magicspells.MagicSpells;
 
 /**
@@ -14,15 +12,15 @@ import com.nisovin.magicspells.MagicSpells;
 public abstract class SpellAnimation implements Runnable {
 
 	private int taskId;
-	private long delay;
-	private long interval;
+	private int delay;
+	private int interval;
 	private int tick;
 	
 	/**
 	 * Create a new spell animation with the specified interval and no delay. It will not auto start.
 	 * @param interval the animation interval, in server ticks (animation speed)
 	 */
-	public SpellAnimation(long interval) {
+	public SpellAnimation(int interval) {
 		this(0, interval, false);
 	}
 	
@@ -31,7 +29,7 @@ public abstract class SpellAnimation implements Runnable {
 	 * @param interval the animation interval, in server ticks (animation speed)
 	 * @param autoStart whether the animation should start immediately upon being created
 	 */
-	public SpellAnimation(long interval, boolean autoStart) {
+	public SpellAnimation(int interval, boolean autoStart) {
 		this(0, interval, autoStart);
 	}
 	
@@ -40,7 +38,7 @@ public abstract class SpellAnimation implements Runnable {
 	 * @param delay the delay before the animation begins, in server ticks
 	 * @param interval the animation interval, in server ticks (animation speed)
 	 */
-	public SpellAnimation(long delay, long interval) {
+	public SpellAnimation(int delay, int interval) {
 		this(delay, interval, false);
 	}
 	
@@ -50,7 +48,7 @@ public abstract class SpellAnimation implements Runnable {
 	 * @param interval the animation interval, in server ticks (animation speed)
 	 * @param autoStart whether the animation should start immediately upon being created
 	 */
-	public SpellAnimation(long delay, long interval, boolean autoStart) {
+	public SpellAnimation(int delay, int interval, boolean autoStart) {
 		this.delay = delay;
 		this.interval = interval;
 		this.tick = -1;
@@ -63,14 +61,14 @@ public abstract class SpellAnimation implements Runnable {
 	 * Start the spell animation.
 	 */
 	public void play() {
-		taskId = Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(MagicSpells.plugin, this, delay, interval);
+		taskId = MagicSpells.scheduleRepeatingTask(this, delay, interval);
 	}
 	
 	/**
 	 * Stop the spell animation.
 	 */
 	protected void stop() {
-		Bukkit.getServer().getScheduler().cancelTask(taskId);
+		MagicSpells.cancelTask(taskId);
 	}
 	
 	/**

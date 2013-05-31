@@ -34,7 +34,7 @@ public class ForcetossSpell extends TargetedEntitySpell {
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
 			// get target
-			LivingEntity target = getTargetedEntity(player, range, targetPlayers, obeyLos);
+			LivingEntity target = getTargetedEntity(player, minRange, range, targetPlayers, obeyLos);
 			if (target == null) {
 				return noTarget(player);
 			}

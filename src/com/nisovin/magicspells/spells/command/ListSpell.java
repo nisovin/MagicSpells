@@ -77,7 +77,7 @@ public class ListSpell extends CommandSpell {
 	}
 	
 	@Override
-	public String[] tabComplete(CommandSender sender, String partial) {
+	public List<String> tabComplete(CommandSender sender, String partial) {
 		if (sender instanceof ConsoleCommandSender) {
 			if (!partial.contains(" ")) {
 				return tabCompletePlayerName(sender, partial);

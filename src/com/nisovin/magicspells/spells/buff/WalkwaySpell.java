@@ -51,8 +51,11 @@ public class WalkwaySpell extends BuffSpell {
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (platforms.containsKey(player)) {
 			turnOff(player);
-			return PostCastAction.ALREADY_HANDLED;
-		} else if (state == SpellCastState.NORMAL) {
+			if (toggle) {
+				return PostCastAction.ALREADY_HANDLED;
+			}
+		}
+		if (state == SpellCastState.NORMAL) {
 			platforms.put(player, new Platform(player, material, size));
 			startSpellDuration(player);
 			registerListener();

@@ -37,7 +37,7 @@ class NovaEffect extends SpellEffect {
 			if (params.length >= 2) {
 				try {
 					data = Byte.parseByte(params[1]);
-				} catch (NumberFormatException e) {					
+				} catch (NumberFormatException e) {
 				}
 			}
 			if (params.length >= 3) {

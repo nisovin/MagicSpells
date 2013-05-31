@@ -77,7 +77,7 @@ public class SummonSpell extends TargetedSpell {
 			}
 			
 			// check location
-			if (landLoc == null || !BlockUtils.isSafeToStand(landLoc)) {
+			if (landLoc == null || !BlockUtils.isSafeToStand(landLoc.clone())) {
 				sendMessage(player, strUsage);
 				return PostCastAction.ALREADY_HANDLED;
 			}
@@ -104,10 +104,10 @@ public class SummonSpell extends TargetedSpell {
 			if (requireAcceptance) {
 				pendingSummons.put(target, landLoc);
 				pendingTimes.put(target, System.currentTimeMillis());
-				sendMessage(target, strSummonPending);
+				sendMessage(target, strSummonPending, "%a", player.getDisplayName());
 			} else {
 				target.teleport(landLoc);
-				sendMessage(target, strSummonAccepted);
+				sendMessage(target, strSummonAccepted, "%a", player.getDisplayName());
 			}
 			
 			sendMessages(player, target);
@@ -136,7 +136,7 @@ public class SummonSpell extends TargetedSpell {
 	}
 	
 	@Override
-	public String[] tabComplete(CommandSender sender, String partial) {
+	public List<String> tabComplete(CommandSender sender, String partial) {
 		if (partial.contains(" ")) {
 			return null;
 		}

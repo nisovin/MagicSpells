@@ -10,22 +10,24 @@ import com.nisovin.magicspells.MagicSpells;
 public class TemporaryBlockSet implements Runnable {
 	
 	private Material original;
-	private Material replaceWith;
+	private int replaceWith;
+	private byte replaceWithData;
 	
 	private ArrayList<Block> blocks;
 	
 	private BlockSetRemovalCallback callback;
 	
-	public TemporaryBlockSet(Material original, Material replaceWith) {
+	public TemporaryBlockSet(Material original, int replaceWith, byte replaceWithData) {
 		this.original = original;
 		this.replaceWith = replaceWith;
+		this.replaceWithData = replaceWithData;
 		
 		this.blocks = new ArrayList<Block>();
 	}
 	
 	public void add(Block block) {
 		if (block.getType() == original) {
-			block.setType(replaceWith);
+			block.setTypeIdAndData(replaceWith, replaceWithData, false);
 			blocks.add(block);
 		}
 	}
@@ -41,7 +43,7 @@ public class TemporaryBlockSet implements Runnable {
 	public void removeAfter(int seconds, BlockSetRemovalCallback callback) {
 		if (blocks.size() > 0) {
 			this.callback = callback;
-			MagicSpells.plugin.getServer().getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, this, seconds*20);
+			MagicSpells.scheduleDelayedTask(this, seconds*20);
 		}
 	}
 	
@@ -54,7 +56,7 @@ public class TemporaryBlockSet implements Runnable {
 	
 	public void remove() {
 		for (Block block : blocks) {
-			if (block.getType() == replaceWith) {
+			if (block.getTypeId() == replaceWith) {
 				block.setType(original);
 			}
 		}

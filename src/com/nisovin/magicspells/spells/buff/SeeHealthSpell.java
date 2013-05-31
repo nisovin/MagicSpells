@@ -1,8 +1,11 @@
 package com.nisovin.magicspells.spells.buff;
 
 import java.util.HashMap;
+import java.util.Random;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -11,15 +14,16 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.spells.BuffSpell;
-import com.nisovin.magicspells.util.BossHealthBar;
 import com.nisovin.magicspells.util.MagicConfig;
 
 public class SeeHealthSpell extends BuffSpell {
 
-	private boolean toggle;
 	private String mode;
 	private int interval;
 	private int range;
@@ -27,14 +31,17 @@ public class SeeHealthSpell extends BuffSpell {
 	private boolean targetNonPlayers;
 	private boolean obeyLos;
 	
-	private HashMap<Player, BossHealthBar> bars;
+	private String symbol = "=";
+	private int barSize = 20;
+	private boolean colorBlind = false;
+	
+	private HashMap<Player, Integer> bars;
 	private Updater updater;
 	
 	public SeeHealthSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		toggle = getConfigBoolean("toggle", true);
-		mode = getConfigString("mode", "attack");
+		mode = getConfigString("mode", "always");
 		interval = getConfigInt("update-interval", 5);
 		range = getConfigInt("range", 15);
 		targetPlayers = getConfigBoolean("target-players", true);
@@ -45,7 +52,7 @@ public class SeeHealthSpell extends BuffSpell {
 			mode = "attack";
 		}
 		
-		bars = new HashMap<Player, BossHealthBar>();
+		bars = new HashMap<Player, Integer>();
 	}
 	
 	@Override
@@ -65,7 +72,7 @@ public class SeeHealthSpell extends BuffSpell {
 		}
 		if (state == SpellCastState.NORMAL) {
 			if (!bars.containsKey(player)) {
-				bars.put(player, new BossHealthBar(player));
+				bars.put(player, player.getInventory().getHeldItemSlot());
 				if (updater == null && mode.equals("always")) {
 					updater = new Updater();
 				}
@@ -80,12 +87,74 @@ public class SeeHealthSpell extends BuffSpell {
 		return bars.containsKey(player);
 	}
 	
+	private void showHealthBar(Player player, LivingEntity entity) {
+		int slot = player.getInventory().getHeldItemSlot();
+		// get item
+		ItemStack item = player.getItemInHand();
+		if (item == null || item.getType() == Material.AIR) {
+			item = new ItemStack(36, 0);
+		} else {
+			item = item.clone();
+		}
+		// get pct health
+		double pct = (double)entity.getHealth() / (double)entity.getMaxHealth();
+		// get bar color
+		ChatColor color = ChatColor.WHITE;
+		if (pct <= .2) {
+			color = ChatColor.DARK_RED;
+		} else if (pct <= .4) {
+			color = ChatColor.RED;
+		} else if (pct <= .6) {
+			color = ChatColor.GOLD;
+		} else if (pct <= .8) {
+			color = ChatColor.YELLOW;
+		} else if (!colorBlind) {
+			color = ChatColor.GREEN;
+		}
+		// get health bar string
+		StringBuilder sb = new StringBuilder(barSize + 9);
+		sb.append(getRandomColor().toString());
+		int remain = (int)Math.round(barSize * pct);
+		sb.append(color.toString());
+		for (int i = 0; i < remain; i++) {
+			sb.append(symbol);
+		}
+		if (remain < barSize) {
+			sb.append(ChatColor.DARK_GRAY.toString());
+			for (int i = 0; i < barSize - remain; i++) {
+				sb.append(symbol);
+			}
+		}
+		// set health bar string
+		ItemMeta meta = item.getItemMeta();
+		meta.setDisplayName(sb.toString());
+		item.setItemMeta(meta);
+		// send update
+		MagicSpells.getVolatileCodeHandler().sendFakeSlotUpdate(player, slot, item);
+	}
+	
+	//private void resetHealthBar(Player player) {
+	//	resetHealthBar(player, player.getInventory().getHeldItemSlot());
+	//}
+	
+	private void resetHealthBar(Player player, int slot) {
+		MagicSpells.getVolatileCodeHandler().sendFakeSlotUpdate(player, slot, player.getItemInHand());
+	}
+	
+	@EventHandler
+	public void onItemHeldChange(PlayerItemHeldEvent event) {
+		if (isActive(event.getPlayer())) {
+			resetHealthBar(event.getPlayer(), event.getPreviousSlot());
+		}
+	}
+	
+	@SuppressWarnings("deprecation")
 	@Override
 	public void turnOff(Player player) {
-		BossHealthBar b = bars.remove(player);
-		if (b != null) {
+		Integer i = bars.remove(player);
+		if (i != null) {
 			super.turnOff(player);
-			b.disable();
+			player.updateInventory();
 			sendMessage(player, strFade);
 			
 			if (updater != null && bars.size() == 0) {
@@ -95,16 +164,25 @@ public class SeeHealthSpell extends BuffSpell {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	protected void turnOff() {
-		for (BossHealthBar bar : bars.values()) {
-			bar.disable();
+		for (Player player : bars.keySet()) {
+			if (player.isValid()) {
+				player.updateInventory();
+			}
 		}
 		bars.clear();
 		if (updater != null) {
 			updater.stop();
 			updater = null;
 		}
+	}
+	
+	private final String colors = "01234567890abcdef";
+	private final Random random = new Random();
+	private ChatColor getRandomColor() {
+		return ChatColor.getByChar(colors.charAt(random.nextInt(colors.length())));
 	}
 	
 	class AttackListener implements Listener {
@@ -115,12 +193,7 @@ public class SeeHealthSpell extends BuffSpell {
 				if (damager instanceof Projectile && ((Projectile)damager).getShooter() != null) {
 					damager = ((Projectile)damager).getShooter();
 				}
-				BossHealthBar bar = bars.get(damager);
-				if (bar != null) {
-					LivingEntity e = (LivingEntity)event.getEntity();
-					bar.update(e.getHealth() - event.getDamage(), e.getMaxHealth());
-					addUseAndChargeCost((Player)damager);
-				}
+				// update bar?
 			}
 		}
 	}
@@ -136,12 +209,11 @@ public class SeeHealthSpell extends BuffSpell {
 		@Override
 		public void run() {
 			for (Player player : bars.keySet()) {
-				LivingEntity target = getTargetedEntity(player, range, targetPlayers, targetNonPlayers, obeyLos, false);
-				BossHealthBar bar = bars.get(player);
+				LivingEntity target = getTargetedEntity(player, 2, range, targetPlayers, targetNonPlayers, obeyLos, false);
 				if (target != null) {
-					bar.update(target);
+					showHealthBar(player, target);
 				} else {
-					bar.disable();
+					//resetHealthBar(player);
 				}
 			}
 		}

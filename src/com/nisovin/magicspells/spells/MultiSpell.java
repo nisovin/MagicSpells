@@ -2,6 +2,7 @@ package com.nisovin.magicspells.spells;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -16,9 +17,11 @@ public final class MultiSpell extends InstantSpell {
 	private boolean castWithItem;
 	private boolean castByCommand;
 	private boolean checkIndividualCooldowns;
+	private boolean castRandomSpellInstead;
 	
 	private List<String> spellList;
 	private ArrayList<Action> actions;
+	private Random random = new Random();
 	
 	public MultiSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -26,6 +29,7 @@ public final class MultiSpell extends InstantSpell {
 		castWithItem = getConfigBoolean("can-cast-with-item", true);
 		castByCommand = getConfigBoolean("can-cast-by-command", true);
 		checkIndividualCooldowns = getConfigBoolean("check-individual-cooldowns", false);
+		castRandomSpellInstead = getConfigBoolean("cast-random-spell-instead", false);
 
 		actions = new ArrayList<Action>();
 		spellList = getConfigStringList("spells", null);
@@ -56,31 +60,46 @@ public final class MultiSpell extends InstantSpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			// check cooldowns
-			if (checkIndividualCooldowns) {
-				for (Action action : actions) {
-					if (action.isSpell()) {
-						if (action.getSpell().onCooldown(player)) {
-							// a spell is on cooldown
-							sendMessage(player, strOnCooldown);
-							return PostCastAction.ALREADY_HANDLED;
+			if (!castRandomSpellInstead) {
+				// check cooldowns
+				if (checkIndividualCooldowns) {
+					for (Action action : actions) {
+						if (action.isSpell()) {
+							if (action.getSpell().onCooldown(player)) {
+								// a spell is on cooldown
+								sendMessage(player, strOnCooldown);
+								return PostCastAction.ALREADY_HANDLED;
+							}
 						}
 					}
 				}
-			}
-			
-			int delay = 0;
-			Spell spell;
-			for (Action action : actions) {
-				if (action.isDelay()) {
-					delay += action.getDelay();
-				} else if (action.isSpell()) {
-					spell = action.getSpell();
-					if (delay == 0) {
-						spell.castSpell(player, SpellCastState.NORMAL, power, null);
-					} else {
-						Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new DelayedSpell(spell, player, power), delay);
+				
+				// cast/schedule spells
+				int delay = 0;
+				Spell spell;
+				for (Action action : actions) {
+					if (action.isDelay()) {
+						delay += action.getDelay();
+					} else if (action.isSpell()) {
+						spell = action.getSpell();
+						if (delay == 0) {
+							spell.castSpell(player, SpellCastState.NORMAL, power, null);
+						} else {
+							Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new DelayedSpell(spell, player, power), delay);
+						}
 					}
+				}
+			} else {
+				// random spell
+				Action action = actions.get(random.nextInt(actions.size()));
+				if (action.isSpell()) {
+					// first check cooldown
+					if (checkIndividualCooldowns && action.getSpell().onCooldown(player)) {
+						sendMessage(player, strOnCooldown);
+						return PostCastAction.ALREADY_HANDLED;
+					}
+					// cast the spell
+					action.getSpell().castSpell(player, SpellCastState.NORMAL, power, null);
 				}
 			}
 			playSpellEffects(EffectPosition.CASTER, player);

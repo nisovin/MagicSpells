@@ -1,5 +1,7 @@
 package com.nisovin.magicspells.spells.command;
 
+import java.util.List;
+
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -35,7 +37,7 @@ public class HelpSpell extends CommandSpell {
 				sendMessage(player, strUsage);
 				return PostCastAction.ALREADY_HANDLED;
 			} else {
-				Spell spell = MagicSpells.getSpellByInGameName(args[0]);
+				Spell spell = MagicSpells.getSpellByInGameName(Util.arrayJoin(args, ' '));
 				Spellbook spellbook = MagicSpells.getSpellbook(player);
 				if (spell == null || (requireKnownSpell && (spellbook == null || !spellbook.hasSpell(spell)))) {
 					sendMessage(player, strNoSpell);
@@ -52,7 +54,7 @@ public class HelpSpell extends CommandSpell {
 	}
 	
 	@Override
-	public String[] tabComplete(CommandSender sender, String partial) {
+	public List<String> tabComplete(CommandSender sender, String partial) {
 		String [] args = Util.splitParams(partial);
 		if (sender instanceof Player && args.length == 1) {
 			return tabCompleteSpellName(sender, partial);

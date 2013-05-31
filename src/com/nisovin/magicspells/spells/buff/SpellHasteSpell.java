@@ -30,6 +30,9 @@ public class SpellHasteSpell extends BuffSpell {
     public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {            
         if (isActive(player)){
             turnOff(player);
+            if (toggle) {
+            	return PostCastAction.ALREADY_HANDLED;
+            }
         }
         if (state == SpellCastState.NORMAL) {
             spellTimersModified.put(player.getName(), power);

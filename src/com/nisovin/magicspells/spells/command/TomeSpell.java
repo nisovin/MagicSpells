@@ -1,9 +1,16 @@
 package com.nisovin.magicspells.spells.command;
 
+import java.util.List;
+
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BookMeta;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
@@ -13,9 +20,7 @@ import com.nisovin.magicspells.events.SpellLearnEvent.LearnSource;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.CommandSpell;
 import com.nisovin.magicspells.util.MagicConfig;
-import com.nisovin.bookworm.Book;
-import com.nisovin.bookworm.BookWorm;
-import com.nisovin.bookworm.event.BookReadEvent;
+import com.nisovin.magicspells.util.Util;
 
 public class TomeSpell extends CommandSpell {
 
@@ -74,12 +79,14 @@ public class TomeSpell extends CommandSpell {
 				}
 			}
 			
-			Book book = BookWorm.getBook(player.getItemInHand());
-			if (book == null) {
+			ItemStack item = player.getItemInHand();
+			if (item.getTypeId() != 386 && item.getTypeId() != 387) {
 				// fail -- no book
 				sendMessage(player, strNoBook);
 				return PostCastAction.ALREADY_HANDLED;
-			} else if (!allowOverwrite && book.hasHiddenData("MagicSpell")) {
+			}
+			
+			if (!allowOverwrite && getSpellDataFromTome(item) != null) {
 				// fail -- already has a spell
 				sendMessage(player, strAlreadyHasSpell);
 				return PostCastAction.ALREADY_HANDLED;
@@ -88,14 +95,27 @@ public class TomeSpell extends CommandSpell {
 				if (args.length > 1 && args[1].matches("^[0-9]+$")) {
 					uses = Integer.parseInt(args[1]);
 				}
-				if (uses > maxUses || (maxUses > 0 && uses < 0)) {
-					uses = maxUses;
-				}
-				book.addHiddenData("MagicSpell", spell.getInternalName() + (uses>0?","+uses:""));
-				book.save();
+				item = createTome(spell, uses, item);
+				player.setItemInHand(item);
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+	
+	public ItemStack createTome(Spell spell, int uses, ItemStack item) {
+		if (maxUses > 0 && uses > maxUses) {
+			uses = maxUses;
+		} else if (uses < 0) {
+			uses = defaultUses;
+		}
+		if (item == null) {
+			item = new ItemStack(Material.WRITTEN_BOOK, 1);
+			BookMeta bookMeta = (BookMeta)item.getItemMeta();
+			bookMeta.setTitle(getName() + ": " + spell.getName());
+			item.setItemMeta(bookMeta);
+		}
+		Util.setLoreData(item, internalName + ":" + spell.getInternalName() + (uses>0?","+uses:""));
+		return item;
 	}
 
 	@Override
@@ -104,58 +124,71 @@ public class TomeSpell extends CommandSpell {
 	}
 	
 	@Override
-	public String[] tabComplete(CommandSender sender, String partial) {
+	public List<String> tabComplete(CommandSender sender, String partial) {
+		return null;
+	}
+	
+	private String getSpellDataFromTome(ItemStack item) {
+		String loreData = Util.getLoreData(item);
+		if (loreData != null && loreData.startsWith(internalName + ":")) {
+			return loreData.replace(internalName + ":", "");
+		}
 		return null;
 	}
 	
 	@EventHandler
-	public void onBookRead(BookReadEvent event) {
-		String spellData = event.getBook().getHiddenData("MagicSpell");
-		if (spellData != null && !spellData.equals("")) {
-			String[] data = spellData.split(",");
-			Spell spell = MagicSpells.getSpellByInternalName(data[0]);
-			int uses = -1;
-			if (data.length > 1) {
-				uses = Integer.parseInt(data[1]);
-			}
-			Spellbook spellbook = MagicSpells.getSpellbook(event.getPlayer());
-			if (spell != null && spellbook != null) {
-				if (spellbook.hasSpell(spell)) {
-					// fail -- already known
-					sendMessage(event.getPlayer(), formatMessage(strAlreadyKnown, "%s", spell.getName()));
-				} else if (!spellbook.canLearn(spell)) {
-					// fail -- can't learn
+	public void onInteract(PlayerInteractEvent event) {
+		if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+		if (!event.hasItem()) return;
+		ItemStack item = event.getItem();
+		if (item.getType() != Material.WRITTEN_BOOK) return;
+		
+		String spellData = getSpellDataFromTome(item);
+		if (spellData == null || spellData.isEmpty()) return;
+		
+		String[] data = spellData.split(",");
+		Spell spell = MagicSpells.getSpellByInternalName(data[0]);
+		int uses = -1;
+		if (data.length > 1) {
+			uses = Integer.parseInt(data[1]);
+		}
+		Spellbook spellbook = MagicSpells.getSpellbook(event.getPlayer());
+		if (spell != null && spellbook != null) {
+			if (spellbook.hasSpell(spell)) {
+				// fail -- already known
+				sendMessage(event.getPlayer(), formatMessage(strAlreadyKnown, "%s", spell.getName()));
+			} else if (!spellbook.canLearn(spell)) {
+				// fail -- can't learn
+				sendMessage(event.getPlayer(), formatMessage(strCantLearn, "%s", spell.getName()));
+			} else {
+				// call event
+				SpellLearnEvent learnEvent = new SpellLearnEvent(spell, event.getPlayer(), LearnSource.TOME, event.getPlayer().getItemInHand());
+				Bukkit.getPluginManager().callEvent(learnEvent);
+				if (learnEvent.isCancelled()) {
+					// fail -- plugin cancelled
 					sendMessage(event.getPlayer(), formatMessage(strCantLearn, "%s", spell.getName()));
 				} else {
-					// call event
-					SpellLearnEvent learnEvent = new SpellLearnEvent(spell, event.getPlayer(), LearnSource.TOME, event.getPlayer().getItemInHand());
-					Bukkit.getPluginManager().callEvent(learnEvent);
-					if (learnEvent.isCancelled()) {
-						// fail -- plugin cancelled
-						sendMessage(event.getPlayer(), formatMessage(strCantLearn, "%s", spell.getName()));
-					} else {
-						// give spell
-						spellbook.addSpell(spell);
-						spellbook.save();
-						sendMessage(event.getPlayer(), formatMessage(strLearned, "%s", spell.getName()));
-						if (cancelReadOnLearn) {
-							event.setCancelled(true);
-						}
-						// remove use
-						if (uses > 0) {
-							uses--;
-							if (uses > 0) {
-								event.getBook().addHiddenData("MagicSpell", data[0] + "," + uses);
-							} else {
-								event.getBook().removeHiddenData("MagicSpell");
-							}							
-						}
-						// consume
-						if (uses <= 0 && consumeBook) {
-							event.getPlayer().setItemInHand(null);
-						}
-						playSpellEffects(EffectPosition.DELAYED, event.getPlayer());
+					// give spell
+					spellbook.addSpell(spell);
+					spellbook.save();
+					sendMessage(event.getPlayer(), formatMessage(strLearned, "%s", spell.getName()));
+					if (cancelReadOnLearn) {
+						event.setCancelled(true);
 					}
+					// remove use
+					if (uses > 0) {
+						uses--;
+						if (uses > 0) {
+							Util.setLoreData(item, internalName + ":" + data[0] + "," + uses);
+						} else {
+							Util.removeLoreData(item);
+						}
+					}
+					// consume
+					if (uses <= 0 && consumeBook) {
+						event.getPlayer().setItemInHand(null);
+					}
+					playSpellEffects(EffectPosition.DELAYED, event.getPlayer());
 				}
 			}
 		}

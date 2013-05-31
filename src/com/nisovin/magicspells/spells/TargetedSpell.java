@@ -12,8 +12,10 @@ import com.nisovin.magicspells.util.MagicConfig;
 public abstract class TargetedSpell extends InstantSpell {
 
 	protected int range;
+	protected int minRange;
 	protected boolean alwaysActivate;
 	protected boolean playFizzleSound;
+	protected boolean targetSelf;
 	protected String strCastTarget;
 	protected String strNoTarget;
 
@@ -21,10 +23,12 @@ public abstract class TargetedSpell extends InstantSpell {
 		super(config, spellName);
 		
 		range = getConfigInt("range", 20);
+		minRange = getConfigInt("min-range", 0);
 		alwaysActivate = getConfigBoolean("always-activate", false);
 		playFizzleSound = getConfigBoolean("play-fizzle-sound", false);
+		targetSelf = getConfigBoolean("target-self", false);
 		strCastTarget = getConfigString("str-cast-target", "");
-		strNoTarget = getConfigString("str-no-target", "No target found.");
+		strNoTarget = getConfigString("str-no-target", "");
 	}
 
 	protected void sendMessageToTarget(Player caster, Player target) {
@@ -43,6 +47,9 @@ public abstract class TargetedSpell extends InstantSpell {
 			if (entityName == null) {
 				entityName = entityType.getName();
 			}
+		}
+		if (entityName == null) {
+			entityName = "unknown";
 		}
 		sendMessage(caster, strCastSelf, "%a", caster.getDisplayName(), "%t", entityName);
 		if (playerTarget != null) {
@@ -68,6 +75,15 @@ public abstract class TargetedSpell extends InstantSpell {
 	protected void fizzle(Player player) {
 		if (playFizzleSound) {
 			player.playEffect(player.getLocation(), Effect.EXTINGUISH, 0);
+		}
+	}
+	
+	@Override
+	protected LivingEntity getTargetedEntity(Player player, int minRange, int range, boolean targetPlayers, boolean targetNonPlayers, boolean checkLos, boolean callSpellTargetEvent) {
+		if (targetSelf) {
+			return player;
+		} else {
+			return super.getTargetedEntity(player, minRange, range, targetPlayers, targetNonPlayers, checkLos, callSpellTargetEvent);
 		}
 	}
 	

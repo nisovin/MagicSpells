@@ -14,16 +14,15 @@ public class ExperienceUtils {
 	private static final int xpRequiredForNextLevel[] = new int[MAX_LEVEL_SUPPORTED];
 	private static final int xpTotalToReachLevel[] = new int[MAX_LEVEL_SUPPORTED];
 
-	// Initialise the xp lookup table.  Basing this on observations noted in https://bukkit.atlassian.net/browse/BUKKIT-47
-	// 7 xp to get to level 1, 17 to level 2, 31 to level 3...
-	// At each level, the increment to get to the next level increases alternately by 3 and 4
 	static {
 		xpTotalToReachLevel[0] = 0;
-		int incr = 7;
-		for (int i = 1; i < xpTotalToReachLevel.length; i++) {
-			xpRequiredForNextLevel[i - 1] = incr;
-			xpTotalToReachLevel[i] = xpTotalToReachLevel[i - 1] + incr;
-			incr += (i % 2 == 0) ? 4 : 3;
+		for (int i = 1; i < 17; i++) {
+			xpRequiredForNextLevel[i - 1] = 17;
+			xpTotalToReachLevel[i] = i * 17;
+		}
+		for (int i = 17; i < MAX_LEVEL_SUPPORTED; i++) {
+			xpRequiredForNextLevel[i - 1] = 3*i - 31;
+			xpTotalToReachLevel[i] = xpTotalToReachLevel[i - 1] + xpRequiredForNextLevel[i - 1];
 		}
 	}
 	

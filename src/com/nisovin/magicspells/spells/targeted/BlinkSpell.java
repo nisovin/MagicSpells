@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.BlockIterator;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.util.BlockUtils;
 import com.nisovin.magicspells.util.MagicConfig;
@@ -82,8 +83,11 @@ public class BlinkSpell extends TargetedLocationSpell {
 					loc.setZ(loc.getZ()+.5);
 					loc.setPitch(player.getLocation().getPitch());
 					loc.setYaw(player.getLocation().getYaw());
-					playSpellEffects(player.getLocation(), loc);
+					Location origLoc = player.getLocation();
+					playSpellEffects(EffectPosition.CASTER, origLoc);
 					teleport(player, loc, smokes);
+					playSpellEffects(EffectPosition.TARGET, loc);
+					playSpellEffectsTrail(origLoc, loc, null);
 				} else {
 					return noTarget(player, strCantBlink);
 				}

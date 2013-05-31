@@ -1,0 +1,21 @@
+zone1:
+    enabled: false
+    world: world
+    type: cuboid
+    point1: -30,0,-30
+    point2: 30,128,30
+    message: An anti-magic aura makes your spell fizzle.
+    allowed-spells:
+        - list
+        - help
+zone2:
+    enabled: false
+    world: world
+    type: worldguard
+    region: arena
+    message: You cannot use that spell in the arena.
+    disallowed-spells:
+        - blink
+        - gate
+        - mark
+        - recall

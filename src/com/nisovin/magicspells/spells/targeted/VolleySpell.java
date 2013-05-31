@@ -22,6 +22,7 @@ public class VolleySpell extends TargetedLocationSpell {
 	private int spread;
 	private int shootInterval;
 	private int removeDelay;
+	private boolean noTarget;
 	
 	public VolleySpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -31,6 +32,7 @@ public class VolleySpell extends TargetedLocationSpell {
 		spread = getConfigInt("spread", 150);
 		shootInterval = getConfigInt("shoot-interval", 0);
 		removeDelay = getConfigInt("remove-delay", 0);
+		noTarget = getConfigBoolean("no-target", false);
 	}
 	
 	@Override
@@ -55,7 +57,12 @@ public class VolleySpell extends TargetedLocationSpell {
 	private void volley(Player player, Location target, float power) {
 		Location spawn = player.getLocation();
 		spawn.setY(spawn.getY()+3);
-		Vector v = target.toVector().subtract(spawn.toVector()).normalize();
+		Vector v;
+		if (noTarget) {
+			v = player.getLocation().getDirection();
+		} else {
+			v = target.toVector().subtract(spawn.toVector()).normalize();
+		}
 		
 		if (shootInterval <= 0) {
 			final ArrayList<Arrow> arrowList = new ArrayList<Arrow>();
@@ -85,11 +92,15 @@ public class VolleySpell extends TargetedLocationSpell {
 		
 		playSpellEffects(player, target);
 	}
-
+	
 	@Override
 	public boolean castAtLocation(Player caster, Location target, float power) {
-		volley(caster, target, power);
-		return true;
+		if (!noTarget) {
+			volley(caster, target, power);
+			return true;
+		} else {
+			return false;
+		}
 	}
 	
 	private class ArrowShooter implements Runnable {

@@ -60,7 +60,7 @@ public class DisarmSpell extends TargetedEntitySpell {
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
 			// get target
-			Player target = getTargetedPlayer(player, range, obeyLos);
+			Player target = getTargetedPlayer(player, minRange, range, obeyLos);
 			if (target == null) {
 				// fail
 				return noTarget(player);

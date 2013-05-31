@@ -4,7 +4,7 @@ general:
     enable-error-logging: true
     enable-stat-collection: true
     enable-volatile-features: true
-    alt-config: altConfig.yml
+    enable-new-spell-handling: false
     str-cast-usage: |
         Usage: /cast <spell>. 
         Use /cast list to see a list of spells.
@@ -31,6 +31,7 @@ general:
     default-all-perms-false: false
     ignore-default-bindings: false
     ignore-cast-item-enchants: true
+    ignore-cast-item-names: false
     ignore-cast-item-durability: [ 268, 269, 270, 271, 283, 284, 285, 286, 290, 294, 314, 315, 316, 317 ]
     los-transparent-blocks: [ 0, 27, 28, 31, 32, 37, 38, 39, 40, 50, 51, 55, 63, 65, 66, 68, 69, 70, 72, 75, 76, 77, 78, 93, 94, 106, 111 ]
     global-cooldown: 500
@@ -148,23 +149,6 @@ spells:
         str-cast-self-target: "You have forgotten the %s spell."
         str-reset-target: "You have reset %t's spellbook."
         str-reset-self: "You have forgotten all of your spells."
-    spellbook:
-        spell-class: ".command.SpellbookSpell"
-        name: spellbook
-        description: Create a spellbook that teaches a spell.
-        default-uses: -1
-        destroy-when-used-up: false
-        spellbook-block: 47
-        str-use: "Usage: /cast spellbook <spell> [uses]"
-        str-cast-self: You have created a spellbook with the %s spell.
-        str-no-spell: You do not know a spell by that name.
-        str-cant-teach: You can't create a spellbook with that spell.
-        str-no-target: You must target a bookcase to create a spellbook.
-        str-has-spellbook: That bookcase already has a spellbook.
-        str-cant-destroy: You cannot destroy a bookcase with a spellbook.
-        str-cant-learn: You cannot learn the spell in this spellbook.
-        str-already-known: You already know the %s spell.
-        str-learned: You have learned the %s spell!
     bind:
         spell-class: ".command.BindSpell"
         name: bind
@@ -186,8 +170,93 @@ spells:
         str-no-spell: You do not know a spell by that name.
         str-cant-bind-spell: That spell cannot be bound to an item.
         str-not-bound: That spell is not bound to that item.
+    scroll:
+        spell-class: ".command.ScrollSpell"
+        name: scroll
+        description: Create a limited use spell scroll.
+        cast-for-free: true
+        default-uses: 5
+        max-uses: 10
+        item-id: 339
+        right-click-cast: true
+        left-click-cast: false
+        ignore-cast-perm: false
+        set-unstackable: true
+        remove-scroll-when-depleted: true
+        charge-reagents-for-spell-per-charge: false
+        require-teach-perm: true
+        require-scroll-cast-perm-on-use: true
+        stack-by-data-fn: "a"
+        str-scroll-over: "Spell Scroll: %s (%u uses remaining)"
+        str-usage: |
+            You must hold a single blank paper 
+            and type /cast scroll <spell> <uses>.
+        str-fail: You cannot create a spell scroll at this time.
+        str-no-spell: You do not know a spell by that name.
+        str-cant-teach: You cannot create a tome with that spell.
+        str-cast-self: You have created a spell scroll for %s.
+        str-on-use: "Spell Scroll: %s used. %u uses remaining."
+        str-use-fail: Unable to use this scroll right now.
+    spellbook:
+        spell-class: ".command.SpellbookSpell"
+        name: spellbook
+        description: Create a spellbook that teaches a spell.
+        default-uses: -1
+        destroy-when-used-up: false
+        spellbook-block: 47
+        str-use: "Usage: /cast spellbook <spell> [uses]"
+        str-cast-self: You have created a spellbook with the %s spell.
+        str-no-spell: You do not know a spell by that name.
+        str-cant-teach: You can't create a spellbook with that spell.
+        str-no-target: You must target a bookcase to create a spellbook.
+        str-has-spellbook: That bookcase already has a spellbook.
+        str-cant-destroy: You cannot destroy a bookcase with a spellbook.
+        str-cant-learn: You cannot learn the spell in this spellbook.
+        str-already-known: You already know the %s spell.
+        str-learned: You have learned the %s spell!
+    tome:
+        spell-class: ".command.TomeSpell"
+        name: tome
+        spell-icon: book
+        enabled: false
+        description: Create a tome that teaches a spell.
+        cancel-read-on-learn: true
+        consume-book: true
+        allow-overwrite: false
+        max-uses: -1
+        default-uses: -1
+        require-teach-perm: true
+        str-usage: "Usage: While holding a book, /cast tome <spell>"
+        str-no-spell: You do not know a spell with that name.
+        str-cant-teach: You cannot create a tome with that spell.
+        str-no-book: You must be holding a book.
+        str-already-has-spell: That book already contains a spell.
+        str-already-known: You already know the %s spell.
+        str-cant-learn: You cannot learn the spell in this tome.
+        str-learned: You have learned the %s spell.
+        str-cast-self: You have created a spell tome.
 
-
+    anvil:
+        spell-class: ".instant.ThrowBlockSpell"
+        name: anvil
+        spell-icon: anvil
+        description: Throws an anvil.
+        cast-item: blaze_rod
+        cooldown: 10
+        block-type: anvil
+        velocity: 1.0
+        vertical-adjustment: 0.5
+        rotation-offset: 0
+        fall-damage: 2.0
+        fall-damage-max: 20
+        drop-item: false
+        remove-blocks: false
+        call-target-event: true
+        check-plugins: false
+        cost:
+            - mana 25
+            - anvil
+        str-cost: 25 mana and 1 anvil
     armor:
         spell-class: ".buff.ArmorSpell"
         name: armor
@@ -223,7 +292,7 @@ spells:
         cost:
             - mana 10
         str-cost: 10 mana
-        str-cast-self: You have blinded your target!
+        str-cast-self: You have blinded %t!
         str-no-target: No target found.
     blink:
         spell-class: ".targeted.BlinkSpell"
@@ -281,9 +350,9 @@ spells:
             - feather 1
         use-cost-interval: 50
         str-cost: 50 mana, 5 feathers, plus 20 mana and 1 feather every 50 blocks
-        str-cast-self: You are now walking on air!
-        str-cast-others: "%a is now walking on air!"
-        str-fade: You are no longer walking on air.
+        str-cast-self: You are now walking on a platform of glass!
+        str-cast-others: "%a is now walking on a platform of glass!"
+        str-fade: Your magical glass platform disappears.
     clarity:
         spell-class: ".buff.ManaRegenSpell"
         name: clarity
@@ -363,7 +432,7 @@ spells:
         cost:
             - mana 10
         str-cost: 10 mana
-        str-cast-self: You have crippled your enemy.
+        str-cast-self: You have crippled %t.
         str-no-target: No target found.
     disarm:
         spell-class: ".targeted.DisarmSpell"
@@ -394,6 +463,24 @@ spells:
         str-invalid-item: Your target could not be disarmed.
         str-cast-self: You have disarmed %t.
         str-cast-target: "%a has disarmed you."
+    dowse:
+        spell-class: ".instant.DowseSpell"
+        name: dowse
+        spell-icon: compass
+        description: Dowse for iron ore.
+        cast-item: book
+        cooldown: 60
+        block-type: iron_ore
+        entity-type: ""
+        radius: 4
+        rotate-player: true
+        set-compass: true
+        cost:
+            - mana 35
+            - stone 2
+        str-cost: 35 mana and 2 stone blocks
+        str-cast-self: There is iron ore nearby.
+        str-not-found: No iron ore found nearby.
     drainlife:
         spell-class: ".targeted.DrainlifeSpell"
         name: drainlife
@@ -432,9 +519,20 @@ spells:
             - mana 5
         use-cost-interval: 1
         str-cost: 15 mana, plus 5 mana for each spell cast
-        str-cast-self: You feel yourself glowing with magical energy.
+        str-cast-self: You begin to glow with magical energy.
         str-cast-others: "%a begins to glow with magical energy."
-        str-fade: You are no longer glowing with magical energy.
+        str-fade: You are no longer glowing with magical energy.        
+    enderchest:
+        spell-class: ".instant.EnderchestSpell"
+        name: enderchest
+        spell-icon: ender_chest
+        description: Opens your ender chest inventory.
+        cast-item: book
+        cooldown: 300
+        cost:
+            - mana 50
+            - ender_pearl 1
+        str-cost: 50 mana and 1 ender pearl
     entomb:
         spell-class: ".targeted.EntombSpell"
         name: entomb
@@ -582,9 +680,27 @@ spells:
         food: 4
         saturation: 2.5
         cost:
-            - 25 mana
+            - mana 25
         str-cost: 25 mana
         str-cast-self: You feel less hungry.
+    forcebomb:
+        spell-class: ".targeted.ForcebombSpell"
+        name: forcepush
+        spell-icon: record_4
+        description: Push back your enemies.
+        cast-item: blaze_rod
+        cooldown: 8
+        range: 15
+        radius: 3
+        pushback-force: 30
+        additional-vertical-force: 15
+        max-vertical-force: 20
+        target-players: false
+        dont-target-caster: true
+        cost:
+            - mana 30
+        str-cost: 30 mana
+        str-cast-self: An explosion of energy pushes your enemies around.
     forcepush:
         spell-class: ".instant.ForcepushSpell"
         name: forcepush
@@ -804,6 +920,7 @@ spells:
         damage-causes:
             - block explosion
             - contact
+            - custom
             - drowning
             - entity attack
             - entity explosion
@@ -812,10 +929,13 @@ spells:
             - fire tick
             - lava
             - lightning
-            - projectile
-            - suffocation
             - magic
+            - poison
+            - projectile
+            - starvation
+            - suffocation
             - void
+            - wither
         duration: 60
         cooldown: 300
         cost: 
@@ -1172,33 +1292,6 @@ spells:
         str-cost: 20 mana, plus 1 feather each time you fall
         str-cast-self: You feel lighter.
         str-fade: Your normal weight returns.
-    scroll:
-        spell-class: ".command.ScrollSpell"
-        name: scroll
-        description: Create a limited use spell scroll.
-        cast-for-free: true
-        default-uses: 5
-        max-uses: 10
-        item-id: 339
-        right-click-cast: true
-        left-click-cast: false
-        ignore-cast-perm: false
-        set-unstackable: true
-        remove-scroll-when-depleted: true
-        charge-reagents-for-spell-per-charge: false
-        require-teach-perm: true
-        require-scroll-cast-perm-on-use: true
-        stack-by-data-fn: "a"
-        str-scroll-over: "Spell Scroll: %s (%u uses remaining)"
-        str-usage: |
-            You must hold a single blank paper 
-            and type /cast scroll <spell> <uses>.
-        str-fail: You cannot create a spell scroll at this time.
-        str-no-spell: You do not know a spell by that name.
-        str-cant-teach: You cannot create a tome with that spell.
-        str-cast-self: You have created a spell scroll for %s.
-        str-on-use: "Spell Scroll: %s used. %u uses remaining."
-        str-use-fail: Unable to use this scroll right now.
     shadowstep:
         spell-class: ".targeted.ShadowstepSpell"
         name: shadowstep
@@ -1293,6 +1386,8 @@ spells:
         fail-if-no-targets: true
         target-players: false
         target-non-players: true
+        target-caster: false
+        target-invisible-players: false
         spells:
             - lightning
         cooldown: 15
@@ -1300,6 +1395,25 @@ spells:
             - mana 35
         str-cost: 35 mana
         str-cast-self: You call down a lightning storm!
+    stormblock:
+        spell-class: ".targeted.PulserSpell"
+        name: stormblock
+        spell-icon: diamond_block
+        description: Summons a diamond block that calls lightning down upon nearby enemies.
+        cast-item: blaze_rod
+        cooldown: 30
+        total-pulses: 5
+        interval: 30
+        max-distance: 15
+        cap-per-player: 2
+        block-type: diamond_block
+        unbreakable: false
+        only-count-on-success: false
+        spells:
+            - storm
+        str-cast-self: You have summoned a storm block!
+        str-cast-others: "%a has summoned a storm block!"
+        str-at-cap: You have too many effects at once.
     summon_helper:
         spell-class: ".targeted.SummonSpell"
         can-cast-with-item: false
@@ -1340,7 +1454,7 @@ spells:
         str-ritual-joined: You have joined the summoning ritual.
         str-ritual-success: The summoning ritual is a success!
         str-ritual-interrupted: The summoning ritual has been interrupted.
-        str-ritual-fail: The summoning ritual has failed.
+        str-ritual-failed: The summoning ritual has failed.
     sun:
         spell-class: ".instant.TimeSpell"
         name: sun
@@ -1355,6 +1469,21 @@ spells:
         str-cost: 75 mana, 5 redstone dust and a clock
         time-to-set: 0
         str-announce: The sun has suddenly appeared in the sky!
+    switch:
+        spell-class: ".targeted.SwitchSpell"
+        name: switch
+        spell-icon: eye_of_ender
+        description: Switch places with your target.
+        cast-item: stick
+        cooldown: 6
+        switch-back: 0
+        target-players: true
+        obey-los: true
+        cost:
+            - mana 10
+        str-cost: 10 mana
+        str-cast-self: You have switched places with %t.
+        str-cast-target: "%a has switched places with you."
     telekinesis:
         spell-class: ".targeted.TelekinesisSpell"
         name: telekinesis
@@ -1367,27 +1496,6 @@ spells:
             - mana 5
         str-cost: 5 mana
         str-no-target: You must target a switch or button.
-    tome:
-        spell-class: ".command.TomeSpell"
-        name: tome
-        spell-icon: book
-        enabled: false
-        description: Create a tome that teaches a spell.
-        cancel-read-on-learn: true
-        consume-book: true
-        allow-overwrite: false
-        max-uses: -1
-        default-uses: -1
-        require-teach-perm: true
-        str-usage: "Usage: While holding a book, /cast tome <spell>"
-        str-no-spell: You do not know a spell with that name.
-        str-cant-teach: You cannot create a tome with that spell.
-        str-no-book: You must be holding a book.
-        str-already-has-spell: That book already contains a spell.
-        str-already-known: You already know the %s spell.
-        str-cant-learn: You cannot learn the spell in this tome.
-        str-learned: You have learned the %s spell.
-        str-cast-self: You have created a spell tome.
     tree:
         spell-class: ".targeted.TreeSpell"
         name: tree
@@ -1475,6 +1583,25 @@ spells:
         str-cost: 10 mana
         str-no-target: No target.
         str-failed: ""
+    waterwalk:
+        spell-class: ".buff.WaterwalkSpell"
+        name: waterwalk
+        spell-icon: boat
+        description: Walk across the water.
+        cast-item: book
+        speed: 0.05
+        duration: 60
+        cancel-on-logout: true
+        cancel-on-teleport: true
+        cost:
+            - mana 25
+            - boat 1
+        use-cost:
+            - water_lily 1
+        use-cost-interval: 50
+        str-cost: 25 mana and 1 boat, plus 1 water lily every 50 blocks moved
+        str-cast-self: You can now walk on water!
+        str-fade: You can no longer walk on water.
     windwalk:
         spell-class: ".buff.WindwalkSpell"
         name: windwalk
@@ -1482,6 +1609,7 @@ spells:
         enabled: true
         description: Fly through the air.
         cast-item: book
+        fly-speed: 0.1
         launch-speed: 1
         cancel-on-land: false
         cancel-on-logout: true

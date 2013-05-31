@@ -48,7 +48,7 @@ public class LightningSpell extends TargetedLocationSpell {
 			Block target = null;
 			LivingEntity entityTarget = null;
 			if (requireEntityTarget) {
-				entityTarget = getTargetedEntity(player, range, targetPlayers, obeyLos);
+				entityTarget = getTargetedEntity(player, minRange, range, targetPlayers, obeyLos);
 				if (entityTarget != null && entityTarget instanceof Player && checkPlugins) {
 					EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, entityTarget, DamageCause.ENTITY_ATTACK, 1 + additionalDamage);
 					Bukkit.getServer().getPluginManager().callEvent(event);

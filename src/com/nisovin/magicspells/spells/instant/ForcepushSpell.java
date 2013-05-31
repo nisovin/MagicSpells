@@ -57,7 +57,7 @@ public class ForcepushSpell extends InstantSpell {
 				e = entity.getLocation().toVector();
 				v = e.subtract(p).normalize().multiply(force/10.0*power);
 				if (force != 0) {
-					v.setY(v.getY() * (yForce/10.0*power));
+					v.setY(v.getY() + (yForce/10.0*power));
 				} else {
 					v.setY(yForce/10.0*power);
 				}

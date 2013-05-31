@@ -17,7 +17,7 @@ public class BuffManager {
 	public BuffManager(int interval) {
 		activeBuffs = new HashMap<String, HashSet<BuffSpell>>();
 		if (interval > 0) {
-			taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(MagicSpells.plugin, new Monitor(), interval, interval);
+			taskId = MagicSpells.scheduleRepeatingTask(new Monitor(), interval, interval);
 		}
 	}
 	

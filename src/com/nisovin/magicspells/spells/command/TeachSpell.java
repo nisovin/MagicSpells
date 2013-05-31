@@ -143,7 +143,7 @@ public class TeachSpell extends CommandSpell {
 	}
 	
 	@Override
-	public String[] tabComplete(CommandSender sender, String partial) {
+	public List<String> tabComplete(CommandSender sender, String partial) {
 		String[] args = Util.splitParams(partial);
 		if (args.length == 1) {
 			// matching player name

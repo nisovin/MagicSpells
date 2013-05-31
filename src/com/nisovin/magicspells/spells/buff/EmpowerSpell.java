@@ -28,8 +28,11 @@ public class EmpowerSpell extends BuffSpell {
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (empowered.containsKey(player)) {
 			turnOff(player);
-			return PostCastAction.ALREADY_HANDLED;
-		} else if (state == SpellCastState.NORMAL) {
+			if (toggle) {
+				return PostCastAction.ALREADY_HANDLED;
+			}
+		}
+		if (state == SpellCastState.NORMAL) {
 			float p = power * extraPower;
 			empowered.put(player, p);
 			startSpellDuration(player);
@@ -37,7 +40,7 @@ public class EmpowerSpell extends BuffSpell {
 		return PostCastAction.HANDLE_NORMALLY;
 	}
 
-	@EventHandler(priority=EventPriority.MONITOR)
+	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onSpellCast(SpellCastEvent event) {
 		Player player = event.getCaster();
 		if (empowered.containsKey(player)) {

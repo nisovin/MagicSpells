@@ -3,6 +3,7 @@ package com.nisovin.magicspells.spells.command;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -59,21 +60,17 @@ public class KeybindSpell extends CommandSpell {
 	}
 
 	private void loadKeybinds(Player player) {
-		System.out.println("test");
 		File file = new File(MagicSpells.plugin.getDataFolder(), "spellbooks" + File.separator + "keybinds-" + player.getName().toLowerCase() + ".txt");
-		if (file.exists()) {		
-			System.out.println("test2");	
+		if (file.exists()) {
 			try {
 				Keybinds keybinds = new Keybinds(player);				
 				YamlConfiguration conf = new YamlConfiguration();
 				conf.load(file);
 				for (String key : conf.getKeys(false)) {
-					System.out.println("test"+key);
 					int slot = Integer.parseInt(key);
 					String spellName = conf.getString(key);
 					Spell spell = MagicSpells.getSpellByInternalName(spellName);
 					if (spell != null) {
-						System.out.println("test"+key+" "+spellName);
 						keybinds.setKeybind(slot, spell);
 					}
 				}
@@ -152,7 +149,6 @@ public class KeybindSpell extends CommandSpell {
 	public void onItemHeldChange(PlayerItemHeldEvent event) {
 		Keybinds keybinds = playerKeybinds.get(event.getPlayer().getName());
 		if (keybinds != null) {
-			System.out.println("old: " + event.getPreviousSlot() + "; new: " + event.getNewSlot());
 			keybinds.deselect(event.getPreviousSlot());
 			keybinds.select(event.getNewSlot());
 		}
@@ -190,7 +186,7 @@ public class KeybindSpell extends CommandSpell {
 	}
 	
 	@Override
-	public String[] tabComplete(CommandSender sender, String partial) {
+	public List<String> tabComplete(CommandSender sender, String partial) {
 		return null;
 	}
 	

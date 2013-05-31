@@ -56,8 +56,11 @@ public class StonevisionSpell extends BuffSpell {
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (seers.containsKey(player.getName())) {
 			turnOff(player);
-			return PostCastAction.ALREADY_HANDLED;
-		} else if (state == SpellCastState.NORMAL) {
+			if (toggle) {
+				return PostCastAction.ALREADY_HANDLED;
+			}
+		}
+		if (state == SpellCastState.NORMAL) {
 			seers.put(player.getName(), new TransparentBlockSet(player, range, transparentType, transparentTypes));
 			startSpellDuration(player);
 		}
@@ -158,7 +161,12 @@ public class StonevisionSpell extends BuffSpell {
 							dy = Math.abs(y - py);
 							dz = Math.abs(z - pz);
 							block = center.getWorld().getBlockAt(x,y,z);
-							if (block.getType() == Material.getMaterial(type) && dx <= range && dy <= range && dz <= range) {
+							id = block.getTypeId();
+							if ((
+									(type != 0 && id == type) ||
+									(types != null && Arrays.binarySearch(types, id) >= 0)
+								) && 
+								dx <= range && dy <= range && dz <= range) {
 								player.sendBlockChange(block.getLocation(), Material.GLASS, (byte)0);
 								newBlocks.add(block);
 							} else {
@@ -203,11 +211,6 @@ public class StonevisionSpell extends BuffSpell {
 				player.sendBlockChange(b.getLocation(), b.getType(), b.getData());
 			}
 			blocks = null;
-			
-			// queue up chunks for resending
-			if (unobfuscate) {
-				MagicSpells.getVolatileCodeHandler().queueChunksForUpdate(player, chunks);
-			}
 		}
 	}
 

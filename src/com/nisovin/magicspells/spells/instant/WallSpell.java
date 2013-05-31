@@ -25,7 +25,8 @@ public class WallSpell extends InstantSpell {
 	private int wallWidth;
 	private int wallHeight;
 	private int wallDepth;
-	private Material wallType;
+	private int wallType;
+	private byte wallData;
 	private int wallDuration;
 	private boolean preventBreaking;
 	private boolean preventDrops;
@@ -42,7 +43,8 @@ public class WallSpell extends InstantSpell {
 		wallDepth = getConfigInt("wall-depth", 1);
 		String type = getConfigString("wall-type", Material.BRICK.getId() + "");
 		ItemTypeAndData t = MagicSpells.getItemNameResolver().resolve(type);
-		wallType = Material.getMaterial(t != null ? t.id : Material.BRICK.getId());
+		wallType = t != null ? t.id : Material.BRICK.getId();
+		wallData = (byte)(t != null ? t.data : 0);
 		wallDuration = getConfigInt("wall-duration", 15);
 		preventBreaking = getConfigBoolean("prevent-breaking", false);
 		preventDrops = getConfigBoolean("prevent-drops", true);
@@ -67,7 +69,7 @@ public class WallSpell extends InstantSpell {
 				sendMessage(player, strNoTarget);
 				return PostCastAction.ALREADY_HANDLED;
 			} else {
-				TemporaryBlockSet blockSet = new TemporaryBlockSet(Material.AIR, wallType);
+				TemporaryBlockSet blockSet = new TemporaryBlockSet(Material.AIR, wallType, wallData);
 				Location loc = target.getLocation();
 				Vector dir = player.getLocation().getDirection();
 				int wallWidth = Math.round(this.wallWidth*power);

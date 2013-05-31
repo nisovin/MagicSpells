@@ -1,0 +1,455 @@
+general:
+    debug: false
+    str-cast-usage: |
+        Usage: /cast <spell>. 
+        Use /cast list to see a list of spells.
+    str-unknown-spell: You do not know a spell with that name.
+    str-spell-change: You are now using the %s spell.
+    str-spell-change-empty: You are no longer using a spell.
+    str-on-cooldown: That spell is on cooldown (%c seconds remaining).
+    str-missing-reagents: You do not have enough mana.
+    str-cant-cast: You can't cast that spell right now.
+    str-no-magic-zone: An anti-magic aura makes your spell fizzle.
+    str-console-name: Admin
+    text-color: 3
+    broadcast-range: 20
+    allow-cycle-to-no-spell: true
+    ops-have-all-spells: true
+    default-all-perms-false: false
+    ignore-default-bindings: false
+    mana:
+        enable-mana-bars: true
+        max-mana: 100
+        mana-bar-prefix: "Mana:"
+        mana-bar-size: 35
+        color-full: 10
+        color-empty: 0
+        regen-tick-seconds: 5
+        regen-percent: 5
+        show-mana-on-use: false
+        show-mana-on-regen: false
+        show-mana-on-wood-tool: true
+        tool-slot: 8
+        mana-potion-cooldown: 30
+        str-mana-potion-on-cooldown: You cannot use another mana potion yet (%c seconds).
+        mana-potions:
+            - 351:4 100
+            - 348 60
+            - 331 30
+        
+spells:
+
+    list:
+        name: List
+        description: List all the spells you know.
+        only-show-castable-spells: false
+        reload-granted-spells: false
+        str-prefix: "Known spells:"
+        str-no-spells: You do not know any spells.
+    help:
+        name: Help
+        description: Get information about a specified spell.
+        str-usage: "Usage: /cast help <spell>"
+        str-no-spell: You do not know a spell by that name.
+        str-desc-line: "%s - %d"
+        str-cost-line: "Cost: %c"
+    teach:
+        name: Teach
+        description: Teach a spell to another player.
+        str-usage: "Usage: /cast teach <target> <spell>"
+        str-no-target: No such player.
+        str-no-spell: You do not know a spell by that name.
+        str-cant-teach: You can't teach that spell.
+        str-cant-learn: That person cannot learn that spell.
+        str-cast-self: You have taught %t the %s spell.
+        str-cast-target: "%a has taught you the %s spell."
+    forget:
+        name: Forget
+        description: Make a player forget a spell.
+        str-usage: "Usage: /cast forget <target> <spell>"
+        str-no-target: No such player.
+        str-no-spell: You do not know a spell by that name.
+        str-doesnt-know: That person does not know that spell.
+        str-cast-self: You made %t forget the %s spell.
+        str-cast-target: "%a has made you forget the %s spell."
+    spellbook:
+        name: Spellbook
+        description: Create a spellbook that teaches a spell.
+        default-uses: -1
+        destroy-when-used-up: false
+        str-use: "Usage: /cast spellbook <spell> [uses]"
+        str-cast-self: You have created a spellbook with the %s spell.
+        str-no-spell: You do not know a spell by that name.
+        str-cant-teach: You can't create a spellbook with that spell.
+        str-no-target: You must target a bookcase to create a spellbook.
+        str-has-spellbook: That bookcase already has a spellbook.
+        str-cant-destroy: You cannot destroy a bookcase with a spellbook.
+        str-cant-learn: You cannot learn the spell in this spellbook.
+        str-already-known: You already know the %s spell.
+        str-learned: You have learned the %s spell!
+    bind:
+        enabled: false
+
+    blink:
+        enabled: false
+    build:
+        enabled: false
+    carpet:
+        enabled: false
+    combust:
+        name: Incendio
+        description: Set a target on fire.
+        cast-item: 280
+        cooldown: 1
+        range: 20
+        obey-los: true
+        fire-ticks: 100
+        target-players: true
+        check-plugins: true
+        cost:
+            - mana 10
+        str-cost: 10 mana
+        str-no-target: No target found.
+    confusion:
+        name: Confundus
+        description: Cause nearby monsters to attack each other.
+        cast-item: 280
+        cooldown: 30
+        range: 20
+        cost:
+            - mana 25
+        str-cost: 25 mana
+        str-cast-self: You cause nearby monsters to become confused and attack each other.
+        str-cast-others: "%a causes nearby monsters to attack each other."
+    disarm:
+        name: Expelliarmus
+        description: Disarm your opponent.
+        cast-item: 280
+        cooldown: 15
+        range: 20
+        disarmable-items:
+            - 280
+            - 261
+            - 267
+            - 268
+            - 276
+            - 283
+        disarm-duration: 100
+        obey-los: true
+        cost:
+            - mana 20
+        str-cost: 20 mana
+        str-no-target: No target found.
+        str-invalid-item: Your target could not be disarmed.
+        str-cast-self: You have disarmed %t.
+        str-cast-target: "%a has disarmed you."
+    drainlife:
+        enabled: false
+    empower:
+        enabled: false
+    entomb:
+        name: LocomotorMortis
+        description: Encase an enemy in glass.
+        cast-item: 280
+        cooldown: 1
+        range: 15
+        obey-los: true
+        target-players: true
+        tomb-block-type: 20
+        tomb-duration: 20
+        cost:
+            - mana 10
+        str-cost: 10 mana
+        str-no-target: No target found.
+    explode:
+        name: Confringo
+        description: The blasting curse
+        cast-item: 280
+        cooldown: 30
+        range: 25
+        explosion-size: 4
+        backfire-chance: 3
+        check-plugins: true
+        cost:
+            - mana 25
+        str-cost: 25 mana
+        str-no-target: You cannot create an explosion there.
+        str-cast-self: Boom!
+        str-cast-others: Boom!
+    fireball:
+        enabled: false
+    firenova:
+        enabled: false
+    flamewalk:
+        enabled: false
+    forcepush:
+        enabled: false
+    forcetoss:
+        name: Flipendo
+        description: Magically push an enemy back.
+        cast-item: 280
+        cooldown: 1
+        range: 15
+        damage: 0
+        horizontal-force: 30
+        vertical-force: 5
+        obey-los: true
+        target-players: true
+        check-plugins: true
+        cost:
+            - mana 15
+        str-cost: 15 mana
+        str-cast-self: You push back your enemy!
+        str-cast-others: "%a pushes back his enemy."
+    levicorpus:
+        name: Levicorpus
+        description: Throw an enemy into the air.
+        cast-item: 280
+        cooldown: 1
+        range: 15
+        damage: 0
+        horizontal-force: 0
+        vertical-force: 15
+        obey-los: true
+        target-players: true
+        check-plugins: true
+        cost:
+            - mana 15
+        str-cost: 15 mana
+        str-cast-self: You throw your enemy into the air!
+    frostwalk:
+        enabled: false
+    gate:
+        name: Apparate
+        description: Teleport to spawn.
+        can-cast-with-item: false
+        world: CURRENT
+        coordinates: SPAWN
+        use-spell-effect: true
+        cost:
+            - 331 1
+            - 265 1
+        str-cost: 1 redstone dust and 1 iron bar
+        str-cast-self: You have teleported to spawn.
+        str-cast-others: "%a teleports!"
+        str-gate-failed: Unable to teleport.
+    geyser:
+        name: Aguamenti
+        description: Create a geyser of water at your enemy's feet.
+        cast-item: 280
+        range: 20
+        damage: 1
+        velocity: 10
+        animation-speed: 2
+        geyser-height: 4
+        geyser-type: water
+        obey-los: true
+        target-players: true
+        check-plugins: true
+        cost:
+            - mana 15
+        str-cost: 15 mana
+        str-cast-self: You create a geyser at your enemy's feet.
+        str-no-target: No target found.
+    gills:
+        name: BubbleHead
+        description: The bubble head charm, lasts 1 minute
+        cast-item: 280
+        glass-head-effect: true
+        cooldown: 120
+        duration: 60
+        cost:
+            - mana 25
+        str-cost: 25 mana
+        str-cast-self: A bubble surrounds your head.
+        str-fade: Your bubble disappears.
+    heal:
+        name: Episkey
+        description: Heals a target player.
+        cast-item: 280
+        heal-amount: 6
+        obey-los: true
+        cooldown: 1
+        range: 12
+        cost:
+            - mana 10
+        str-cost: 10 mana
+        str-cast-self: You have healed %t.
+        str-cast-target: "%a has healed you."
+        str-no-target: No target to heal.
+        str-max-health: "%t is already at max health."
+    invulnerability:
+        enabled: false
+    leap:
+        enabled: false
+        name: leap
+        description: Leap forward.
+        cast-item: 280
+        forward-velocity: 40
+        upward-velocity: 15
+        cancel-damage: true
+        cooldown: 10
+        cost:
+            - 331 2
+        str-cost: 2 redstone dust
+        str-cast-self: You leap forward.
+        str-cast-others: "%a leaps forward."
+    lifewalk:
+        enabled: false
+    lightning:
+        enabled: false
+    lightwalk:
+        name: Lumos
+        description: Light your path.
+        cast-item: 280
+        cost:
+            - mana 15
+        use-cost:
+            - mana 5
+        use-cost-interval: 5
+        str-cost: 15 mana, plus drains mana while in use
+        str-cast-self: Light appears at your feet.
+        str-fade: The light at your feet goes out.
+    mana:
+        enabled: false
+        name: lifetap
+        description: Restores mana at the cost of life.
+        cooldown: 3
+        cast-item: 280
+        mana: 25
+        cost:
+            - health 4
+        str-cost: 2 hearts
+        str-cast-self: You restore 25 mana.
+    mark:
+        name: ApparateMark
+        description: Marks your location to apparate to.
+        cooldown: 43200
+        permanent-marks: true
+        cost:
+            - mana 10
+        str-cost: 10 mana
+        str-cast-self: You have marked your location.
+    minion:
+        enabled: false
+    pain:
+        name: Crucio
+        description: The cruciatus curse
+        cast-item: 280
+        cooldown: 5
+        damage: 4
+        range: 15
+        obey-los: true
+        target-players: true
+        check-plugins: true
+        cost:
+            - mana 15
+            - health 2
+        str-cost: 15 mana and 1 heart
+        str-no-target: No target found.
+    avada:
+        name: AvadaKedavra
+        description: The killing curse
+        cast-item: 280
+        cooldown: 60
+        damage: 50
+        range: 10
+        obey-los: true
+        target-players: true
+        check-plugins: true
+        cost:
+            - mana 20
+            - health 10
+        str-cost: 20 mana and 5 hearts
+        str-no-target: No target found.
+    prayer:
+        enabled: false
+    purge:
+        enabled: false
+    recall:
+        name: Disapparate
+        description: Apparate at your marked location
+        cooldown: 300
+        max-range: -1
+        allow-cross-world: true
+        cost:
+            - mana 50
+        str-cost: 50 mana
+        str-cast-self: You disapparate!
+        str-no-mark: You have not marked a location to apparate to.
+        str-other-world: You cannot apparate to another world.
+        str-too-far: Your marked location is too far away.
+        str-cast-others: "%a disapparates!"
+    reflect:
+        name: Protego
+        description: Reflects a spell cast at you.
+        cooldown: 30
+        num-uses: 1
+        cost:
+            - mana 10
+        use-cost: []
+        use-cost-interval: 0
+        str-cost: 10 mana
+        str-cast-self: You feel a magical barrier surround you.
+        str-cast-others: A magical barrier surrounds %a.
+        str-fade: ""
+    repair:
+        name: Reparo
+        description: Repairs your gear.
+        cooldown: 120
+        to-repair:
+            - held
+        cost:
+            - mana 5
+        str-cost: 5 mana
+        str-cast-self: You've repaired your gear!
+        str-nothing-to-repair: You have nothing to repair.
+    safefall:
+        enabled: false
+    scroll:
+        enabled: false
+    stealth:
+        enabled: false
+    stonevision:
+        enabled: false
+    summon:
+        enabled: false
+    sun:
+        enabled: false   
+    telekinesis:
+        name: Alohamora
+        description: Manipulate switches and buttons remotely.
+        cast-item: 280
+        cooldown: 10
+        range: 20
+        cost:
+            - mana 10
+        str-cost: 10 mana
+        str-no-target: You must target a switch or button.
+    tome:
+        enabled: false
+    volley:
+        enabled: false
+    walkway:
+        enabled: false
+    wall:
+        name: Impedimenta
+        description: Creates a temporary wall to block your enemies.
+        cast-item: 280
+        cooldown: 15
+        range: 3
+        wall-width: 5
+        wall-height: 3
+        wall-type: 45
+        wall-duration: 15
+        cost:
+            - mana 15
+        str-cost: 15 mana
+        str-no-target: Unable to create a wall.
+    zap:
+        enable: false
+        
+    external:
+        enable: false
+spellcopies:
+    avada=pain

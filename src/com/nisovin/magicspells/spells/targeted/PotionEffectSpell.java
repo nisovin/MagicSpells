@@ -17,6 +17,7 @@ public class PotionEffectSpell extends TargetedEntitySpell {
 	private int type;
 	private int duration;
 	private int amplifier;
+	private boolean ambient;
 	private boolean targeted;
 	private boolean targetPlayers;
 	private boolean targetNonPlayers;
@@ -29,6 +30,7 @@ public class PotionEffectSpell extends TargetedEntitySpell {
 		type = getConfigInt("type", 0);
 		duration = getConfigInt("duration", 0);
 		amplifier = getConfigInt("strength", 0);
+		ambient = getConfigBoolean("ambient", false);
 		targeted = getConfigBoolean("targeted", false);
 		targetPlayers = getConfigBoolean("target-players", false);
 		targetNonPlayers = getConfigBoolean("target-non-players", true);
@@ -41,7 +43,7 @@ public class PotionEffectSpell extends TargetedEntitySpell {
 		if (state == SpellCastState.NORMAL) {
 			LivingEntity target;
 			if (targeted) {
-				target = getTargetedEntity(player, range, targetPlayers, targetNonPlayers, obeyLos, true);
+				target = getTargetedEntity(player, minRange, range, targetPlayers, targetNonPlayers, obeyLos, true);
 			} else {
 				target = player;
 			}
@@ -50,7 +52,7 @@ public class PotionEffectSpell extends TargetedEntitySpell {
 				return noTarget(player);
 			}
 			
-			target.addPotionEffect(new PotionEffect(PotionEffectType.getById(type), Math.round(duration*power), amplifier));
+			target.addPotionEffect(new PotionEffect(PotionEffectType.getById(type), Math.round(duration*power), amplifier, ambient), true);
 			if (targeted) {
 				playSpellEffects(player, target);
 			} else {
@@ -69,12 +71,12 @@ public class PotionEffectSpell extends TargetedEntitySpell {
 		} else if (!(target instanceof Player) && !targetNonPlayers) {
 			return false;
 		} else {
-			PotionEffect effect = new PotionEffect(PotionEffectType.getById(type), Math.round(duration*power), amplifier);
+			PotionEffect effect = new PotionEffect(PotionEffectType.getById(type), Math.round(duration*power), amplifier, ambient);
 			if (targeted) {
-				target.addPotionEffect(effect);
+				target.addPotionEffect(effect, true);
 				playSpellEffects(caster, target);
 			} else {
-				caster.addPotionEffect(effect);
+				caster.addPotionEffect(effect, true);
 				playSpellEffects(EffectPosition.CASTER, caster);
 			}
 			return true;

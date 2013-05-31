@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
@@ -20,12 +21,14 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.BlockIterator;
 
 import com.nisovin.magicspells.events.SpellCastEvent;
 import com.nisovin.magicspells.events.SpellCastedEvent;
 import com.nisovin.magicspells.events.SpellTargetEvent;
 import com.nisovin.magicspells.mana.ManaChangeReason;
+import com.nisovin.magicspells.mana.ManaHandler;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spelleffects.SpellEffect;
 import com.nisovin.magicspells.spells.BuffSpell;
@@ -51,6 +54,8 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	
 	protected String description;
 	protected CastItem[] castItems;
+	protected boolean castWithLeftClick;
+	protected boolean castWithRightClick;
 	protected boolean requireCastItemOnCommand;
 	protected boolean bindable;
 	protected HashSet<CastItem> bindableItems;
@@ -62,7 +67,9 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	protected int castTime;
 	protected boolean interruptOnMove;
 	protected boolean interruptOnDamage;
-	protected String spellOnInterrupt;
+	protected boolean interruptOnCast;
+	protected String spellNameOnInterrupt;
+	protected Spell spellOnInterrupt;
 	
 	protected SpellReagents reagents;
 	protected float cooldown;
@@ -117,6 +124,8 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 				this.castItems[i] = new CastItem(is);
 			}
 		}
+		this.castWithLeftClick = config.getBoolean(section + "." + spellName + ".cast-with-left-click", MagicSpells.castWithLeftClick);
+		this.castWithRightClick = config.getBoolean(section + "." + spellName + ".cast-with-right-click", MagicSpells.castWithRightClick);
 		this.requireCastItemOnCommand = config.getBoolean(section + "." + spellName + ".require-cast-item-on-command", false);
 		this.bindable = config.getBoolean(section + "." + spellName + ".bindable", true);
 		List<String> bindables = config.getStringList(section + "." + spellName + ".bindable-items", null);
@@ -134,8 +143,13 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 			spellIcon = null;
 		} else {
 			spellIcon = Util.getItemStackFromString(icontemp);
-			if (spellIcon != null) {
+			if (spellIcon != null && spellIcon.getTypeId() != 0) {
 				spellIcon.setAmount(0);
+				if (!icontemp.contains("|")) {
+					ItemMeta iconMeta = spellIcon.getItemMeta();
+					iconMeta.setDisplayName(MagicSpells.getTextColor() + name);
+					spellIcon.setItemMeta(iconMeta);
+				}
 			}
 		}
 		this.broadcastRange = config.getInt(section + "." + spellName + ".broadcast-range", MagicSpells.broadcastRange);
@@ -145,7 +159,8 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		this.castTime = config.getInt(section + "." + spellName + ".cast-time", 0);
 		this.interruptOnMove = config.getBoolean(section + "." + spellName + ".interrupt-on-move", true);
 		this.interruptOnDamage = config.getBoolean(section + "." + spellName + ".interrupt-on-damage", false);
-		this.spellOnInterrupt = config.getString(section + "." + spellName + ".spell-on-interrupt", null);
+		this.interruptOnCast = config.getBoolean(section + "." + spellName + ".interrupt-on-cast", true);
+		this.spellNameOnInterrupt = config.getString(section + "." + spellName + ".spell-on-interrupt", null);
 		
 		// graphical effects
 		List<String> effectsList = config.getStringList(section + "." + spellName + ".effects", null);
@@ -178,42 +193,8 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		}
 		
 		// cost
-		reagents = new SpellReagents();
-		List<String> costList = config.getStringList(section + "." + spellName + ".cost", null);
-		if (costList != null && costList.size() > 0) {
-			String[] data;
-			for (int i = 0; i < costList.size(); i++) {
-				String costVal = costList.get(i);
-				
-				// validate cost data
-				if (!costVal.matches("^([0-9a-zA-Z_]+(:[0-9]+)?|mana|health|hunger|experience|levels)( [1-9][0-9]*)?$")) {
-					MagicSpells.error("Failed to process cost value for " + spellName + " spell: " + costVal);
-					continue;
-				}
-				
-				// parse cost data
-				data = costVal.split(" ");
-				int amt = 1;
-				if (data.length > 1) amt = Integer.parseInt(data[1]);
-				if (data[0].equalsIgnoreCase("health")) {
-					reagents.setHealth(amt);
-				} else if (data[0].equalsIgnoreCase("mana")) {
-					reagents.setMana(amt);
-				} else if (data[0].equalsIgnoreCase("hunger")) {
-					reagents.setHunger(amt);
-				} else if (data[0].equalsIgnoreCase("experience")) {
-					reagents.setExperience(amt);
-				} else if (data[0].equalsIgnoreCase("levels")) {
-					reagents.setLevels(amt);
-				} else {
-					ItemStack is = Util.getItemStackFromString(data[0]);
-					if (is != null) {
-						is.setAmount(amt);
-						reagents.addItem(is);
-					}
-				}
-			}
-		}
+		reagents = getConfigReagents("cost");
+		if (reagents == null) reagents = new SpellReagents();
 		
 		// cooldowns
 		this.cooldown = (float)config.getDouble(section + "." + spellName + ".cooldown", 0);
@@ -238,6 +219,50 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		this.strWrongCastItem = config.getString(section + "." + spellName + ".str-wrong-cast-item", strCantCast);
 		this.strCastStart = config.getString(section + "." + spellName + ".str-cast-start", null);
 		this.strInterrupted = config.getString(section + "." + spellName + ".str-interrupted", null);
+		
+	}
+	
+	protected SpellReagents getConfigReagents(String option) {
+		SpellReagents reagents = null;
+		List<String> costList = config.getStringList("spells." + internalName + "." + option, null);
+		if (costList != null && costList.size() > 0) {
+			reagents = new SpellReagents();
+			String[] data;
+			for (int i = 0; i < costList.size(); i++) {
+				String costVal = costList.get(i);
+				
+				try {
+					// parse cost data
+					data = costVal.split(" ");
+					int amt = 1;
+					if (data.length > 1) amt = Integer.parseInt(data[1]);
+					if (data[0].equalsIgnoreCase("health")) {
+						reagents.setHealth(amt);
+					} else if (data[0].equalsIgnoreCase("mana")) {
+						reagents.setMana(amt);
+					} else if (data[0].equalsIgnoreCase("hunger")) {
+						reagents.setHunger(amt);
+					} else if (data[0].equalsIgnoreCase("experience")) {
+						reagents.setExperience(amt);
+					} else if (data[0].equalsIgnoreCase("levels")) {
+						reagents.setLevels(amt);
+					} else if (data[0].equalsIgnoreCase("durability")) {
+						reagents.setDurability(amt);
+					} else {
+						ItemStack is = Util.getItemStackFromString(data[0]);
+						if (is != null) {
+							is.setAmount(amt);
+							reagents.addItem(is);
+						} else {
+							MagicSpells.error("Failed to process cost value for " + internalName + " spell: " + costVal);
+						}
+					}
+				} catch (Exception e) {
+					MagicSpells.error("Failed to process cost value for " + internalName + " spell: " + costVal);
+				}
+			}
+		}
+		return reagents;
 	}
 	
 	/**
@@ -259,7 +284,13 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 			rawSharedCooldowns = null;
 		}
 		
+		// register events
 		registerEvents();
+		
+		// other processing
+		if (spellNameOnInterrupt != null && !spellNameOnInterrupt.isEmpty()) {
+			spellOnInterrupt = MagicSpells.getSpellByInternalName(spellNameOnInterrupt);
+		}
 	}
 	
 	/**
@@ -374,20 +405,22 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		if (player.hasPermission("magicspells.nocasttime")) {
 			castTime = 0;
 		}
-		
+				
 		// cast spell
 		PostCastAction action;
 		MagicSpells.debug(3, "    Cast time: " + castTime);
 		if (castTime <= 0 || state != SpellCastState.NORMAL) {
 			action = handleCast(player, state, power, cooldown, reagents, args);
+		} else if (!preCastTimeCheck(player, args)) {
+			action = PostCastAction.ALREADY_HANDLED;
 		} else {
 			action = PostCastAction.DELAYED;
 			sendMessage(player, strCastStart);
 			playSpellEffects(EffectPosition.START_CAST, player);
 			if (MagicSpells.useExpBarAsCastTimeBar) {
-				new DelayedSpellCastWithBar(player, this, state, power, cooldown, reagents, castTime);
+				new DelayedSpellCastWithBar(player, this, state, power, cooldown, reagents, castTime, args);
 			} else {
-				new DelayedSpellCast(player, this, state, power, cooldown, reagents, castTime);
+				new DelayedSpellCast(player, this, state, power, cooldown, reagents, castTime, args);
 			}
 		}
 		
@@ -468,6 +501,10 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		return action;
 	}
 
+	protected boolean preCastTimeCheck(Player player, String[] args) {
+		return true;
+	}
+	
 	/**
 	 * This method is called when a player casts a spell, either by command, with a wand item, or otherwise.
 	 * @param player the player casting the spell
@@ -478,11 +515,11 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	 */
 	public abstract PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args);
 	
-	public String[] tabComplete(CommandSender sender, String partial) {
+	public List<String> tabComplete(CommandSender sender, String partial) {
 		return null;
 	}
 	
-	protected String[] tabCompletePlayerName(CommandSender sender, String partial) {
+	protected List<String> tabCompletePlayerName(CommandSender sender, String partial) {
 		ArrayList<String> matches = new ArrayList<String>();
 		partial = partial.toLowerCase();
 		for (Player p : Bukkit.getOnlinePlayers()) {
@@ -493,52 +530,14 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 			}
 		}
 		if (matches.size() > 0) {
-			return matches.toArray(new String[matches.size()]);
+			return matches;
 		} else {
 			return null;
 		}
 	}
 	
-	protected String[] tabCompleteSpellName(CommandSender sender, String partial) {
-		List<String> matches = new ArrayList<String>();
-		if (sender instanceof Player) {
-			Spellbook spellbook = MagicSpells.getSpellbook((Player)sender);
-			for (Spell spell : spellbook.getSpells()) {
-				if (spellbook.canTeach(spell)) {
-					if (spell.getName().toLowerCase().startsWith(partial)) {
-						matches.add(spell.getName());
-					} else {
-						String[] aliases = spell.getAliases();
-						if (aliases != null && aliases.length > 0) {
-							for (String alias : aliases) {
-								if (alias.toLowerCase().startsWith(partial)) {
-									matches.add(alias);
-								}
-							}
-						}
-					}
-				}
-			}
-		} else if (sender.isOp()) {
-			for (Spell spell : MagicSpells.spells()) {
-				if (spell.getName().toLowerCase().startsWith(partial)) {
-					matches.add(spell.getName());
-				} else {
-					String[] aliases = spell.getAliases();
-					if (aliases != null && aliases.length > 0) {
-						for (String alias : aliases) {
-							if (alias.toLowerCase().startsWith(partial)) {
-								matches.add(alias);
-							}
-						}
-					}
-				}
-			}
-		}
-		if (matches.size() > 0) {
-			return matches.toArray(new String[matches.size()]);
-		}
-		return null;
+	protected List<String> tabCompleteSpellName(CommandSender sender, String partial) {
+		return Util.tabCompleteSpellName(sender, partial);
 	}
 	
 	/**
@@ -554,6 +553,14 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	public abstract boolean canCastWithItem();
 	
 	public abstract boolean canCastByCommand();
+	
+	public boolean canCastWithLeftClick() {
+		return castWithLeftClick;
+	}
+	
+	public boolean canCastWithRightClick() {
+		return castWithRightClick;
+	}
 	
 	public boolean isAlwaysGranted() {
 		return alwaysGranted;
@@ -669,7 +676,8 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	 * @return true if the player has the reagents, false otherwise
 	 */
 	protected boolean hasReagents(Player player, SpellReagents reagents) {
-		return hasReagents(player, reagents.getItemsAsArray(), reagents.getHealth(), reagents.getMana(), reagents.getHunger(), reagents.getExperience(), reagents.getLevels());
+		if (reagents == null) return true;
+		return hasReagents(player, reagents.getItemsAsArray(), reagents.getHealth(), reagents.getMana(), reagents.getHunger(), reagents.getExperience(), reagents.getLevels(), reagents.getDurability());
 	}
 	
 	/**
@@ -678,9 +686,9 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	 * @param cost the reagents to look for
 	 * @return true if the player has the reagents, false otherwise
 	 */
-	protected boolean hasReagents(Player player, ItemStack[] cost) {
-		return hasReagents(player, cost, 0, 0, 0, 0, 0);
-	}
+	//protected boolean hasReagents(Player player, ItemStack[] cost) {
+	//	return hasReagents(player, cost, 0, 0, 0, 0, 0);
+	//}
 	
 	/**
 	 * Checks if a player has the specified reagents, including health and mana
@@ -690,7 +698,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	 * @param manaCost the mana cost
 	 * @return true if the player has all the reagents, false otherwise
 	 */
-	private boolean hasReagents(Player player, ItemStack[] reagents, int healthCost, int manaCost, int hungerCost, int experienceCost, int levelsCost) {
+	private boolean hasReagents(Player player, ItemStack[] reagents, int healthCost, int manaCost, int hungerCost, int experienceCost, int levelsCost, int durabilityCost) {
 		if (player.hasPermission("magicspells.noreagents")) {
 			return true;
 		}
@@ -700,7 +708,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		if (healthCost > 0 && player.getHealth() <= healthCost) {
 			return false;
 		}
-		if (manaCost > 0 && !MagicSpells.mana.hasMana(player, manaCost)) {
+		if (manaCost > 0 && (MagicSpells.mana == null || !MagicSpells.mana.hasMana(player, manaCost))) {
 			return false;
 		}
 		if (hungerCost > 0 && player.getFoodLevel() < hungerCost) {
@@ -712,9 +720,17 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		if (levelsCost > 0 && player.getLevel() < levelsCost) {
 			return false;
 		}
-		for (ItemStack item : reagents) {
-			if (item != null && !inventoryContains(player.getInventory(), item)) {
+		if (durabilityCost > 0) {
+			ItemStack inHand = player.getItemInHand();
+			if (inHand == null || inHand.getDurability() >= inHand.getType().getMaxDurability()) {
 				return false;
+			}
+		}
+		if (reagents != null) {
+			for (ItemStack item : reagents) {
+				if (item != null && !inventoryContains(player.getInventory(), item)) {
+					return false;
+				}
 			}
 		}
 		return true;		
@@ -736,11 +752,11 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	 * @param reagents the inventory item reagents to remove
 	 */
 	protected void removeReagents(Player player, ItemStack[] reagents) {
-		removeReagents(player, reagents, 0, 0, 0, 0, 0);
+		removeReagents(player, reagents, 0, 0, 0, 0, 0, 0);
 	}
 	
 	protected void removeReagents(Player player, SpellReagents reagents) {
-		removeReagents(player, reagents.getItemsAsArray(), reagents.getHealth(), reagents.getMana(), reagents.getHunger(), reagents.getExperience(), reagents.getLevels());
+		removeReagents(player, reagents.getItemsAsArray(), reagents.getHealth(), reagents.getMana(), reagents.getHunger(), reagents.getExperience(), reagents.getLevels(), reagents.getDurability());
 	}
 	
 	/**
@@ -751,7 +767,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	 * @param healthCost the health to remove
 	 * @param manaCost the mana to remove
 	 */
-	private void removeReagents(Player player, ItemStack[] reagents, int healthCost, int manaCost, int hungerCost, int experienceCost, int levelsCost) {
+	private void removeReagents(Player player, ItemStack[] reagents, int healthCost, int manaCost, int hungerCost, int experienceCost, int levelsCost, int durabilityCost) {
 		if (player.hasPermission("magicspells.noreagents")) {
 			return;
 		}
@@ -774,6 +790,18 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		if (experienceCost > 0) {
 			ExperienceUtils.changeExp(player, -experienceCost);
 		}
+		if (durabilityCost > 0) {
+			ItemStack inHand = player.getItemInHand();
+			if (inHand != null && inHand.getType().getMaxDurability() > 0) {
+				short newDura = (short) (inHand.getDurability() + durabilityCost);
+				if (newDura >= inHand.getType().getMaxDurability()) {
+					player.setItemInHand(null);
+				} else {
+					inHand.setDurability(newDura);
+					player.setItemInHand(inHand);
+				}
+			}
+		}
 		if (levelsCost > 0) {
 			int lvl = player.getLevel() - levelsCost;
 			if (lvl < 0) lvl = 0;
@@ -785,7 +813,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		int count = 0;
 		ItemStack[] items = inventory.getContents();
 		for (int i = 0; i < items.length; i++) {
-			if (items[i] != null && items[i].getType() == item.getType() && items[i].getDurability() == item.getDurability()) {
+			if (items[i] != null && item.isSimilar(items[i])) {
 				count += items[i].getAmount();
 			}
 			if (count >= item.getAmount()) {
@@ -799,7 +827,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		int amt = item.getAmount();
 		ItemStack[] items = inventory.getContents();
 		for (int i = 0; i < items.length; i++) {
-			if (items[i] != null && items[i].getType() == item.getType() && items[i].getDurability() == item.getDurability()) {
+			if (items[i] != null && item.isSimilar(items[i])) {
 				if (items[i].getAmount() > amt) {
 					items[i].setAmount(items[i].getAmount() - amt);
 					break;
@@ -823,8 +851,8 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	 * @param checkLos whether to obey line-of-sight restrictions
 	 * @return the targeted LivingEntity, or null if none was found
 	 */
-	protected LivingEntity getTargetedEntity(Player player, int range, boolean targetPlayers, boolean checkLos) {
-		return getTargetedEntity(player, range, targetPlayers, true, checkLos, true);
+	protected LivingEntity getTargetedEntity(Player player, int minRange, int range, boolean targetPlayers, boolean checkLos) {
+		return getTargetedEntity(player, minRange, range, targetPlayers, true, checkLos, true);
 	}
 	
 	/**
@@ -834,8 +862,8 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	 * @param checkLos whether to obey line-of-sight restrictions
 	 * @return the targeted Player, or null if none was found
 	 */
-	protected Player getTargetedPlayer(Player player, int range, boolean checkLos) {
-		LivingEntity entity = getTargetedEntity(player, range, true, false, checkLos, true);
+	protected Player getTargetedPlayer(Player player, int minRange, int range, boolean checkLos) {
+		LivingEntity entity = getTargetedEntity(player, minRange, range, true, false, checkLos, true);
 		if (entity instanceof Player) {
 			return (Player)entity;
 		} else {
@@ -843,7 +871,16 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		}
 	}
 	
-	protected LivingEntity getTargetedEntity(Player player, int range, boolean targetPlayers, boolean targetNonPlayers, boolean checkLos, boolean callSpellTargetEvent) {
+	protected LivingEntity getTargetedEntity(Player player, int minRange, int range, boolean targetPlayers, boolean targetNonPlayers, boolean checkLos, boolean callSpellTargetEvent) {
+		return getTargetedEntity(player, minRange, range, targetPlayers, targetNonPlayers, checkLos, callSpellTargetEvent, null);
+	}
+	
+	protected LivingEntity getTargetedEntity(Player player, int minRange, int range, boolean targetPlayers, boolean targetNonPlayers, boolean checkLos, boolean callSpellTargetEvent, ValidTargetChecker checker) {
+		// check if pvp is disabled
+		if (MagicSpells.checkWorldPvpFlag && targetPlayers && !isBeneficial() && !player.getWorld().getPVP()) {
+			targetPlayers = false;
+		}
+		
 		// get nearby living entities, filtered by player targeting options
 		List<Entity> ne = player.getNearbyEntities(range, range, range);
 		ArrayList<LivingEntity> entities = new ArrayList<LivingEntity>(); 
@@ -867,6 +904,10 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		Location l;
 		int bx, by, bz;
 		double ex, ey, ez;
+		// do min range
+		for (int i = 0; i < minRange && bi.hasNext(); i++) {
+			bi.next();
+		}
 		// loop through player's line of sight
 		while (bi.hasNext()) {
 			b = bi.next();
@@ -887,6 +928,12 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 						// entity is close enough, set target and stop
 						target = e;
 						
+						// check for invalid target
+						if (target != null && target instanceof Player && ((Player)target).getGameMode() == GameMode.CREATIVE) {
+							target = null;
+							continue;
+						}
+						
 						// check for anti-magic-zone
 						if (target != null && MagicSpells.getNoMagicZoneManager() != null && MagicSpells.getNoMagicZoneManager().willFizzle(target.getLocation(), this)) {
 							target = null;
@@ -902,6 +949,14 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 								continue;
 							} else {
 								target = event.getTarget();
+							}
+						}
+						
+						// run checker
+						if (target != null && checker != null) {
+							if (!checker.isValidTarget(target)) {
+								target = null;
+								continue;
 							}
 						}
 						
@@ -1023,6 +1078,14 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	
 	protected void unregisterEvents(Listener listener) {
 		HandlerList.unregisterAll(listener);
+	}
+	
+	protected int scheduleDelayedTask(Runnable task, int delay) {
+		return MagicSpells.scheduleDelayedTask(task, delay);
+	}
+	
+	protected int scheduleRepeatingTask(Runnable task, int delay, int interval) {
+		return MagicSpells.scheduleRepeatingTask(task, delay, interval);
 	}
 	
 	/**
@@ -1233,10 +1296,11 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		private float power;
 		private float cooldown;
 		private SpellReagents reagents;
+		private String[] args;
 		private int taskId;
 		private boolean cancelled = false;
 		
-		public DelayedSpellCast(Player player, Spell spell, SpellCastState state, float power, float cooldown, SpellReagents reagents, int castTime) {
+		public DelayedSpellCast(Player player, Spell spell, SpellCastState state, float power, float cooldown, SpellReagents reagents, int castTime, String[] args) {
 			this.player = player;
 			this.prevLoc = player.getLocation().clone();
 			this.spell = spell;
@@ -1244,34 +1308,41 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 			this.power = power;
 			this.cooldown = cooldown;
 			this.reagents = reagents;
+			this.args = args;
 			
-			taskId = Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, this, castTime);
-			if (interruptOnDamage) {
-				registerEvents(this);
-			}
+			taskId = scheduleDelayedTask(this, castTime);
+			registerEvents(this);
 		}
 		
 		@Override
 		public void run() {
 			if (!cancelled && player.isOnline() && !player.isDead()) {
 				Location currLoc = player.getLocation();
-				if (!interruptOnMove || (Math.abs(currLoc.getX() - prevLoc.getX()) < .01 && Math.abs(currLoc.getY() - prevLoc.getY()) < .01 && Math.abs(currLoc.getZ() - prevLoc.getZ()) < .01)) {
-					if (!hasReagents(player)) {
+				if (!interruptOnMove || (Math.abs(currLoc.getX() - prevLoc.getX()) < .2 && Math.abs(currLoc.getY() - prevLoc.getY()) < .2 && Math.abs(currLoc.getZ() - prevLoc.getZ()) < .2)) {
+					if (!spell.hasReagents(player, reagents)) {
 						state = SpellCastState.MISSING_REAGENTS;
 					}
-					spell.handleCast(player, state, power, cooldown, reagents, null);
+					spell.handleCast(player, state, power, cooldown, reagents, args);
 				} else {
 					interrupt();
 				}
 			}
-			HandlerList.unregisterAll(this);
+			unregisterEvents(this);
 		}
 		
 		@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
 		public void onDamage(EntityDamageEvent event) {
-			if (event.getEntity().equals(player)) {
+			if (interruptOnDamage && !cancelled && event.getEntity().equals(player)) {
 				cancelled = true;
 				Bukkit.getScheduler().cancelTask(taskId);
+				interrupt();
+			}
+		}
+		
+		@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
+		public void onSpellCast(SpellCastEvent event) {
+			if (interruptOnCast && !cancelled) {
+				cancelled = true;
 				interrupt();
 			}
 		}
@@ -1279,10 +1350,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		private void interrupt() {
 			sendMessage(player, strInterrupted);
 			if (spellOnInterrupt != null) {
-				Spell spell = MagicSpells.getSpellByInternalName(spellOnInterrupt);
-				if (spell != null) {
-					spell.castSpell(player, SpellCastState.NORMAL, power, null);
-				}
+				spellOnInterrupt.castSpell(player, SpellCastState.NORMAL, power, null);
 			}
 		}
 	}
@@ -1296,13 +1364,14 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		private float cooldown;
 		private SpellReagents reagents;
 		private int castTime;
+		private String[] args;
 		private int taskId;
 		private boolean cancelled = false;
 		
 		private int interval = 5;
 		private int elapsed = 0;
 		
-		public DelayedSpellCastWithBar(Player player, Spell spell, SpellCastState state, float power, float cooldown, SpellReagents reagents, int castTime) {
+		public DelayedSpellCastWithBar(Player player, Spell spell, SpellCastState state, float power, float cooldown, SpellReagents reagents, int castTime, String[] args) {
 			this.player = player;
 			this.prevLoc = player.getLocation().clone();
 			this.spell = spell;
@@ -1311,13 +1380,12 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 			this.cooldown = cooldown;
 			this.reagents = reagents;
 			this.castTime = castTime;
+			this.args = args;
 			
 			MagicSpells.getExpBarManager().lock(player, this);
 			
-			taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(MagicSpells.plugin, this, interval, interval);
-			if (interruptOnDamage) {
-				registerEvents(this);
-			}
+			taskId = scheduleRepeatingTask(this, interval, interval);
+			registerEvents(this);
 		}
 		
 		@Override
@@ -1325,12 +1393,12 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 			if (!cancelled && player.isOnline() && !player.isDead()) {
 				elapsed += interval;
 				Location currLoc = player.getLocation();
-				if (!interruptOnMove || (Math.abs(currLoc.getX() - prevLoc.getX()) < .01 && Math.abs(currLoc.getY() - prevLoc.getY()) < .01 && Math.abs(currLoc.getZ() - prevLoc.getZ()) < .01)) {
+				if (!interruptOnMove || (Math.abs(currLoc.getX() - prevLoc.getX()) < .2 && Math.abs(currLoc.getY() - prevLoc.getY()) < .2 && Math.abs(currLoc.getZ() - prevLoc.getZ()) < .2)) {
 					if (elapsed >= castTime) {
-						if (!hasReagents(player)) {
+						if (!spell.hasReagents(player, reagents)) {
 							state = SpellCastState.MISSING_REAGENTS;
 						}
-						spell.handleCast(player, state, power, cooldown, reagents, null);
+						spell.handleCast(player, state, power, cooldown, reagents, args);
 						cancelled = true;
 					}
 					MagicSpells.getExpBarManager().update(player, 0, ((float)elapsed / (float)castTime), this);
@@ -1344,7 +1412,15 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		
 		@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
 		public void onDamage(EntityDamageEvent event) {
-			if (!cancelled && event.getEntity().equals(player)) {
+			if (interruptOnDamage && !cancelled && event.getEntity().equals(player)) {
+				cancelled = true;
+				interrupt();
+			}
+		}
+		
+		@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
+		public void onSpellCast(SpellCastEvent event) {
+			if (interruptOnCast && !cancelled && event.getCaster().equals(player)) {
 				cancelled = true;
 				interrupt();
 			}
@@ -1354,20 +1430,25 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 			sendMessage(player, strInterrupted);
 			end();
 			if (spellOnInterrupt != null) {
-				Spell spell = MagicSpells.getSpellByInternalName(spellOnInterrupt);
-				if (spell != null) {
-					spell.castSpell(player, SpellCastState.NORMAL, power, null);
-				}
+				spellOnInterrupt.castSpell(player, SpellCastState.NORMAL, power, null);
 			}
 		}
 		
 		private void end() {
 			cancelled = true;
 			Bukkit.getScheduler().cancelTask(taskId);
-			HandlerList.unregisterAll(this);
+			unregisterEvents(this);
 			MagicSpells.getExpBarManager().unlock(player, this);
 			MagicSpells.getExpBarManager().update(player, player.getLevel(), player.getExp());
+			ManaHandler mana = MagicSpells.getManaHandler();
+			if (mana != null) {
+				mana.showMana(player);
+			}
 		}
+	}
+	
+	public interface ValidTargetChecker {
+		public boolean isValidTarget(LivingEntity entity);
 	}
 
 }

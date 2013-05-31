@@ -4,14 +4,17 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
 
+import org.bukkit.ChatColor;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import com.nisovin.magicspells.MagicSpells;
 
 public class CastItem {
 	private int type = 0;
 	private short data = 0;
+	private String name = "";
 	private int[][] enchants = null;
 	
 	public CastItem() {
@@ -41,7 +44,13 @@ public class CastItem {
 			} else {
 				this.data = item.getDurability();
 			}
-			if (!MagicSpells.ignoreCastItemEnchants()) {
+			if (this.type > 0 && !MagicSpells.ignoreCastItemNames() && item.hasItemMeta()) {
+				ItemMeta meta = item.getItemMeta();
+				if (meta.hasDisplayName()) {
+					this.name = meta.getDisplayName();
+				}
+			}
+			if (this.type > 0 && !MagicSpells.ignoreCastItemEnchants()) {
 				enchants = getEnchants(item);
 			}
 		}
@@ -49,6 +58,13 @@ public class CastItem {
 	
 	public CastItem(String string) {
 		String s = string;
+		if (s.contains("|")) {
+			String[] temp = s.split("\\|");
+			s = temp[0];
+			if (!MagicSpells.ignoreCastItemNames() && temp.length > 1) {
+				name = ChatColor.translateAlternateColorCodes('&', temp[1]);
+			}
+		}
 		if (s.contains(";")) {
 			String[] temp = s.split(";");
 			s = temp[0];
@@ -81,11 +97,24 @@ public class CastItem {
 	}
 	
 	public boolean equals(CastItem i) {
-		return i.type == this.type && i.data == this.data && (MagicSpells.ignoreCastItemEnchants() || compareEnchants(this.enchants, i.enchants));
+		return i.type == this.type && i.data == this.data && (MagicSpells.ignoreCastItemNames() || i.name.equals(this.name)) && (MagicSpells.ignoreCastItemEnchants() || compareEnchants(this.enchants, i.enchants));
 	}
 	
 	public boolean equals(ItemStack i) {
-		return i.getTypeId() == type && i.getDurability() == data && (MagicSpells.ignoreCastItemEnchants() || compareEnchants(this.enchants, getEnchants(i)));
+		return i.getTypeId() == type && i.getDurability() == data && (MagicSpells.ignoreCastItemNames() || namesEqual(i)) && (MagicSpells.ignoreCastItemEnchants() || compareEnchants(this.enchants, getEnchants(i)));
+	}
+	
+	private boolean namesEqual(ItemStack i) {
+		String n = null;
+		if (i.hasItemMeta()) {
+			ItemMeta meta = i.getItemMeta();
+			if (meta.hasDisplayName()) {
+				n = meta.getDisplayName();
+			}
+		}
+		if (n == null && name == null) return true;
+		if (n == null || name == null) return false;
+		return n.equals(name);
 	}
 	
 	@Override
@@ -120,6 +149,9 @@ public class CastItem {
 					s += "+";
 				}
 			}
+		}
+		if (name != null && !name.isEmpty()) {
+			s += "|" + name;
 		}
 		return s;
 	}
@@ -161,4 +193,5 @@ public class CastItem {
 		}
 		return true;
 	}
+	
 }

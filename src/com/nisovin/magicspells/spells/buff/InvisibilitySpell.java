@@ -21,7 +21,6 @@ import com.nisovin.magicspells.util.MagicConfig;
 
 public class InvisibilitySpell extends BuffSpell {
 
-	private boolean toggle;
 	private boolean preventPickups;
 	private boolean cancelOnSpellCast;
 	
@@ -30,7 +29,6 @@ public class InvisibilitySpell extends BuffSpell {
 	public InvisibilitySpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		toggle = getConfigBoolean("toggle", true);
 		preventPickups = getConfigBoolean("prevent-pickups", true);
 		cancelOnSpellCast = getConfigBoolean("cancel-on-spell-cast", false);
 	}
@@ -118,8 +116,6 @@ public class InvisibilitySpell extends BuffSpell {
 			for (Player p : Bukkit.getOnlinePlayers()) {
 				p.showPlayer(player);
 			}
-			// spell effect
-			playSpellEffects(EffectPosition.DISABLED, player);
 			sendMessage(player, strFade);
 		}
 	}

@@ -3,9 +3,9 @@ package com.nisovin.magicspells.spelleffects;
 import org.bukkit.EntityEffect;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Tameable;
+
+import com.nisovin.magicspells.MagicSpells;
 
 class HeartsEffect extends SpellEffect {
 	
@@ -20,9 +20,7 @@ class HeartsEffect extends SpellEffect {
 	
 	@Override
 	public void playEffect(Location location, String param) {
-		LivingEntity e = location.getWorld().spawnCreature(location, EntityType.OCELOT);
-		e.playEffect(EntityEffect.WOLF_HEARTS);
-		e.remove();
+		MagicSpells.getVolatileCodeHandler().playParticleEffect(location, "heart", .3F, .2F, .2F, 4, 32, 2F);
 	}
 	
 }

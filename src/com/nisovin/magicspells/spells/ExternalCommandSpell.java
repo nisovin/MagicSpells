@@ -3,6 +3,11 @@ package com.nisovin.magicspells.spells;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.conversations.Conversation;
+import org.bukkit.conversations.ConversationContext;
+import org.bukkit.conversations.ConversationFactory;
+import org.bukkit.conversations.Prompt;
+import org.bukkit.conversations.StringPrompt;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -25,11 +30,17 @@ public class ExternalCommandSpell extends TargetedEntitySpell {
 	private List<String> temporaryPermissions;
 	private boolean temporaryOp;
 	private boolean requirePlayerTarget;
+	private boolean blockChatOutput;
+	private boolean beneficial;
 	private boolean executeAsTargetInstead;
 	private boolean executeOnConsoleInstead;
 	private boolean obeyLos;
 	private String strCantUseCommand;
 	private String strNoTarget;
+	private String strBlockedOutput;
+	
+	private ConversationFactory convoFac;
+	private Prompt convoPrompt;
 
 	public ExternalCommandSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -43,11 +54,26 @@ public class ExternalCommandSpell extends TargetedEntitySpell {
 		temporaryPermissions = getConfigStringList("temporary-permissions", null);
 		temporaryOp = getConfigBoolean("temporary-op", false);
 		requirePlayerTarget = getConfigBoolean("require-player-target", false);
+		blockChatOutput = getConfigBoolean("block-chat-output", false);
+		beneficial = getConfigBoolean("beneficial", false);
 		executeAsTargetInstead = getConfigBoolean("execute-as-target-instead", false);
 		executeOnConsoleInstead = getConfigBoolean("execute-on-console-instead", false);
 		obeyLos = getConfigBoolean("obey-los", true);
 		strCantUseCommand = getConfigString("str-cant-use-command", "&4You don't have permission to do that.");
 		strNoTarget = getConfigString("str-no-target", "No target found.");
+		strBlockedOutput = getConfigString("str-blocked-output", "");
+		
+		if (blockChatOutput) {
+			convoPrompt = new StringPrompt() {	
+				public String getPromptText(ConversationContext arg0) {
+					return strBlockedOutput;
+				}
+				public Prompt acceptInput(ConversationContext arg0, String arg1) {
+					return Prompt.END_OF_CONVERSATION;
+				}
+			};
+			convoFac = new ConversationFactory(MagicSpells.plugin).withModality(true).withFirstPrompt(convoPrompt).withTimeout(1);
+		}
 	}
 
 	@Override
@@ -56,7 +82,7 @@ public class ExternalCommandSpell extends TargetedEntitySpell {
 			// get target if necessary
 			Player target = null;
 			if (requirePlayerTarget) {
-				target = getTargetedPlayer(player, range, obeyLos);
+				target = getTargetedPlayer(player, minRange, range, obeyLos);
 				if (target == null) {
 					sendMessage(player, strNoTarget);
 					return PostCastAction.ALREADY_HANDLED;
@@ -102,11 +128,27 @@ public class ExternalCommandSpell extends TargetedEntitySpell {
 						comm = comm.replace("%t", target.getName());
 					}
 					if (executeAsTargetInstead) {
+						Conversation convo = null;
+						if (blockChatOutput) {
+							convo = convoFac.buildConversation(target);
+							convo.begin();
+						}
 						target.performCommand(comm);
+						if (convo != null) {
+							convo.abandon();
+						}
 					} else if (executeOnConsoleInstead) {
 						Bukkit.dispatchCommand(Bukkit.getConsoleSender(), comm);
 					} else {
+						Conversation convo = null;
+						if (blockChatOutput) {
+							convo = convoFac.buildConversation(player);
+							convo.begin();
+						}
 						player.performCommand(comm);
+						if (convo != null) {
+							convo.abandon();
+						}
 					}
 				}
 			}
@@ -165,6 +207,11 @@ public class ExternalCommandSpell extends TargetedEntitySpell {
 		return castWithItem;
 	}
 	
+	@Override
+	public boolean isBeneficial() {
+		return beneficial;
+	}
+	
 	private class DelayedCommand implements Runnable {
 
 		private Player player;
@@ -206,11 +253,27 @@ public class ExternalCommandSpell extends TargetedEntitySpell {
 							comm = comm.replace("%t", target.getName());
 						}
 						if (executeAsTargetInstead) {
+							Conversation convo = null;
+							if (blockChatOutput) {
+								convo = convoFac.buildConversation(target);
+								convo.begin();
+							}
 							target.performCommand(comm);
+							if (convo != null) {
+								convo.abandon();
+							}
 						} else if (executeOnConsoleInstead) {
 							Bukkit.dispatchCommand(Bukkit.getConsoleSender(), comm);
 						} else {
+							Conversation convo = null;
+							if (blockChatOutput) {
+								convo = convoFac.buildConversation(player);
+								convo.begin();
+							}
 							player.performCommand(comm);
+							if (convo != null) {
+								convo.abandon();
+							}
 						}
 					}
 				}

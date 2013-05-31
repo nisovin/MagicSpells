@@ -3,6 +3,7 @@ package com.nisovin.magicspells.spells.instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -47,6 +48,9 @@ public class ProjectileSpell extends InstantSpell {
 	private Class<? extends Projectile> projectileClass;
 	private ItemStack projectileItem;
 	private double velocity;
+	private double horizSpread;
+	private double vertSpread;
+	private boolean applySpellPowerToVelocity;
 	private boolean requireHitEntity;
 	private boolean cancelDamage;
 	private boolean removeProjectile;
@@ -62,6 +66,8 @@ public class ProjectileSpell extends InstantSpell {
 	
 	private HashMap<Projectile, ProjectileInfo> projectiles;
 	private HashMap<Item, ProjectileInfo> itemProjectiles;
+	
+	private Random random = new Random();
 	
 	public ProjectileSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -88,6 +94,9 @@ public class ProjectileSpell extends InstantSpell {
 			MagicSpells.error("Invalid projectile type on spell '" + internalName + "'");
 		}
 		velocity = getConfigFloat("velocity", 0);
+		horizSpread = getConfigFloat("horizontal-spread", 0);
+		vertSpread = getConfigFloat("vertical-spread", 0);
+		applySpellPowerToVelocity = getConfigBoolean("apply-spell-power-to-velocity", false);
 		requireHitEntity = getConfigBoolean("require-hit-entity", false);
 		cancelDamage = getConfigBoolean("cancel-damage", true);
 		removeProjectile = getConfigBoolean("remove-projectile", true);
@@ -145,14 +154,30 @@ public class ProjectileSpell extends InstantSpell {
 		if (state == SpellCastState.NORMAL) {
 			if (projectileClass != null) {
 				Projectile projectile = player.launchProjectile(projectileClass);
+				projectile.setBounce(false);
 				if (velocity > 0) {
 					projectile.setVelocity(player.getLocation().getDirection().multiply(velocity));
+				}
+				if (horizSpread > 0 || vertSpread > 0) {
+					Vector v = projectile.getVelocity();
+					v.add(new Vector((random.nextDouble()-.5) * horizSpread, (random.nextDouble()-.5) * vertSpread, (random.nextDouble()-.5) * horizSpread));
+					projectile.setVelocity(v);
+				}
+				if (applySpellPowerToVelocity) {
+					projectile.setVelocity(projectile.getVelocity().multiply(power));
 				}
 				projectiles.put(projectile, new ProjectileInfo(player, power));
 				playSpellEffects(EffectPosition.CASTER, projectile);
 			} else if (projectileItem != null) {
 				Item item = player.getWorld().dropItem(player.getEyeLocation(), projectileItem.clone());
-				item.setVelocity(player.getLocation().getDirection().multiply(velocity > 0 ? velocity : 1));
+				Vector v = player.getLocation().getDirection().multiply(velocity > 0 ? velocity : 1);
+				if (horizSpread > 0 || vertSpread > 0) {
+					v.add(new Vector((random.nextDouble()-.5) * horizSpread, (random.nextDouble()-.5) * vertSpread, (random.nextDouble()-.5) * horizSpread));
+				}
+				if (applySpellPowerToVelocity) {
+					v.multiply(power);
+				}
+				item.setVelocity(v);
 				item.setPickupDelay(10);
 				itemProjectiles.put(item, new ProjectileInfo(player, power, new ItemProjectileMonitor(item)));
 				playSpellEffects(EffectPosition.CASTER, item);
@@ -416,7 +441,7 @@ public class ProjectileSpell extends InstantSpell {
 					stop();
 				}
 			}
-			if (++count > 100) {
+			if (++count > 300) {
 				stop();
 			}
 		}

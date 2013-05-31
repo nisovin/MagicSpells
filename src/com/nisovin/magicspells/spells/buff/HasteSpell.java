@@ -9,7 +9,6 @@ import org.bukkit.event.player.PlayerToggleSprintEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.BuffSpell;
 import com.nisovin.magicspells.util.MagicConfig;
@@ -32,6 +31,12 @@ public class HasteSpell extends BuffSpell {
 
 	@Override
 	public PostCastAction castSpell(final Player player, SpellCastState state, float power, String[] args) {
+		if (isActive(player)) {
+			turnOff(player);
+			if (toggle) {
+				return PostCastAction.ALREADY_HANDLED;
+			}
+		}
 		if (state == SpellCastState.NORMAL) {
 			hasted.put(player, Math.round(strength*power));
 			startSpellDuration(player);
@@ -45,7 +50,6 @@ public class HasteSpell extends BuffSpell {
 		Player player = event.getPlayer();
 		if (hasted.containsKey(player)) {
 			if (isExpired(player)) {
-				playSpellEffects(EffectPosition.DISABLED, player);
 				turnOff(player);
 			} else if (event.isSprinting()) {
 				event.setCancelled(true);
@@ -53,7 +57,8 @@ public class HasteSpell extends BuffSpell {
 				addUseAndChargeCost(player);
 				playSpellEffects(EffectPosition.CASTER, player);
 			} else {
-				MagicSpells.getVolatileCodeHandler().removeMobEffect(player, PotionEffectType.SPEED);
+				player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 1, 0), true);
+				player.removePotionEffect(PotionEffectType.SPEED);
 				playSpellEffects(EffectPosition.DISABLED, player);
 			}
 		}
@@ -64,7 +69,8 @@ public class HasteSpell extends BuffSpell {
 		if (hasted.containsKey(player)) {
 			super.turnOff(player);
 			hasted.remove(player);
-			MagicSpells.getVolatileCodeHandler().removeMobEffect(player, PotionEffectType.SPEED);
+			player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 1, 0), true);
+			player.removePotionEffect(PotionEffectType.SPEED);
 			sendMessage(player, strFade);
 		}
 	}

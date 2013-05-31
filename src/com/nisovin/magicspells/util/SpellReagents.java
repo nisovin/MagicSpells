@@ -13,6 +13,7 @@ public class SpellReagents {
 	private int hunger;
 	private int experience;
 	private int levels;
+	private int durability;
 	
 	public SpellReagents() {
 		this.items = new HashSet<ItemStack>();
@@ -35,7 +36,7 @@ public class SpellReagents {
 		this.levels = other.levels;
 	}
 	
-	public SpellReagents(ItemStack[] items, int mana, int health, int hunger, int experience, int levels) {
+	public SpellReagents(ItemStack[] items, int mana, int health, int hunger, int experience, int levels, int durability) {
 		this.items = new HashSet<ItemStack>();
 		if (items != null) {
 			for (ItemStack i : items) {
@@ -49,6 +50,7 @@ public class SpellReagents {
 		this.hunger = hunger;
 		this.experience = experience;
 		this.levels = levels;
+		this.durability = durability;
 	}
 	
 	public HashSet<ItemStack> getItems() {
@@ -117,6 +119,14 @@ public class SpellReagents {
 		this.levels = levels;
 	}
 	
+	public int getDurability() {
+		return durability;
+	}
+	
+	public void setDurability(int durability) {
+		this.durability = durability;
+	}
+	
 	public SpellReagents clone() {
 		SpellReagents other = new SpellReagents();
 		for (ItemStack item : this.items) {
@@ -127,6 +137,7 @@ public class SpellReagents {
 		other.hunger = this.hunger;
 		other.experience = this.experience;
 		other.levels = this.levels;
+		other.durability = this.durability;
 		return other;
 	}
 	
@@ -142,6 +153,7 @@ public class SpellReagents {
 		other.hunger = Math.round(this.hunger * x);
 		other.experience = Math.round(this.experience * x);
 		other.levels = Math.round(this.levels * x);
+		other.durability = Math.round(this.durability * x);
 		return other;
 	}
 	
