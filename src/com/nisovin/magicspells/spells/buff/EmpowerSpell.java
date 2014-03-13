@@ -1,6 +1,9 @@
 package com.nisovin.magicspells.spells.buff;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -13,49 +16,41 @@ import com.nisovin.magicspells.util.MagicConfig;
 public class EmpowerSpell extends BuffSpell {
 
 	private float extraPower;
+	private Set<String> spells;
 	
-	private HashMap<Player,Float> empowered;
+	private HashMap<Player, Float> empowered;
 	
 	public EmpowerSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
 		extraPower = getConfigFloat("power-multiplier", 1.5F);
+		List<String> list = getConfigStringList("spells", null);
+		if (list != null && list.size() > 0) {
+			spells = new HashSet<String>(list);
+		}
 		
-		empowered = new HashMap<Player,Float>();
+		empowered = new HashMap<Player, Float>();
 	}
 
 	@Override
-	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
-		if (empowered.containsKey(player)) {
-			turnOff(player);
-			if (toggle) {
-				return PostCastAction.ALREADY_HANDLED;
-			}
-		}
-		if (state == SpellCastState.NORMAL) {
-			float p = power * extraPower;
-			empowered.put(player, p);
-			startSpellDuration(player);
-		}
-		return PostCastAction.HANDLE_NORMALLY;
+	public boolean castBuff(Player player, float power, String[] args) {
+		float p = power * extraPower;
+		empowered.put(player, p);
+		return true;
 	}
 
 	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onSpellCast(SpellCastEvent event) {
 		Player player = event.getCaster();
-		if (empowered.containsKey(player)) {
+		if (empowered.containsKey(player) && (spells == null || spells.contains(event.getSpell().getInternalName()))) {
 			event.increasePower(empowered.get(player));
 			addUseAndChargeCost(player);
 		}
 	}
 	
 	@Override
-	public void turnOff(Player player) {
-		if (empowered.containsKey(player)) {
-			super.turnOff(player);
-			empowered.remove(player);
-			sendMessage(player, strFade);
-		}
+	public void turnOffBuff(Player player) {
+		empowered.remove(player);
 	}
 
 	@Override

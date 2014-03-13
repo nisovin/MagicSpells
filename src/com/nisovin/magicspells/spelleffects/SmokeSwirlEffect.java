@@ -3,36 +3,41 @@ package com.nisovin.magicspells.spelleffects;
 import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Location;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
 
 import com.nisovin.magicspells.MagicSpells;
 
 class SmokeSwirlEffect extends SpellEffect {
 
+	int duration = 20;
+	
+	@Override
+	public void loadFromString(String string) {
+		if (string != null && !string.isEmpty()) {
+			try {
+				duration = Integer.parseInt(string);
+			} catch (NumberFormatException e) {
+			}
+		}
+	}
+
+	@Override
+	public void loadFromConfig(ConfigurationSection config) {
+	}
+
 	private int[] x = {1,1,0,-1,-1,-1,0,1};
 	private int[] z = {0,1,1,1,0,-1,-1,-1};
 	private int[] v = {7,6,3,0,1,2,5,8};
 	
 	@Override
-	public void playEffect(Location location, String param) {		
-		new Animator(location, 1, getDuration(param));
+	public void playEffectLocation(Location location) {		
+		new Animator(location, 1, duration);
 	}
 	
 	@Override
-	public void playEffect(Entity entity, String param) {
-		new Animator(entity, 1, getDuration(param));
-	}
-	
-	private int getDuration(String param) {
-		if (param == null || param.isEmpty()) {
-			return 20;
-		} else {
-			try {
-				return Integer.parseInt(param);
-			} catch (NumberFormatException e) {
-				return 20;
-			}
-		}
+	public void playEffectEntity(Entity entity) {
+		new Animator(entity, 1, duration);
 	}
 	
 	private class Animator implements Runnable {

@@ -1,10 +1,12 @@
 package com.nisovin.magicspells.spells.command;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
 
+import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event.Result;
@@ -17,9 +19,9 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
+import com.nisovin.magicspells.materials.ItemNameResolver;
+import com.nisovin.magicspells.materials.MagicMaterial;
 import com.nisovin.magicspells.spells.CommandSpell;
-import com.nisovin.magicspells.util.ItemNameResolver;
-import com.nisovin.magicspells.util.ItemNameResolver.ItemTypeAndData;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.SpellReagents;
 import com.nisovin.magicspells.util.Util;
@@ -36,7 +38,8 @@ public class ImbueSpell extends CommandSpell {
 	private boolean consumeItem;
 	private boolean rightClickCast;
 	private boolean leftClickCast;
-	private Set<Integer> allowedItems;
+	private Set<Material> allowedItemTypes;
+	private List<MagicMaterial> allowedItemMaterials;
 	private boolean nameAndLoreHasUses;
 	
 	private String strItemName;
@@ -58,14 +61,16 @@ public class ImbueSpell extends CommandSpell {
 		rightClickCast = getConfigBoolean("right-click-cast", false);
 		leftClickCast = getConfigBoolean("left-click-cast", true);
 
-		allowedItems = new TreeSet<Integer>();
+		allowedItemTypes = new HashSet<Material>();
+		allowedItemMaterials = new ArrayList<MagicMaterial>();
 		List<String> allowed = getConfigStringList("allowed-items", null);
 		if (allowed != null) {
 			ItemNameResolver resolver = MagicSpells.getItemNameResolver();
 			for (String s : allowed) {
-				ItemTypeAndData type = resolver.resolve(s);
-				if (type != null) {
-					allowedItems.add(type.id);
+				MagicMaterial m = resolver.resolveItem(s);
+				if (m != null) {
+					allowedItemTypes.add(m.getMaterial());
+					allowedItemMaterials.add(m);
 				}
 			}
 		}
@@ -90,7 +95,19 @@ public class ImbueSpell extends CommandSpell {
 			
 			// get item
 			ItemStack inHand = player.getItemInHand();
-			if (!allowedItems.contains(inHand.getTypeId())) {
+			if (!allowedItemTypes.contains(inHand.getType())) {
+				// disallowed item
+				sendMessage(player, strCantImbueItem);
+				return PostCastAction.ALREADY_HANDLED;
+			}
+			boolean allowed = false;
+			for (MagicMaterial m : allowedItemMaterials) {
+				if (m.equals(inHand)) {
+					allowed = true;
+					break;
+				}
+			}
+			if (!allowed) {
 				// disallowed item
 				sendMessage(player, strCantImbueItem);
 				return PostCastAction.ALREADY_HANDLED;
@@ -163,7 +180,15 @@ public class ImbueSpell extends CommandSpell {
 				(leftClickCast && (event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK))
 				)) {
 			ItemStack item = event.getItem();
-			if (allowedItems.contains(item.getTypeId())) {
+			if (allowedItemTypes.contains(item.getType())) {
+				boolean allowed = false;
+				for (MagicMaterial m : allowedItemMaterials) {
+					if (m.equals(item)) {
+						allowed = true;
+						break;
+					}
+				}
+				if (!allowed) return;
 				String imbueData = getImbueData(item);
 				if (imbueData != null && !imbueData.isEmpty()) {
 					String[] data = imbueData.split(",");

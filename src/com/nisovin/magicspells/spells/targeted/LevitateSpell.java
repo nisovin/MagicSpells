@@ -18,14 +18,13 @@ import org.bukkit.util.Vector;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.events.SpellCastEvent;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
+import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class LevitateSpell extends TargetedEntitySpell {
+public class LevitateSpell extends TargetedSpell implements TargetedEntitySpell {
 
 	private int tickRate;
 	private int duration;
-	private boolean targetPlayers;
-	private boolean obeyLos;
 	private boolean cancelOnItemSwitch;
 	private boolean cancelOnSpellCast;
 	private boolean cancelOnTakeDamage;
@@ -37,8 +36,6 @@ public class LevitateSpell extends TargetedEntitySpell {
 		
 		tickRate = getConfigInt("tick-rate", 5);
 		duration = getConfigInt("duration", 10);
-		targetPlayers = getConfigBoolean("target-players", false);
-		obeyLos = getConfigBoolean("obey-los", true);
 		cancelOnItemSwitch = getConfigBoolean("cancel-on-item-switch", true);
 		cancelOnSpellCast = getConfigBoolean("cancel-on-spell-cast", false);
 		cancelOnTakeDamage = getConfigBoolean("cancel-on-take-damage", true);
@@ -66,7 +63,7 @@ public class LevitateSpell extends TargetedEntitySpell {
 			levitating.remove(player).stop();
 			return PostCastAction.ALREADY_HANDLED;
 		} else if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, minRange, range, targetPlayers, obeyLos);
+			LivingEntity target = getTargetedEntity(player, power);
 			if (target == null) {
 				return noTarget(player);
 			}
@@ -90,6 +87,11 @@ public class LevitateSpell extends TargetedEntitySpell {
 	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
 		levitate(caster, target, power);
 		return true;
+	}
+
+	@Override
+	public boolean castAtEntity(LivingEntity target, float power) {
+		return false;
 	}
 	
 	public void onPlayerDeath(PlayerDeathEvent event) {

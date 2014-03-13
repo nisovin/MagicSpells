@@ -13,16 +13,15 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.materials.MagicMaterial;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
-import com.nisovin.magicspells.util.ItemNameResolver.ItemTypeAndData;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.Util;
 
 public class DowseSpell extends InstantSpell {
 
-	private int typeId;
-	private byte data;
+	private MagicMaterial material;
 	private EntityType entityType;
 	private String playerName;
 	private int radius;
@@ -37,9 +36,7 @@ public class DowseSpell extends InstantSpell {
 		
 		String blockName = getConfigString("block-type", "");
 		if (!blockName.isEmpty()) {
-			ItemTypeAndData typeAndData = MagicSpells.getItemNameResolver().resolve(blockName);
-			typeId = typeAndData.id;
-			data = (byte)typeAndData.data;
+			material = MagicSpells.getItemNameResolver().resolveBlock(blockName);
 		}
 		String entityName = getConfigString("entity-type", "");
 		if (!entityName.isEmpty()) {
@@ -49,7 +46,7 @@ public class DowseSpell extends InstantSpell {
 				entityType = EntityType.PLAYER;
 				playerName = entityName.split(":")[1];
 			} else {
-				entityType = EntityType.fromName(entityName);
+				entityType = Util.getEntityType(entityName);
 			}
 		}
 		
@@ -60,7 +57,7 @@ public class DowseSpell extends InstantSpell {
 		
 		getDistance = strCastSelf != null && strCastSelf.contains("%d");
 		
-		if (typeId <= 0 && entityType == null) {
+		if (material == null && entityType == null) {
 			MagicSpells.error("DowseSpell '" + internalName + "' has no dowse target (block or entity) defined");
 		}
 	}
@@ -71,7 +68,7 @@ public class DowseSpell extends InstantSpell {
 			
 			int distance = -1;
 			
-			if (typeId > 0) {
+			if (material != null) {
 			
 				Block foundBlock = null;
 				
@@ -86,7 +83,7 @@ public class DowseSpell extends InstantSpell {
 							for (int z = -r; z <= r; z++) {
 								if (x == r || y == r || z == r || -x == r || -y == r || -z == r) {
 									Block block = world.getBlockAt(cx + x, cy + y, cz + z);
-									if (block.getTypeId() == typeId && block.getData() == data) {
+									if (material.equals(block)) {
 										foundBlock = block;
 										break;
 									}

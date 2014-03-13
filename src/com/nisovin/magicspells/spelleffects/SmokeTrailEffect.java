@@ -5,21 +5,31 @@ import java.util.ArrayList;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.configuration.ConfigurationSection;
 
 import com.nisovin.magicspells.MagicSpells;
 
 class SmokeTrailEffect extends SpellEffect {
 
+	int interval = 0;
+	
 	@Override
-	public void playEffect(Location location1, Location location2, String param) {
-		int interval = 0;
-		if (param != null) {
+	public void loadFromString(String string) {
+		if (string != null) {
 			try {
-				interval = Integer.parseInt(param);
-			} catch (NumberFormatException e) {			
+				interval = Integer.parseInt(string);
+			} catch (NumberFormatException e) {
 			}
 		}
-		
+	}
+
+	@Override
+	public void loadFromConfig(ConfigurationSection config) {
+		interval = config.getInt("interval", interval);
+	}
+
+	@Override
+	public void playEffect(Location location1, Location location2) {		
 		SmokeStreamEffect effect = new SmokeStreamEffect(location1, location2);
 		if (interval > 0) {
 			effect.start(interval);

@@ -4,32 +4,37 @@ import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 
+import com.nisovin.magicspells.spelleffects.EffectPosition;
+import com.nisovin.magicspells.spells.TargetedEntityFromLocationSpell;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
+import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.BlockUtils;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class GripSpell extends TargetedEntitySpell {
+public class GripSpell extends TargetedSpell implements TargetedEntitySpell, TargetedEntityFromLocationSpell {
 
 	float locationOffset;
-	boolean targetPlayers;
-	boolean targetNonPlayers;
-	boolean obeyLos;
+	float yOffset;
+	
+	String strCantGrip;
 	
 	public GripSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
 		locationOffset = getConfigFloat("location-offset", 0);
-		targetPlayers = getConfigBoolean("target-players", true);
-		targetNonPlayers = getConfigBoolean("target-non-players", false);
-		obeyLos = getConfigBoolean("obey-los", true);
+		yOffset = getConfigFloat("y-offset", 0.5F);
+		strCantGrip = getConfigString("str-cant-grip", "");
 	}
 
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, minRange, range, targetPlayers, targetNonPlayers, obeyLos, true);
+			LivingEntity target = getTargetedEntity(player, power);
 			if (target != null) {
-				grip(player, target);
+				boolean ok = grip(player, target);
+				if (!ok) {
+					return noTarget(player, strCantGrip);
+				}
 				sendMessages(player, target);
 				return PostCastAction.NO_MESSAGES;
 			} else {
@@ -39,19 +44,56 @@ public class GripSpell extends TargetedEntitySpell {
 		return PostCastAction.HANDLE_NORMALLY;
 	}
 	
-	private void grip(Player player, LivingEntity target) {
+	private boolean grip(Player player, LivingEntity target) {
 		Location loc = player.getLocation().add(player.getLocation().getDirection().setY(0).normalize().multiply(locationOffset));
+		loc.add(0, yOffset, 0);
 		if (!BlockUtils.isSafeToStand(loc)) {
-			loc = player.getLocation();
+			return false;
 		}
 		playSpellEffects(player, target);
-		target.teleport(loc);
+		return target.teleport(loc);
 	}
 
 	@Override
 	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
-		grip(caster, target);
-		return true;
+		if (validTargetList.canTarget(caster, target)) {
+			return grip(caster, target);
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	public boolean castAtEntity(LivingEntity target, float power) {
+		return false;
+	}
+
+	@Override
+	public boolean castAtEntityFromLocation(Player caster, Location from, LivingEntity target, float power) {
+		return castAtEntityFromLocation(from, target, power);
+	}
+
+	@Override
+	public boolean castAtEntityFromLocation(Location from, LivingEntity target, float power) {
+		if (validTargetList.canTarget(target)) {
+			Location loc = from.clone();
+			loc.setX(loc.getBlockX() + .5);
+			loc.setY(loc.getBlockY() + .5);
+			loc.setZ(loc.getBlockZ() + .5);
+			if (!BlockUtils.isSafeToStand(loc)) {
+				loc.add(0, 1, 0);
+				if (!BlockUtils.isSafeToStand(loc)) {
+					return false;
+				}
+			}
+			Location start = target.getLocation().clone();
+			playSpellEffects(EffectPosition.TARGET, target);
+			target.teleport(loc);
+			playSpellEffectsTrail(start, loc);
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 }

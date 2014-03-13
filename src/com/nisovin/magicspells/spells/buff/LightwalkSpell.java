@@ -10,33 +10,29 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.material.MaterialData;
 
+import com.nisovin.magicspells.materials.MagicBlockMaterial;
+import com.nisovin.magicspells.materials.MagicMaterial;
 import com.nisovin.magicspells.spells.BuffSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.Util;
 
 public class LightwalkSpell extends BuffSpell {
 	
-	private HashMap<String,Block> lightwalkers;
+	private HashMap<String, Block> lightwalkers;
+	private MagicMaterial mat = new MagicBlockMaterial(new MaterialData(Material.GLOWSTONE));
 
 	public LightwalkSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 				
-		lightwalkers = new HashMap<String,Block>();
+		lightwalkers = new HashMap<String, Block>();
 	}
 
 	@Override
-	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
-		if (lightwalkers.containsKey(player.getName())) {
-			turnOff(player);
-			if (toggle) {
-				return PostCastAction.ALREADY_HANDLED;
-			}
-		}
-		if (state == SpellCastState.NORMAL) {
-			lightwalkers.put(player.getName(), null);
-			startSpellDuration(player);
-		}
-		return PostCastAction.HANDLE_NORMALLY;
+	public boolean castBuff(Player player, float power, String[] args) {
+		lightwalkers.put(player.getName(), null);
+		return true;
 	}
 	
 	@EventHandler(priority=EventPriority.MONITOR)
@@ -50,9 +46,9 @@ public class LightwalkSpell extends BuffSpell {
 					turnOff(p);
 				} else {
 					if (oldBlock != null) {
-						p.sendBlockChange(oldBlock.getLocation(), oldBlock.getType(), oldBlock.getData());
+						Util.restoreFakeBlockChange(p, oldBlock);
 					}
-					p.sendBlockChange(newBlock.getLocation(), Material.GLOWSTONE, (byte)0);
+					Util.sendFakeBlockChange(p, newBlock, mat);
 					lightwalkers.put(p.getName(), newBlock);
 					addUse(p);
 					chargeUseCost(p);
@@ -81,13 +77,10 @@ public class LightwalkSpell extends BuffSpell {
 	}
 	
 	@Override
-	public void turnOff(Player player) {
-		Block b = lightwalkers.get(player.getName());
+	public void turnOffBuff(Player player) {
+		Block b = lightwalkers.remove(player.getName());
 		if (b != null) {
-			super.turnOff(player);
-			player.sendBlockChange(b.getLocation(), b.getType(), b.getData());
-			lightwalkers.remove(player.getName());
-			sendMessage(player, strFade);
+			Util.restoreFakeBlockChange(player, b);
 		}
 	}
 
@@ -98,7 +91,7 @@ public class LightwalkSpell extends BuffSpell {
 			if (p != null) {
 				Block b = lightwalkers.get(s);
 				if (b != null) {
-					p.sendBlockChange(b.getLocation(), b.getType(), b.getData());
+					Util.restoreFakeBlockChange(p, b);
 				}
 			}
 		}

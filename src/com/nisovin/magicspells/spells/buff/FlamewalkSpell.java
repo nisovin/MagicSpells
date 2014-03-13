@@ -11,6 +11,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.BuffSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
@@ -22,7 +23,7 @@ public class FlamewalkSpell extends BuffSpell {
 	private boolean targetPlayers;
 	private boolean checkPlugins;
 	
-	private HashMap<String,Float> flamewalkers;
+	private HashMap<String, Float> flamewalkers;
 	private Burner burner;
 	
 	public FlamewalkSpell(MagicConfig config, String spellName) {
@@ -34,37 +35,24 @@ public class FlamewalkSpell extends BuffSpell {
 		targetPlayers = getConfigBoolean("target-players", false);
 		checkPlugins = getConfigBoolean("check-plugins", true);
 		
-		flamewalkers = new HashMap<String,Float>();
+		flamewalkers = new HashMap<String, Float>();
 	}
 
 	@Override
-	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
-		if (flamewalkers.containsKey(player.getName())) {
-			turnOff(player);
-			if (toggle) {
-				return PostCastAction.ALREADY_HANDLED;
-			}
+	public boolean castBuff(Player player, float power, String[] args) {
+		flamewalkers.put(player.getName(), power);
+		if (burner == null) {
+			burner = new Burner();
 		}
-		if (state == SpellCastState.NORMAL) {
-			flamewalkers.put(player.getName(),power);
-			if (burner == null) {
-				burner = new Burner();
-			}
-			startSpellDuration(player);
-		}
-		return PostCastAction.HANDLE_NORMALLY;
+		return true;
 	}	
 	
 	@Override
-	public void turnOff(Player player) {
-		if (flamewalkers.containsKey(player.getName())) {
-			super.turnOff(player);
-			sendMessage(player, strFade);
-			flamewalkers.remove(player.getName());
-			if (flamewalkers.size() == 0 && burner != null) {
-				burner.stop();
-				burner = null;
-			}
+	public void turnOffBuff(Player player) {
+		flamewalkers.remove(player.getName());
+		if (flamewalkers.size() == 0 && burner != null) {
+			burner.stop();
+			burner = null;
 		}
 	}
 	
@@ -98,26 +86,27 @@ public class FlamewalkSpell extends BuffSpell {
 						turnOff(player);
 						continue;
 					}
+					playSpellEffects(EffectPosition.DELAYED, player);
 					List<Entity> entities = player.getNearbyEntities(range, range, range);
 					for (Entity entity : entities) {
 						if (entity instanceof Player) {
 							if (entity != player && targetPlayers) {
 								if (checkPlugins) {
-									EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, entity, DamageCause.ENTITY_ATTACK, 1);
+									EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, entity, DamageCause.ENTITY_ATTACK, (double)1);
 									Bukkit.getServer().getPluginManager().callEvent(event);
 									if (event.isCancelled()) {
 										continue;
 									}
 								}
-								entity.setFireTicks(Math.round(fireTicks*power));
-								addUse(player);
-								chargeUseCost(player);
 							}
-						} else if (entity instanceof LivingEntity) {
-							entity.setFireTicks(Math.round(fireTicks*power));
-							addUse(player);
-							chargeUseCost(player);
+						} else if (!(entity instanceof LivingEntity)) {
+							continue;
 						}
+						entity.setFireTicks(Math.round(fireTicks*power));
+						playSpellEffects(EffectPosition.TARGET, entity);
+						playSpellEffectsTrail(player.getLocation(), entity.getLocation());
+						addUse(player);
+						chargeUseCost(player);
 					}
 				}
 			}

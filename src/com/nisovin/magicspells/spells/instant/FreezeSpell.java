@@ -3,7 +3,6 @@ package com.nisovin.magicspells.spells.instant;
 import java.util.Random;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Effect;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Snowball;
@@ -27,8 +26,6 @@ public class FreezeSpell extends InstantSpell {
 	private int damage;
 	private int slowAmount;
 	private int slowDuration;
-	private boolean playBowSound;
-	private boolean targetPlayers;
 	private boolean callTargetEvents;
 	
 	private float identifier;
@@ -42,8 +39,6 @@ public class FreezeSpell extends InstantSpell {
 		damage = getConfigInt("damage", 3);
 		slowAmount = getConfigInt("slow-amount", 3);
 		slowDuration = getConfigInt("slow-duration", 40);
-		playBowSound = getConfigBoolean("play-bow-sound", true);
-		targetPlayers = getConfigBoolean("target-players", false);
 		callTargetEvents = getConfigBoolean("call-target-events", false);
 		
 		identifier = (float)Math.random() * 20F;
@@ -60,9 +55,6 @@ public class FreezeSpell extends InstantSpell {
 				mod = new Vector((rand.nextDouble() - .5) * horizSpread, (rand.nextDouble() - .5) * vertSpread, (rand.nextDouble() - .5) * horizSpread);
 				snowball.setVelocity(snowball.getVelocity().add(mod));
 			}
-			if (playBowSound) {
-				player.playEffect(player.getLocation(), Effect.BOW_FIRE, 0);
-			}
 			playSpellEffects(EffectPosition.CASTER, player);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
@@ -70,13 +62,15 @@ public class FreezeSpell extends InstantSpell {
 	
 	@EventHandler(priority=EventPriority.LOWEST)
 	public void onEntityDamage(EntityDamageByEntityEvent event) {
-		if (damage <= 0 || event.isCancelled()) return;
+		if (damage <= 0 || event.isCancelled() || !(event.getEntity() instanceof LivingEntity)) return;
 		
 		if (!(event.getDamager() instanceof Snowball) || event.getDamager().getFallDistance() != identifier) return;
 		
-		if (targetPlayers || !(event.getEntity() instanceof Player)) {
+		LivingEntity entity = (LivingEntity)event.getEntity();
+		
+		if (validTargetList.canTarget(entity)) {
 			if (callTargetEvents) {
-				SpellTargetEvent e = new SpellTargetEvent(this, (Player)((Snowball)event.getDamager()).getShooter(), (LivingEntity)event.getEntity());
+				SpellTargetEvent e = new SpellTargetEvent(this, (Player)((Snowball)event.getDamager()).getShooter(), entity);
 				Bukkit.getPluginManager().callEvent(e);
 				if (e.isCancelled()) {
 					event.setCancelled(true);
@@ -86,6 +80,8 @@ public class FreezeSpell extends InstantSpell {
 			} else {				
 				event.setDamage(damage);
 			}
+		} else {
+			event.setCancelled(true);
 		}
 	}
 	

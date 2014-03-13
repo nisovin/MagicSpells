@@ -18,7 +18,7 @@ public class WaterwalkSpell extends BuffSpell {
 
 	private float speed;
 	
-	private HashSet<Player> waterwalking;
+	private HashSet<String> waterwalking;
 	private Ticker ticker = null;
 	
 	public WaterwalkSpell(MagicConfig config, String spellName) {
@@ -26,7 +26,7 @@ public class WaterwalkSpell extends BuffSpell {
 		
 		speed = getConfigFloat("speed", 0.05F);
 		
-		waterwalking = new HashSet<Player>();
+		waterwalking = new HashSet<String>();
 	}
 	
 	@Override
@@ -35,48 +35,39 @@ public class WaterwalkSpell extends BuffSpell {
 	}
 
 	@Override
-	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
-		if (waterwalking.contains(player)) {
-			turnOff(player);
-			if (toggle) {
-				return PostCastAction.ALREADY_HANDLED;
-			}
-		}
-		if (state == SpellCastState.NORMAL) {
-			waterwalking.add(player);
-			startSpellDuration(player);
-			startTicker();
-		}
-		return PostCastAction.HANDLE_NORMALLY;
+	public boolean castBuff(Player player, float power, String[] args) {
+		waterwalking.add(player.getName());
+		startTicker();
+		return true;
 	}
 
 	@Override
 	public boolean isActive(Player player) {
-		return waterwalking.contains(player);
+		return waterwalking.contains(player.getName());
 	}
 
 	@Override
-	public void turnOff(Player player) {
-		if (waterwalking.contains(player)) {
-			super.turnOff(player);
-			waterwalking.remove(player);
+	public void turnOffBuff(Player player) {
+		if (waterwalking.remove(player.getName())) {
 			player.setFlying(false);
 			if (player.getGameMode() != GameMode.CREATIVE) {
 				player.setAllowFlight(false);
 			}
-			sendMessage(player, strFade);
-			if (waterwalking.size() == 0) {
-				stopTicker();
-			}
+		}
+		if (waterwalking.size() == 0) {
+			stopTicker();
 		}
 	}
 	
 	@Override
 	protected void turnOff() {
-		for (Player player : waterwalking) {
-			player.setFlying(false);
-			if (player.getGameMode() != GameMode.CREATIVE) {
-				player.setAllowFlight(false);
+		for (String playerName : waterwalking) {
+			Player player = Bukkit.getPlayerExact(playerName);
+			if (player != null && player.isValid()) {
+				player.setFlying(false);
+				if (player.getGameMode() != GameMode.CREATIVE) {
+					player.setAllowFlight(false);
+				}
 			}
 		}
 		waterwalking.clear();
@@ -110,8 +101,9 @@ public class WaterwalkSpell extends BuffSpell {
 			if (count >= 4) count = 0;
 			Location loc;
 			Block feet, underfeet;
-			for (Player p : waterwalking) {
-				if (p.isOnline() && p.isValid()) {
+			for (String n : waterwalking) {
+				Player p = Bukkit.getPlayerExact(n);
+				if (p != null && p.isOnline() && p.isValid()) {
 					loc = p.getLocation();
 					feet = loc.getBlock();
 					underfeet = feet.getRelative(BlockFace.DOWN);

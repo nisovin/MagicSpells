@@ -8,15 +8,14 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
+import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class ForcetossSpell extends TargetedEntitySpell {
+public class ForcetossSpell extends TargetedSpell implements TargetedEntitySpell {
 
 	private int damage;
 	private float hForce;
 	private float vForce;
-	private boolean obeyLos;
-	private boolean targetPlayers;
 	private boolean checkPlugins;
 	
 	public ForcetossSpell(MagicConfig config, String spellName) {
@@ -25,8 +24,6 @@ public class ForcetossSpell extends TargetedEntitySpell {
 		damage = getConfigInt("damage", 0);
 		hForce = getConfigInt("horizontal-force", 20) / 10.0F;
 		vForce = getConfigInt("vertical-force", 10) / 10.0F;
-		obeyLos = getConfigBoolean("obey-los", true);
-		targetPlayers = getConfigBoolean("target-players", false);
 		checkPlugins = getConfigBoolean("check-plugins", true);
 	}
 
@@ -34,14 +31,14 @@ public class ForcetossSpell extends TargetedEntitySpell {
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
 			// get target
-			LivingEntity target = getTargetedEntity(player, minRange, range, targetPlayers, obeyLos);
+			LivingEntity target = getTargetedEntity(player, power);
 			if (target == null) {
 				return noTarget(player);
 			}
 			
 			// do damage
 			if (damage > 0) {
-				int damage = Math.round(this.damage*power);
+				double damage = this.damage * power;
 				if (target instanceof Player && checkPlugins) {
 					EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, target, DamageCause.ENTITY_ATTACK, damage);
 					Bukkit.getServer().getPluginManager().callEvent(event);
@@ -74,14 +71,17 @@ public class ForcetossSpell extends TargetedEntitySpell {
 
 	@Override
 	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
-		if (target instanceof Player && !targetPlayers) {
+		if (!validTargetList.canTarget(caster, target)) {
 			return false;
 		} else {
 			toss(caster, target, power);
 			return true;
 		}
 	}
-	
-	
+
+	@Override
+	public boolean castAtEntity(LivingEntity target, float power) {
+		return false;
+	}
 
 }

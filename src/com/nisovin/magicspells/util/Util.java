@@ -1,27 +1,45 @@
 package com.nisovin.magicspells.util;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BookMeta;
+import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
+import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.inventory.meta.Repairable;
+import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.Spellbook;
-import com.nisovin.magicspells.util.ItemNameResolver.ItemTypeAndData;
+import com.nisovin.magicspells.materials.ItemNameResolver.ItemTypeAndData;
+import com.nisovin.magicspells.materials.MagicMaterial;
 
 public class Util {
 
@@ -85,17 +103,23 @@ public class Util {
 			} else {
 				return null;
 			}
-			ItemMeta meta = item.getItemMeta();
-			if (name != null) {
-				meta.setDisplayName(name);
+			if (name != null || lore != null || color >= 0) {
+				try {
+					ItemMeta meta = item.getItemMeta();
+					if (name != null) {
+						meta.setDisplayName(name);
+					}
+					if (lore != null) {
+						meta.setLore(Arrays.asList(lore));
+					}
+					if (color >= 0 && meta instanceof LeatherArmorMeta) {
+						((LeatherArmorMeta)meta).setColor(Color.fromRGB(color));
+					}
+					item.setItemMeta(meta);
+				} catch (Exception e) {
+					MagicSpells.error("Failed to process item meta for item: " + s);
+				}
 			}
-			if (lore != null) {
-				meta.setLore(Arrays.asList(lore));
-			}
-			if (color >= 0 && meta instanceof LeatherArmorMeta) {
-				((LeatherArmorMeta)meta).setColor(Color.fromRGB(color));
-			}
-			item.setItemMeta(meta);
 			if (enchants != null) {
 				if (enchants.size() > 0) {
 					item.addUnsafeEnchantments(enchants);
@@ -105,6 +129,190 @@ public class Util {
 			}
 			return item;
 		} catch (Exception e) {
+			MagicSpells.handleException(e);
+			return null;
+		}
+	}
+	
+	public static ItemStack getItemStackFromConfig(ConfigurationSection config) {
+		try {
+			if (!config.contains("type")) return null;
+			
+			// basic item
+			MagicMaterial material = MagicSpells.getItemNameResolver().resolveItem(config.getString("type"));
+			if (material == null) return null;
+			ItemStack item = material.toItemStack();
+			ItemMeta meta = item.getItemMeta();
+			
+			// name and lore
+			if (config.contains("name") && config.isString("name")) {
+				meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("name")));
+			}
+			if (config.contains("lore")) {
+				if (config.isList("lore")) {
+					List<String> lore = config.getStringList("lore");
+					for (int i = 0; i < lore.size(); i++) {
+						lore.set(i, ChatColor.translateAlternateColorCodes('&', lore.get(i)));
+					}
+					meta.setLore(lore);
+				} else if (config.isString("lore")) {
+					List<String> lore = new ArrayList<String>();
+					lore.add(ChatColor.translateAlternateColorCodes('&', config.getString("lore")));
+					meta.setLore(lore);
+				}
+			}
+			
+			// enchants
+			boolean emptyEnchants = false;
+			if (config.contains("enchants") && config.isList("enchants")) {
+				List<String> enchants = config.getStringList("enchants");
+				for (String enchant : enchants) {
+					String[] data = enchant.split(" ");
+					Enchantment e = null;
+					try {
+						int id = Integer.parseInt(data[0]);
+						e = Enchantment.getById(id);
+					} catch (NumberFormatException ex) {
+						e = Enchantment.getByName(data[0].toUpperCase());
+					}
+					if (e != null) {
+						int level = 0;
+						if (data.length > 1) {
+							try {
+								level = Integer.parseInt(data[1]);
+							} catch (NumberFormatException ex) {						
+							}
+						}
+						if (meta instanceof EnchantmentStorageMeta) {
+							((EnchantmentStorageMeta)meta).addStoredEnchant(e, level, true);
+						} else {
+							meta.addEnchant(e, level, true);
+						}
+					}
+				}
+				if (enchants.size() == 0) {
+					emptyEnchants = true;
+				}
+			}
+			
+			// armor color
+			if (config.contains("color") && config.isString("color") && meta instanceof LeatherArmorMeta) {
+				try {
+					int color = Integer.parseInt(config.getString("color").replace("#", ""), 16);
+					((LeatherArmorMeta)meta).setColor(Color.fromRGB(color));
+				} catch (NumberFormatException e) {				
+				}
+			}
+			
+			// potion effects
+			if (config.contains("potioneffects") && config.isList("potioneffects") && meta instanceof PotionMeta) {
+				((PotionMeta)meta).clearCustomEffects();
+				List<String> potionEffects = config.getStringList("potioneffects");
+				for (String potionEffect : potionEffects) {
+					String[] data = potionEffect.split(" ");
+					PotionEffectType t = null;
+					try {
+						int id = Integer.parseInt(data[0]);
+						t = PotionEffectType.getById(id);
+					} catch (NumberFormatException e) {
+						t = PotionEffectType.getByName(data[0].toUpperCase());
+					}
+					if (t != null) {
+						int level = 0;
+						if (data.length > 1) {
+							try {
+								level = Integer.parseInt(data[1]);
+							} catch (NumberFormatException ex) {						
+							}
+						}
+						int duration = 600;
+						if (data.length > 2) {
+							try {
+								duration = Integer.parseInt(data[2]);
+							} catch (NumberFormatException ex) {						
+							}
+						}
+						boolean ambient = false;
+						if (data.length > 3 && (data[3].equalsIgnoreCase("true") || data[3].equalsIgnoreCase("yes") || data[3].equalsIgnoreCase("ambient"))) {
+							ambient = true;
+						}
+						((PotionMeta)meta).addCustomEffect(new PotionEffect(t, duration, level, ambient), true);
+					}
+				}
+			}
+			
+			// skull owner
+			if (config.contains("skullowner") && config.isString("skullowner") && meta instanceof SkullMeta) {
+				((SkullMeta)meta).setOwner(config.getString("skullowner"));
+			}
+			
+			// repair cost
+			if (config.contains("repaircost") && config.isInt("repaircost") && meta instanceof Repairable) {
+				((Repairable)meta).setRepairCost(config.getInt("repaircost"));
+			}
+			
+			// written book
+			if (meta instanceof BookMeta) {
+				if (config.contains("title") && config.isString("title")) {
+					((BookMeta)meta).setTitle(ChatColor.translateAlternateColorCodes('&', config.getString("title")));
+				}
+				if (config.contains("author") && config.isString("author")) {
+					((BookMeta)meta).setAuthor(ChatColor.translateAlternateColorCodes('&', config.getString("author")));
+				}
+				if (config.contains("pages") && config.isList("pages")) {
+					List<String> pages = config.getStringList("pages");
+					for (int i = 0; i < pages.size(); i++) {
+						pages.set(i, ChatColor.translateAlternateColorCodes('&', pages.get(i)));
+					}
+					((BookMeta)meta).setPages(pages);
+				}
+			}
+			
+			// set meta
+			item.setItemMeta(meta);
+			
+			// empty enchant
+			if (emptyEnchants) {
+				item = MagicSpells.getVolatileCodeHandler().addFakeEnchantment(item);
+			}
+			
+			// attributes
+			if (config.contains("attributes")) {
+				Set<String> attrs = config.getConfigurationSection("attributes").getKeys(false);
+				String[] attrNames = new String[attrs.size()];
+				String[] attrTypes = new String[attrs.size()];
+				double[] attrAmounts = new double[attrs.size()];
+				int[] attrOperations = new int[attrs.size()];
+				int i = 0;
+				for (String attrName : attrs) {
+					String[] attrData = config.getString("attributes." + attrName).split(" ");
+					String attrType = attrData[0];
+					double attrAmt = 1;
+					try {
+						attrAmt = Double.parseDouble(attrData[1]);
+					} catch (NumberFormatException e) {}
+					int attrOp = 0; // add number
+					if (attrData.length > 2) {
+						if (attrData[2].toLowerCase().startsWith("mult")) {
+							attrOp = 1; // multiply percent
+						} else if (attrData[2].toLowerCase().contains("add") && attrData[2].toLowerCase().contains("perc")) {
+							attrOp = 2; // add percent
+						}
+					}
+					if (attrType != null) {
+						attrNames[i] = attrName;
+						attrTypes[i] = attrType;
+						attrAmounts[i] = attrAmt;
+						attrOperations[i] = attrOp;
+					}
+					i++;
+				}
+				item = MagicSpells.getVolatileCodeHandler().addAttributes(item, attrNames, attrTypes, attrAmounts, attrOperations);
+			}
+			
+			return item;
+		} catch (Exception e) {
+			e.printStackTrace();
 			return null;
 		}
 	}
@@ -115,9 +323,12 @@ public class Util {
 		if (meta.hasLore()) {
 			lore = meta.getLore();
 			if (lore.size() > 0) {
-				String s = ChatColor.stripColor(lore.get(lore.size() - 1));
-				if (s.startsWith("MS$")) {
-					lore.remove(lore.size() - 1);
+				for (int i = 0; i < lore.size(); i++) {
+					String s = ChatColor.stripColor(lore.get(i));
+					if (s.startsWith("MS$:")) {
+						lore.remove(i);
+						break;
+					}
 				}
 			}
 		} else {
@@ -133,9 +344,11 @@ public class Util {
 		if (meta.hasLore()) {
 			List<String> lore = meta.getLore();
 			if (lore.size() > 0) {
-				String s = ChatColor.stripColor(lore.get(lore.size() - 1));
-				if (s.startsWith("MS$")) {
-					return s.substring(4);
+				for (int i = 0; i < lore.size(); i++) {
+					String s = ChatColor.stripColor(lore.get(lore.size() - 1));
+					if (s.startsWith("MS$:")) {
+						return s.substring(4);
+					}
 				}
 			}
 		}
@@ -148,9 +361,16 @@ public class Util {
 		if (meta.hasLore()) {
 			lore = meta.getLore();
 			if (lore.size() > 0) {
-				String s = ChatColor.stripColor(lore.get(lore.size() - 1));
-				if (s.startsWith("MS$")) {
-					lore.remove(lore.size() - 1);
+				boolean removed = false;
+				for (int i = 0; i < lore.size(); i++) {
+					String s = ChatColor.stripColor(lore.get(i));
+					if (s.startsWith("MS$:")) {
+						lore.remove(i);
+						removed = true;
+						break;
+					}
+				}
+				if (removed) {
 					if (lore.size() > 0) {
 						meta.setLore(lore);
 					} else {
@@ -161,16 +381,75 @@ public class Util {
 			}
 		}
 	}
+
+	static Map<String, EntityType> entityTypeMap = new HashMap<String, EntityType>();
+	static {
+		for (EntityType type : EntityType.values()) {
+			if (type != null && type.getName() != null) {
+				entityTypeMap.put(type.getName().toLowerCase(), type);
+				entityTypeMap.put(type.name().toLowerCase(), type);
+				entityTypeMap.put(type.name().toLowerCase().replace("_", ""), type);
+			}
+		}
+		entityTypeMap.put("zombiepig", EntityType.PIG_ZOMBIE);
+		entityTypeMap.put("mooshroom", EntityType.MUSHROOM_COW);
+		entityTypeMap.put("cat", EntityType.OCELOT);
+		entityTypeMap.put("golem", EntityType.IRON_GOLEM);
+		entityTypeMap.put("snowgolem", EntityType.SNOWMAN);
+		entityTypeMap.put("dragon", EntityType.ENDER_DRAGON);
+		Map<String, EntityType> toAdd = new HashMap<String, EntityType>();
+		for (String s : entityTypeMap.keySet()) {
+			toAdd.put(s + "s", entityTypeMap.get(s));
+		}
+		entityTypeMap.putAll(toAdd);
+		entityTypeMap.put("endermen", EntityType.ENDERMAN);
+		entityTypeMap.put("wolves", EntityType.WOLF);
+	}
+	
+	public static EntityType getEntityType(String type) {
+		if (type.equalsIgnoreCase("player")) return EntityType.PLAYER;
+		return entityTypeMap.get(type.toLowerCase());
+	}
+	
+	public static PotionEffectType getPotionEffectType(String type) {
+		if (type.matches("^[0-9]+$")) {
+			return PotionEffectType.getById(Integer.parseInt(type));
+		} else {
+			return PotionEffectType.getByName(type);
+		}
+	}
+	
+	public static Enchantment getEnchantmentType(String type) {
+		if (type.matches("^[0-9]+$")) {
+			return Enchantment.getById(Integer.parseInt(type));
+		} else {
+			return Enchantment.getByName(type.toUpperCase());
+		}
+	}
+	
+	public static void sendFakeBlockChange(Player player, Block block, MagicMaterial mat) {
+		player.sendBlockChange(block.getLocation(), mat.getMaterial(), mat.getMaterialData().getData());
+	}
+	
+	public static void restoreFakeBlockChange(Player player, Block block) {
+		player.sendBlockChange(block.getLocation(), block.getType(), block.getData());
+	}
 	
 	public static void setFacing(Player player, Vector vector) {
-		double yaw = Math.toDegrees(Math.atan2(-vector.getX(), vector.getZ()));
-		double pitch = Math.toDegrees(-Math.asin(vector.getY()));
-				
 		Location loc = player.getLocation();
-		loc.setYaw((float)yaw);
-		loc.setPitch((float)pitch);
-		
+		setLocationFacingFromVector(loc, vector);
 		player.teleport(loc);
+	}
+	
+	public static void setLocationFacingFromVector(Location location, Vector vector) {
+		double yaw = getYawOfVector(vector);
+		double pitch = Math.toDegrees(-Math.asin(vector.getY()));				
+		location.setYaw((float)yaw);
+		location.setPitch((float)pitch);
+	}
+	
+	public static double getYawOfVector(Vector vector) {
+		return Math.toDegrees(Math.atan2(-vector.getX(), vector.getZ()));
 	}
 	
 	public static boolean arrayContains(int[] array, int value) {
@@ -238,6 +517,7 @@ public class Util {
 		String building = "";
 		
 		for (String word : words) {
+			if (word.length() == 0) continue;
 			if (max > 0 && list.size() == max - 1) {
 				if (!building.isEmpty()) building += " ";
 				building += word;
@@ -398,6 +678,29 @@ public class Util {
 		double z = (v.getX() * sin) + (v.getZ() * cos);
 		v.setX(x);
 		v.setZ(z);
+	}
+	
+	public static boolean downloadFile(String url, File file) {
+		try {
+			URL website = new URL(url);
+		    ReadableByteChannel rbc = Channels.newChannel(website.openStream());
+		    FileOutputStream fos = new FileOutputStream(file);
+		    fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+		    fos.close();
+		    rbc.close();
+		    return true;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+	
+	public static void createFire(Block block, byte d) {
+		block.setTypeIdAndData(Material.FIRE.getId(), d, false);
+	}
+	
+	public static ItemStack getEggItemForEntityType(EntityType type) {
+		return new ItemStack(Material.MONSTER_EGG, 1, type.getTypeId());
 	}
 	
 }

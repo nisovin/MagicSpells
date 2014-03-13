@@ -5,18 +5,20 @@ import java.util.Collection;
 import java.util.TreeSet;
 
 import org.bukkit.Location;
+import org.bukkit.configuration.ConfigurationSection;
 
 import com.nisovin.magicspells.MagicSpells;
 
 public class SoundEffect extends SpellEffect {
 	
+	String sound = "random.pop";
+	float volume = 1.0F;
+	float pitch = 1.0F;
+
 	@Override
-	public void playEffect(Location location, String param) {
-		String sound = "random.pop";
-		float volume = 1.0F;
-		float pitch = 1.0F;
-		if (param != null && param.length() > 0) {
-			String[] data = param.split(" ");
+	public void loadFromString(String string) {
+		if (string != null && string.length() > 0) {
+			String[] data = string.split(" ");
 			sound = data[0];
 			if (data.length > 1) {
 				volume = Float.parseFloat(data[1]);
@@ -30,12 +32,23 @@ public class SoundEffect extends SpellEffect {
 				sound = "mob.ghast.affectionate scream";
 			}
 		}
+	}
+
+	@Override
+	public void loadFromConfig(ConfigurationSection config) {
+		sound = config.getString("sound", sound);
+		volume = (float)config.getDouble("volume", volume);
+		pitch = (float)config.getDouble("pitch", volume);
+	}
+	
+	@Override
+	public void playEffectLocation(Location location) {
 		MagicSpells.getVolatileCodeHandler().playSound(location, sound, volume, pitch);
 	}
 	
 	public static void main(String[] args) {
 		Collection<String> sounds = new TreeSet<String>();
-		File file = new File("C:\\Users\\Justin.Baker\\AppData\\Roaming\\.minecraft\\resources\\sound3");
+		File file = new File("C:\\Users\\Justin.Baker\\AppData\\Roaming\\.minecraft\\assets\\sound");
 		parseFolder(file, "", sounds);
 		for (String sound : sounds) {
 			System.out.println("   * " + sound);

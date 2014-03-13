@@ -48,8 +48,7 @@ blind:
     strength: 0
     duration: 200
     targeted: true
-    target-players: true
-    target-non-players: false
+    can-target: players
     obey-los: true
     cost:
         - mana 10
@@ -129,6 +128,24 @@ clarity:
     str-cost: 10 mana
     str-cast-self: Your thoughts race and flow with ease!
     str-fade: Your mind returns to normal.
+cleanse:
+    spell-class: ".targeted.CleanseSpell"
+    name: cleanse
+    spell-icon: nether_star
+    description: Remove negative affects from yourself.
+    cast-item: book
+    cooldown: 60
+    remove:
+      - fire
+      - 17
+      - 19
+      - 20
+    target-self: true
+    beneficial: true
+    cost:
+        - mana 30
+    str-cost: 30 mana
+    str-cast-self: You cleanse yourself of negative effects.
 combust:
     spell-class: ".targeted.CombustSpell"
     name: combust
@@ -141,7 +158,7 @@ combust:
     fire-ticks: 100
     fire-tick-damage: 1
     prevent-immunity: true
-    target-players: false
+    can-target: monsters
     check-plugins: true
     cost:
         - mana 10
@@ -155,6 +172,7 @@ confusion:
     cast-item: bone
     cooldown: 30
     range: 20
+    can-target: zombie,skeleton,creeper
     cost:
         - mana 30
     str-cost: 30 mana
@@ -189,8 +207,7 @@ cripple:
     range: 20
     effect-strength: 5
     effect-duration: 100
-    target-players: true
-    obey-los: true
+    can-target: players,monsters
     cost:
         - mana 10
     str-cost: 10 mana
@@ -214,10 +231,10 @@ disarm:
         - iron_sword
         - diamond_sword
         - bow
+    can-target: players,zombies,skeletons
     disarm-duration: 100
-    dont-drop: false
+    dont-drop: true
     prevent-theft: true
-    obey-los: true
     cost:
         - mana 20
     str-cost: 20 mana
@@ -257,8 +274,7 @@ drainlife:
     give-amt: 2
     animation-speed: 2
     ignore-armor: false
-    obey-los: true
-    target-players: false
+    can-target: players,monsters
     check-plugins: true
     cost:
         - mana 10
@@ -303,8 +319,7 @@ entomb:
     cast-item: blaze_rod
     cooldown: 5
     range: 15
-    obey-los: true
-    target-players: false
+    can-target: players,monsters
     tomb-block-type: 20
     tomb-duration: 20
     cost:
@@ -379,8 +394,7 @@ fireball:
     cooldown: 5
     range: 30
     require-entity-target: false
-    obey-los: true
-    target-players: false
+    can-target: players,monsters
     check-plugins: true
     damage-multiplier: 3
     small-fireball: true
@@ -457,8 +471,7 @@ forcebomb:
     pushback-force: 30
     additional-vertical-force: 15
     max-vertical-force: 20
-    target-players: false
-    dont-target-caster: true
+    can-target: players,monsters
     cost:
         - mana 30
     str-cost: 30 mana
@@ -475,7 +488,7 @@ forcepush:
     pushback-force: 30
     additional-vertical-force: 15
     max-vertical-force: 20
-    target-players: false
+    can-target: players,monsters
     cost:
         - mana 30
     str-cost: 30 mana
@@ -492,8 +505,7 @@ forcetoss:
     damage: 0
     horizontal-force: 30
     vertical-force: 15
-    obey-los: true
-    target-players: false
+    can-target: players,monsters
     check-plugins: true
     cost:
         - mana 10
@@ -513,7 +525,7 @@ freeze:
     damage: 3
     slow-amount: 3
     slow-duration: 80
-    target-players: false
+    can-target: players,monsters
     cooldown: 5
     cost:
         - mana 10
@@ -568,8 +580,7 @@ geyser:
     geyser-height: 4
     geyser-type: water
     ignore-armor: false
-    obey-los: true
-    target-players: false
+    can-target: players,monsters
     check-plugins: true
     cost:
         - mana 10
@@ -622,8 +633,7 @@ haze:
     strength: 0
     duration: 200
     targeted: true
-    target-players: true
-    target-non-players: false
+    can-target: players
     obey-los: true
     cost:
         - mana 10
@@ -640,6 +650,7 @@ heal:
     cancel-if-full: true
     effects:
         - target potion FF0000 40
+    can-target: players,wolf,cat
     obey-los: true
     cooldown: 0
     range: 12
@@ -737,8 +748,7 @@ levitate:
     range: 12
     cancel-on-item-switch: true
     cancel-on-spell-cast: true
-    target-players: false
-    obey-los: true
+    can-target: players,monsters,animals
     cost:
         - mana 30
         - feather 2
@@ -780,8 +790,6 @@ lightning:
     additional-damage: 0
     no-damage: false
     require-entity-target: false
-    obey-los: true
-    target-players: false
     check-plugins: true
     cost:
         - mana 15
@@ -877,8 +885,7 @@ pain:
     damage: 4
     range: 15
     ignore-armor: false
-    obey-los: true
-    target-players: false
+    can-target: players,monsters
     check-plugins: true
     cost:
         - mana 10
@@ -911,9 +918,7 @@ poison:
     strength: 0
     duration: 100
     targeted: true
-    target-players: false
-    target-non-players: true
-    obey-los: true
+    can-target: players,monsters
     cost:
         - mana 12
     str-cost: 12 mana
@@ -940,6 +945,7 @@ purge:
     cast-item: bone
     cooldown: 60
     range: 8
+    can-target: monsters,animals
     cost:
         - mana 50
     str-cost: 50 mana
@@ -1032,6 +1038,7 @@ roar:
     cast-item: book
     cooldown: 15
     range: 8
+    can-target: monsters
     cost:
         - mana 10
     str-cost: 10 mana
@@ -1064,8 +1071,7 @@ shadowstep:
     effects:
         - caster spawner
         - target spawner
-    target-players: false
-    obey-los: true
+    can-target: players,monsters
     range: 15
     cost:
         - mana 10
@@ -1149,10 +1155,7 @@ storm:
     vertical-radius: 5
     point-blank: true
     fail-if-no-targets: true
-    target-players: false
-    target-non-players: true
-    target-caster: false
-    target-invisible-players: false
+    can-target: players,monsters,animals
     spells:
         - lightning
     cooldown: 15
@@ -1244,8 +1247,7 @@ switch:
     cast-item: stick
     cooldown: 6
     switch-back: 0
-    target-players: true
-    obey-los: true
+    can-target: players
     cost:
         - mana 10
     str-cost: 10 mana
@@ -1382,7 +1384,8 @@ windwalk:
     cancel-on-land: false
     cancel-on-logout: true
     cancel-on-teleport: true
-    cancel-on-damage: false
+    cancel-on-give-damage: false
+    cancel-on-take-damage: false
     duration: 120
     cost:
         - mana 25
@@ -1401,8 +1404,8 @@ zap:
     description: Instantly destroys a block.
     cast-item: stick
     cooldown: 1
-    allowed-block-types: ""
-    disallowed-block-types: 0,7
+    allowed-block-types: []
+    disallowed-block-types: [air, bedrock]
     drop-block: false
     drop-normal: true
     effects:

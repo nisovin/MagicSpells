@@ -20,18 +20,9 @@ public class StealthSpell extends BuffSpell {
 	}
 	
 	@Override
-	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
-		if (stealthy.contains(player.getName())) {
-			turnOff(player);
-			if (toggle) {
-				return PostCastAction.ALREADY_HANDLED;
-			}
-		}
-		if (state == SpellCastState.NORMAL) {
-			stealthy.add(player.getName());
-			startSpellDuration(player);
-		}
-		return PostCastAction.HANDLE_NORMALLY;
+	public boolean castBuff(Player player, float power, String[] args) {
+		stealthy.add(player.getName());
+		return true;
 	}
 	
 	@EventHandler
@@ -53,12 +44,8 @@ public class StealthSpell extends BuffSpell {
 	}
 	
 	@Override
-	public void turnOff(Player player) {
-		if (stealthy.contains(player.getName())) {
-			super.turnOff(player);
-			stealthy.remove(player.getName());
-			sendMessage(player, strFade);
-		}
+	public void turnOffBuff(Player player) {
+		stealthy.remove(player.getName());
 	}
 	
 	@Override

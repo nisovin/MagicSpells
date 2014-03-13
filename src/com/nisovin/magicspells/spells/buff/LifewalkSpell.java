@@ -4,10 +4,13 @@ import java.util.HashSet;
 import java.util.Random;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GrassSpecies;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
+import org.bukkit.material.LongGrass;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.spells.BuffSpell;
@@ -41,33 +44,20 @@ public class LifewalkSpell extends BuffSpell {
 	}
 
 	@Override
-	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
-		if (lifewalkers.contains(player.getName())) {
-			turnOff(player);
-			if (toggle) {
-				return PostCastAction.ALREADY_HANDLED;
-			}
+	public boolean castBuff(Player player, float power, String[] args) {
+		lifewalkers.add(player.getName());
+		if (grower == null) {
+			grower = new Grower();
 		}
-		if (state == SpellCastState.NORMAL) {
-			lifewalkers.add(player.getName());
-			if (grower == null) {
-				grower = new Grower();
-			}
-			startSpellDuration(player);
-		}
-		return PostCastAction.HANDLE_NORMALLY;
+		return true;
 	}	
 	
 	@Override
-	public void turnOff(Player player) {
-		if (lifewalkers.contains(player.getName())) {
-			super.turnOff(player);
-			lifewalkers.remove(player.getName());
-			sendMessage(player, strFade);
-			if (lifewalkers.size() == 0 && grower != null) {
-				grower.stop();
-				grower = null;
-			}
+	public void turnOffBuff(Player player) {
+		lifewalkers.remove(player.getName());
+		if (lifewalkers.size() == 0 && grower != null) {
+			grower.stop();
+			grower = null;
 		}
 	}
 	
@@ -126,15 +116,19 @@ public class LifewalkSpell extends BuffSpell {
 								} else {
 									rand -= saplingChance;
 									if (rand < tallgrassChance) {
-										feet.setTypeId(31);
-										feet.setData((byte)1);
+										BlockState state = feet.getState();
+										state.setType(Material.LONG_GRASS);
+										state.setData(new LongGrass(GrassSpecies.NORMAL));
+										state.update(true);
 										addUse(player);
 										chargeUseCost(player);
 									} else {
 										rand -= tallgrassChance;
 										if (rand < fernChance) {
-											feet.setTypeId(31);
-											feet.setData((byte)2);
+											BlockState state = feet.getState();
+											state.setType(Material.LONG_GRASS);
+											state.setData(new LongGrass(GrassSpecies.FERN_LIKE));
+											state.update(true);
 											addUse(player);
 											chargeUseCost(player);
 										}

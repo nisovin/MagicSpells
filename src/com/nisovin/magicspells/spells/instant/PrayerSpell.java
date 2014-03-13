@@ -11,7 +11,7 @@ import com.nisovin.magicspells.util.MagicConfig;
 
 public class PrayerSpell extends InstantSpell {
 	
-	private int amountHealed;
+	private double amountHealed;
 	private String strAtFullHealth;
 	private boolean checkPlugins;
 
@@ -26,13 +26,13 @@ public class PrayerSpell extends InstantSpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			if (player.getHealth() == 20 && amountHealed > 0) {
+			if (player.getHealth() >= player.getMaxHealth() && amountHealed > 0) {
 				sendMessage(player, strAtFullHealth);
 				return PostCastAction.ALREADY_HANDLED;
 			} else if (player.isValid()) {
-				int health = player.getHealth();
+				double health = player.getHealth();
 				if (health > 0) {
-					int amt = Math.round(amountHealed*power);
+					double amt = amountHealed * power;
 					if (checkPlugins && amt > 0) {
 						EntityRegainHealthEvent evt = new EntityRegainHealthEvent(player, amt, RegainReason.CUSTOM);
 						Bukkit.getPluginManager().callEvent(evt);

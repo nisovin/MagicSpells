@@ -1,5 +1,6 @@
 package com.nisovin.magicspells.spells.instant;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Location;
@@ -8,6 +9,8 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BlockIterator;
 
+import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.materials.MagicMaterial;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
 import com.nisovin.magicspells.util.MagicConfig;
@@ -16,7 +19,7 @@ public class PhaseSpell extends InstantSpell {
 
 	private int range;
 	private int maxDistance;
-	private List<Integer> allowedPassThru;
+	private List<MagicMaterial> allowedPassThru;
 	private String strCantPhase;
 	
 	public PhaseSpell(MagicConfig config, String spellName) {
@@ -24,10 +27,17 @@ public class PhaseSpell extends InstantSpell {
 		
 		range = getConfigInt("range", 5);
 		maxDistance = getConfigInt("max-distance", 15);
-		allowedPassThru = getConfigIntList("allowed-pass-thru-blocks", null);
+		List<String> passThru = getConfigStringList("allowed-pass-thru-blocks", null);
+		allowedPassThru = new ArrayList<MagicMaterial>();
+		for (String s : passThru) {
+			MagicMaterial m = MagicSpells.getItemNameResolver().resolveBlock(s);
+			if (m != null) {
+				allowedPassThru.add(m);
+			}
+		}
 		strCantPhase = getConfigString("str-cant-phase", "Unable to find place to phase to.");
 		
-		if (allowedPassThru != null && allowedPassThru.size() == 0) {
+		if (allowedPassThru.size() == 0) {
 			allowedPassThru = null;
 		}
 	}
@@ -61,7 +71,7 @@ public class PhaseSpell extends InstantSpell {
 			
 			// find landing spot
 			if (start != null) {
-				if (allowedPassThru != null && !allowedPassThru.contains(start.getTypeId())) {
+				if (allowedPassThru != null && !canPassThru(start)) {
 					// can't phase through the block
 					location = null;
 				} else {
@@ -75,7 +85,7 @@ public class PhaseSpell extends InstantSpell {
 							break;
 						}
 						// check for invalid pass-thru block
-						if (allowedPassThru != null && !allowedPassThru.contains(b.getTypeId())) {
+						if (allowedPassThru != null && !canPassThru(b)) {
 							location = null;
 							break;
 						}
@@ -101,6 +111,14 @@ public class PhaseSpell extends InstantSpell {
 			player.teleport(location);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+	
+	private boolean canPassThru(Block block) {
+		if (allowedPassThru == null) return true;
+		for (MagicMaterial mat : allowedPassThru) {
+			if (mat.equals(block)) return true;
+		}
+		return false;
 	}
 
 }

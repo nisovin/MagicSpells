@@ -2,6 +2,7 @@ package com.nisovin.magicspells.mana;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 
 import org.bukkit.Bukkit;
@@ -11,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.castmodifiers.ModifierSet;
 import com.nisovin.magicspells.util.MagicConfig;
 
 public class ManaSystem extends ManaHandler {
@@ -30,6 +32,8 @@ public class ManaSystem extends ManaHandler {
 	private boolean showManaOnWoodTool;
 	private boolean showManaOnHungerBar;
 	private boolean showManaOnExperienceBar;
+	
+	private ModifierSet modifiers;
 	
 	private ArrayList<ManaRank> ranks;
 	
@@ -54,6 +58,14 @@ public class ManaSystem extends ManaHandler {
 		showManaOnHungerBar = config.getBoolean("mana.show-mana-on-hunger-bar", false);
 		showManaOnExperienceBar = config.getBoolean("mana.show-mana-on-experience-bar", false);
 
+		if (config.contains("general.mana.modifiers")) {
+			List<String> list = config.getStringList("general.mana.modifiers", null);
+			if (list != null && list.size() > 0) {
+				MagicSpells.debug(2, "Adding mana modifiers");
+				modifiers = new ModifierSet(list);
+			}
+		}
+		
 		ranks = new ArrayList<ManaRank>();
 		Set<String> rankKeys = config.getKeys("mana.ranks");
 		if (rankKeys != null) {
@@ -200,6 +212,11 @@ public class ManaSystem extends ManaHandler {
 			if (showManaOnHungerBar) showManaOnHungerBar(player, bar);
 			if (showManaOnExperienceBar) showManaOnExperienceBar(player, bar);
 		}
+	}
+	
+	@Override
+	public ModifierSet getModifiers() {
+		return modifiers;
 	}
 	
 	private void showManaInChat(Player player, ManaBar bar) {

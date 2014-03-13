@@ -11,27 +11,18 @@ import com.nisovin.magicspells.util.MagicConfig;
 
 public class ReflectSpell extends BuffSpell {
 
-	private HashSet<Player> reflectors;
+	private HashSet<String> reflectors;
 	
 	public ReflectSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		reflectors = new HashSet<Player>();
+		reflectors = new HashSet<String>();
 	}
 	
 	@Override
-	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
-		if (reflectors.contains(player)) {
-			turnOff(player);
-			if (toggle) {
-				return PostCastAction.ALREADY_HANDLED;
-			}
-		}
-		if (state == SpellCastState.NORMAL) {
-			reflectors.add(player);
-			startSpellDuration(player);
-		}
-		return PostCastAction.HANDLE_NORMALLY;
+	public boolean castBuff(Player player, float power, String[] args) {
+		reflectors.add(player.getName());
+		return true;
 	}
 
 	@EventHandler
@@ -39,7 +30,7 @@ public class ReflectSpell extends BuffSpell {
 		if (event.isCancelled()) return;
 		if (event.getTarget() instanceof Player) {
 			Player target = (Player)event.getTarget();
-			if (reflectors.contains(target)) {
+			if (isActive(target)) {
 				boolean ok = chargeUseCost(target);
 				if (ok) {
 					event.setTarget(event.getCaster());
@@ -50,12 +41,8 @@ public class ReflectSpell extends BuffSpell {
 	}
 
 	@Override
-	public void turnOff(Player player) {
-		if (reflectors.contains(player)) {
-			super.turnOff(player);
-			reflectors.remove(player);
-			sendMessage(player, strFade);
-		}
+	public void turnOffBuff(Player player) {
+		reflectors.remove(player.getName());
 	}
 
 	@Override
@@ -65,7 +52,7 @@ public class ReflectSpell extends BuffSpell {
 
 	@Override
 	public boolean isActive(Player player) {
-		return reflectors.contains(player);
+		return reflectors.contains(player.getName());
 	}
 
 }

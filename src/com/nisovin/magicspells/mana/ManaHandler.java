@@ -2,6 +2,8 @@ package com.nisovin.magicspells.mana;
 
 import org.bukkit.entity.Player;
 
+import com.nisovin.magicspells.castmodifiers.ModifierSet;
+
 
 public abstract class ManaHandler {
 
@@ -26,6 +28,10 @@ public abstract class ManaHandler {
 	}
 	
 	public abstract void showMana(Player player, boolean forceShowInChat);
+	
+	public ModifierSet getModifiers() {
+		return null;
+	}
 	
 	public abstract void turnOff();
 	

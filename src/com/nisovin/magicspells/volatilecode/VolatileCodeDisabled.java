@@ -7,7 +7,7 @@ import org.bukkit.FireworkEffect.Type;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.enchantments.Enchantment;
+import org.bukkit.block.BlockState;
 import org.bukkit.entity.Creature;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.FallingBlock;
@@ -19,8 +19,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.SmallFireball;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkMeta;
+import org.bukkit.material.Button;
+import org.bukkit.material.Lever;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+
+import com.nisovin.magicspells.util.DisguiseManager;
+import com.nisovin.magicspells.util.MagicConfig;
 
 public class VolatileCodeDisabled implements VolatileCodeHandle {
 
@@ -38,13 +43,16 @@ public class VolatileCodeDisabled implements VolatileCodeHandle {
 	
 	@Override
 	public void toggleLeverOrButton(Block block) {
-		if (block.getType() == Material.STONE_BUTTON) {
-			block.setData((byte) (block.getData() ^ 0x1));
-		} else {
-			byte data = block.getData();
-			byte var1 = (byte) (data & 7);
-			byte var2 = (byte) (8 - (data & 8));
-			block.setData((byte) (var1 + var2));
+		if (block.getType() == Material.STONE_BUTTON || block.getType() == Material.WOOD_BUTTON) {
+			BlockState state = block.getState();
+			Button button = (Button)state.getData();
+			button.setPowered(true);
+			state.update();
+		} else if (block.getType() == Material.LEVER) {
+			BlockState state = block.getState();
+			Lever lever = (Lever)state.getData();
+			lever.setPowered(!lever.isPowered());
+			state.update();
 		}
 	}
 
@@ -88,13 +96,14 @@ public class VolatileCodeDisabled implements VolatileCodeHandle {
 	public void playSound(Location location, String sound, float volume, float pitch) {
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public void playSound(Player player, String sound, float volume, float pitch) {
+		player.playSound(player.getLocation(), sound, volume, pitch);
 	}
 
 	@Override
 	public ItemStack addFakeEnchantment(ItemStack item) {
-		item.addUnsafeEnchantment(Enchantment.ARROW_DAMAGE, 1);
 		return item;
 	}
 
@@ -148,5 +157,37 @@ public class VolatileCodeDisabled implements VolatileCodeHandle {
 	
 	@Override
 	public void playParticleEffect(Location location, String name, float spreadHoriz, float spreadVert, float speed, int count, int radius, float yOffset) {		
+	}
+	
+	@Override
+	public void playDragonDeathEffect(Location location) {
+		
+	}
+	
+	@Override
+	public void setKiller(LivingEntity entity, Player killer) {
+		
+	}
+
+	@Override
+	public DisguiseManager getDisguiseManager(MagicConfig config) {
+		return null;
+	}
+
+	@Override
+	public ItemStack addAttributes(ItemStack item, String[] names, String[] types, double[] amounts, int[] operations) {
+		return item;
+	}
+
+	@Override
+	public void removeAI(LivingEntity entity) {
+	}
+
+	@Override
+	public void addEntityAttribute(LivingEntity entity, String attribute, double amount, int operation) {
+	}
+
+	@Override
+	public void addAILookAtPlayer(LivingEntity entity, int range) {
 	}
 }

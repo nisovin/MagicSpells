@@ -1,7 +1,7 @@
 package com.nisovin.magicspells.spells.buff;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -16,19 +16,24 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.material.MaterialData;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.materials.MagicBlockMaterial;
+import com.nisovin.magicspells.materials.MagicMaterial;
 import com.nisovin.magicspells.spells.BuffSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.Util;
 
 public class StonevisionSpell extends BuffSpell {
 	
 	private int range;
-	private int transparentType;
-	private int[] transparentTypes;
+	private Set<Material> transparentTypes;
 	private boolean unobfuscate;
 	
-	private HashMap<String,TransparentBlockSet> seers;
+	private MagicMaterial glass = new MagicBlockMaterial(new MaterialData(Material.GLASS));
+	
+	private HashMap<String, TransparentBlockSet> seers;
 
 	public StonevisionSpell(MagicConfig config, String spellName) {
 		super(config, spellName);		
@@ -36,16 +41,21 @@ public class StonevisionSpell extends BuffSpell {
 		range = getConfigInt("range", 4);
 		unobfuscate = getConfigBoolean("unobfuscate", false);
 		
-		transparentType = getConfigInt("transparent-type", 0);
-		List<Integer> types = getConfigIntList("transparent-types", null);
-		if (types != null) {
-			transparentTypes = new int[types.size()];
-			for (int i = 0; i < types.size(); i++) {
-				transparentTypes[i] = types.get(i);
-			}
-			Arrays.sort(transparentTypes);
+		transparentTypes = EnumSet.noneOf(Material.class);
+		MagicMaterial type = MagicSpells.getItemNameResolver().resolveBlock(getConfigString("transparent-type", "stone"));
+		if (type != null) {
+			transparentTypes.add(type.getMaterial());
 		}
-		if (transparentType == 0 && transparentTypes == null) {
+		List<String> types = getConfigStringList("transparent-types", null);
+		if (types != null) {
+			for (int i = 0; i < types.size(); i++) {
+				type = MagicSpells.getItemNameResolver().resolveBlock(types.get(i));
+				if (type != null) {
+					transparentTypes.add(type.getMaterial());
+				}
+			}
+		}
+		if (transparentTypes.size() == 0) {
 			MagicSpells.error("Spell '" + internalName + "' does not define any transparent types");
 		}
 		
@@ -53,18 +63,9 @@ public class StonevisionSpell extends BuffSpell {
 	}
 
 	@Override
-	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
-		if (seers.containsKey(player.getName())) {
-			turnOff(player);
-			if (toggle) {
-				return PostCastAction.ALREADY_HANDLED;
-			}
-		}
-		if (state == SpellCastState.NORMAL) {
-			seers.put(player.getName(), new TransparentBlockSet(player, range, transparentType, transparentTypes));
-			startSpellDuration(player);
-		}
-		return PostCastAction.HANDLE_NORMALLY;
+	public boolean castBuff(Player player, float power, String[] args) {
+		seers.put(player.getName(), new TransparentBlockSet(player, range, transparentTypes));
+		return true;
 	}
 	
 	@EventHandler(priority=EventPriority.MONITOR)
@@ -84,12 +85,10 @@ public class StonevisionSpell extends BuffSpell {
 	}
 	
 	@Override
-	public void turnOff(Player player) {
-		if (seers.containsKey(player.getName())) {
-			super.turnOff(player);
-			seers.get(player.getName()).removeTransparency();
-			seers.remove(player.getName());
-			sendMessage(player, strFade);
+	public void turnOffBuff(Player player) {
+		TransparentBlockSet t = seers.remove(player.getName());
+		if (t != null) {
+			t.removeTransparency();
 		}
 	}
 
@@ -105,16 +104,14 @@ public class StonevisionSpell extends BuffSpell {
 		Player player;
 		Block center;
 		int range;
-		int type;
-		int[] types;
+		Set<Material> types;
 		List<Block> blocks;
 		Set<Chunk> chunks;
 		
-		public TransparentBlockSet(Player player, int range, int type, int[] types) {
+		public TransparentBlockSet(Player player, int range, Set<Material> types) {
 			this.player = player;
 			this.center = player.getLocation().getBlock();
 			this.range = range;
-			this.type = type;
 			this.types = types;
 			
 			blocks = new ArrayList<Block>();
@@ -133,19 +130,14 @@ public class StonevisionSpell extends BuffSpell {
 			int py = center.getY();
 			int pz = center.getZ();
 			Block block;
-			int id;
 			if (!unobfuscate) {
 				// handle normally
 				for (int x = px - range; x <= px + range; x++) {
 					for (int y = py - range; y <= py + range; y++) {
 						for (int z = pz - range; z <= pz + range; z++) {
 							block = center.getWorld().getBlockAt(x,y,z);
-							id = block.getTypeId();
-							if (
-									(type != 0 && id == type) ||
-									(types != null && Arrays.binarySearch(types, id) >= 0)
-								) {
-								player.sendBlockChange(block.getLocation(), Material.GLASS, (byte)0);
+							if (types.contains(block.getType())) {
+								Util.sendFakeBlockChange(player, block, glass);
 								newBlocks.add(block);
 							}
 						}
@@ -161,16 +153,11 @@ public class StonevisionSpell extends BuffSpell {
 							dy = Math.abs(y - py);
 							dz = Math.abs(z - pz);
 							block = center.getWorld().getBlockAt(x,y,z);
-							id = block.getTypeId();
-							if ((
-									(type != 0 && id == type) ||
-									(types != null && Arrays.binarySearch(types, id) >= 0)
-								) && 
-								dx <= range && dy <= range && dz <= range) {
-								player.sendBlockChange(block.getLocation(), Material.GLASS, (byte)0);
+							if (types.contains(block.getType()) && dx <= range && dy <= range && dz <= range) {
+								Util.sendFakeBlockChange(player, block, glass);
 								newBlocks.add(block);
-							} else {
-								player.sendBlockChange(block.getLocation(), block.getType(), block.getData());
+							} else if (block.getType() != Material.AIR) {
+								Util.restoreFakeBlockChange(player, block);
 							}
 							
 							// save chunk for resending after spell ends
@@ -184,7 +171,7 @@ public class StonevisionSpell extends BuffSpell {
 			// remove old transparent blocks
 			for (Block b : blocks) {
 				if (!newBlocks.contains(b)) {
-					player.sendBlockChange(b.getLocation(), b.getType(), b.getData());
+					Util.restoreFakeBlockChange(player, b);
 				}
 			}
 			
@@ -208,7 +195,7 @@ public class StonevisionSpell extends BuffSpell {
 		
 		public void removeTransparency() {
 			for (Block b : blocks) {
-				player.sendBlockChange(b.getLocation(), b.getType(), b.getData());
+				Util.restoreFakeBlockChange(player, b);
 			}
 			blocks = null;
 		}

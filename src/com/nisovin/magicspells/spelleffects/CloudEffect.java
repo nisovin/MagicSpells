@@ -6,22 +6,32 @@ import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.ConfigurationSection;
 
 import com.nisovin.magicspells.util.BlockUtils;
 
 class CloudEffect extends SpellEffect {
 
 	Random rand = new Random();
+
+	int radius = 3;
 	
 	@Override
-	public void playEffect(Location location, String param) {
-		int radius = 3;
+	public void loadFromString(String string) {
 		try {
-			radius = Integer.parseInt(param);
+			radius = Integer.parseInt(string);
 		} catch (NumberFormatException e) {
 			radius = 3;
 		}
-		
+	}
+
+	@Override
+	public void loadFromConfig(ConfigurationSection config) {
+		radius = config.getInt("radius", radius);
+	}
+	
+	@Override
+	public void playEffectLocation(Location location) {		
 		World w = location.getWorld();
 		int cx = location.getBlockX();
 		int cy = location.getBlockY();

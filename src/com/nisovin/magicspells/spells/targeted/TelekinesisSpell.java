@@ -13,10 +13,12 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.events.SpellTargetLocationEvent;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
+import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class TelekinesisSpell extends TargetedLocationSpell {
+public class TelekinesisSpell extends TargetedSpell implements TargetedLocationSpell {
 	
 	private boolean checkPlugins;
 	
@@ -31,6 +33,8 @@ public class TelekinesisSpell extends TargetedLocationSpell {
 		transparent.remove((byte)Material.LEVER.getId());
 		transparent.remove((byte)Material.STONE_PLATE.getId());
 		transparent.remove((byte)Material.WOOD_PLATE.getId());
+		transparent.remove((byte)Material.IRON_PLATE.getId());
+		transparent.remove((byte)Material.GOLD_PLATE.getId());
 		transparent.remove((byte)Material.STONE_BUTTON.getId());
 	}
 	
@@ -38,7 +42,7 @@ public class TelekinesisSpell extends TargetedLocationSpell {
 		if (state == SpellCastState.NORMAL) {
 			Block target = null;
 			try {
-				target = player.getTargetBlock(transparent, range);
+				target = player.getTargetBlock(transparent, getRange(power));
 			} catch (IllegalStateException e) {
 				target = null;
 			}
@@ -46,6 +50,15 @@ public class TelekinesisSpell extends TargetedLocationSpell {
 				// fail
 				return noTarget(player);
 			} else {
+				// run target event
+				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, target.getLocation());
+				Bukkit.getPluginManager().callEvent(event);
+				if (event.isCancelled()) {
+					return noTarget(player);
+				} else {
+					target = event.getTargetLocation().getBlock();
+				}
+				// run effect
 				boolean activated = activate(player, target);
 				if (!activated) {
 					return noTarget(player);
@@ -90,5 +103,10 @@ public class TelekinesisSpell extends TargetedLocationSpell {
 			playSpellEffects(caster, target);
 		}
 		return activated;
+	}
+
+	@Override
+	public boolean castAtLocation(Location target, float power) {
+		return false;
 	}
 }

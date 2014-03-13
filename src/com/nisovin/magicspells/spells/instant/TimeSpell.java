@@ -1,12 +1,14 @@
 package com.nisovin.magicspells.spells.instant;
 
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 import com.nisovin.magicspells.spells.InstantSpell;
+import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class TimeSpell extends InstantSpell {
+public class TimeSpell extends InstantSpell implements TargetedLocationSpell {
 
 	private int timeToSet;
 	private String strAnnounce;
@@ -22,12 +24,28 @@ public class TimeSpell extends InstantSpell {
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
 			World world = player.getWorld();
-			world.setTime(timeToSet);
-			for (Player p : world.getPlayers()) {
-				sendMessage(p, strAnnounce);
-			}
+			setTime(world);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+	
+	void setTime(World world) {
+		world.setTime(timeToSet);
+		for (Player p : world.getPlayers()) {
+			sendMessage(p, strAnnounce);
+		}
+	}
+
+	@Override
+	public boolean castAtLocation(Player caster, Location target, float power) {
+		setTime(target.getWorld());
+		return true;
+	}
+
+	@Override
+	public boolean castAtLocation(Location target, float power) {
+		setTime(target.getWorld());
+		return true;
 	}
 
 }

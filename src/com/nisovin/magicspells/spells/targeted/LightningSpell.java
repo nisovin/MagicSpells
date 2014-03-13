@@ -5,41 +5,29 @@ import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 
-import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.events.SpellTargetLocationEvent;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
+import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class LightningSpell extends TargetedLocationSpell {
+public class LightningSpell extends TargetedSpell implements TargetedLocationSpell {
 	
 	private boolean requireEntityTarget;
-	private boolean obeyLos;
-	private boolean targetPlayers;
 	private boolean checkPlugins;
-	private int additionalDamage;
+	private double additionalDamage;
 	private boolean noDamage;
 	
 	public LightningSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
 		requireEntityTarget = getConfigBoolean("require-entity-target", false);
-		obeyLos = getConfigBoolean("obey-los", true);
-		targetPlayers = getConfigBoolean("target-players", false);
 		checkPlugins = getConfigBoolean("check-plugins", true);
-		additionalDamage = getConfigInt("additional-damage", 0);
+		additionalDamage = getConfigFloat("additional-damage", 0);
 		noDamage = getConfigBoolean("no-damage", false);
-	}
-	
-	@Override
-	public void initialize() {
-		if (!targetPlayers) {
-			registerEvents(new PlayerDamageListener());
-		}
 	}
 
 	@Override
@@ -48,7 +36,7 @@ public class LightningSpell extends TargetedLocationSpell {
 			Block target = null;
 			LivingEntity entityTarget = null;
 			if (requireEntityTarget) {
-				entityTarget = getTargetedEntity(player, minRange, range, targetPlayers, obeyLos);
+				entityTarget = getTargetedEntity(player, power);
 				if (entityTarget != null && entityTarget instanceof Player && checkPlugins) {
 					EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, entityTarget, DamageCause.ENTITY_ATTACK, 1 + additionalDamage);
 					Bukkit.getServer().getPluginManager().callEvent(event);
@@ -59,16 +47,25 @@ public class LightningSpell extends TargetedLocationSpell {
 				if (entityTarget != null) {
 					target = entityTarget.getLocation().getBlock();
 					if (additionalDamage > 0) {
-						entityTarget.damage(Math.round(additionalDamage*power), player);
+						entityTarget.damage(additionalDamage * power, player);
 					}
 				} else {
 					return noTarget(player);
 				}
 			} else {
 				try {
-					target = player.getTargetBlock(MagicSpells.getTransparentBlocks(), range);
+					target = getTargetedBlock(player, power);
 				} catch (IllegalStateException e) {	
 					target = null;
+				}
+				if (target != null) {
+					SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, target.getLocation());
+					Bukkit.getPluginManager().callEvent(event);
+					if (event.isCancelled()) {
+						target = null;
+					} else {
+						target = event.getTargetLocation().getBlock();
+					}
 				}
 			}
 			if (target != null) {
@@ -99,13 +96,11 @@ public class LightningSpell extends TargetedLocationSpell {
 		playSpellEffects(caster, target);
 		return true;
 	}
-	
-	public class PlayerDamageListener implements Listener {
-		@EventHandler(ignoreCancelled=true)
-		public void onDamage(EntityDamageEvent event) {
-			if (!targetPlayers && event.getCause() == DamageCause.LIGHTNING && event.getEntity() instanceof Player) {
-				event.setCancelled(true);
-			}
-		}
+
+	@Override
+	public boolean castAtLocation(Location target, float power) {
+		lightning(target);
+		playSpellEffects(EffectPosition.CASTER, target);
+		return true;
 	}
 }

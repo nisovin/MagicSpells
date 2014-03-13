@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<project name="MagicSpells" default="build" basedir=".">
+	<property name="version" value="3.2"/>
+	<property name="src.dir" location="src"/>
+	<property name="build.dir" location="bin"/>
+	<property name="dist.dir" location="dist"/>
+	<property name="lib.dir" location="lib"/>
+	<property name="doc.dir" location="doc"/>
+	<tstamp><format property="datestamp" pattern="yyMMddHHmm"/></tstamp>
+		
+	<!-- Deletes the existing build, docs and dist directory-->
+	<target name="clean">
+		<delete dir="${build.dir}"/>
+		<delete dir="${doc.dir}"/>
+		<delete dir="${dist.dir}"/>
+	</target>
+
+	<!-- Compiles the java code -->
+	<target name="compile" depends="clean">
+		<mkdir dir="${build.dir}" />
+		<javac srcdir="${src.dir}" destdir="${build.dir}" debug="true" source="1.6" target="1.6">
+			<classpath>
+				<fileset dir="${lib.dir}">
+					<include name="bukkit*.jar"/>
+					<include name="*.jar"/>
+				</fileset>
+			</classpath>
+		</javac>
+		<copy todir="${build.dir}">
+			<fileset dir="${src.dir}">
+				<include name="*.yml"/>
+			</fileset>
+		</copy>
+	</target>
+	
+	<!-- Updates version in plugin.yml -->
+	<target name="versiondev" depends="compile">
+		<replace file="${build.dir}\plugin.yml" token="VERSION_STRING" value="${version}-dev-${datestamp}"/>
+	</target>	
+	<target name="versionrel" depends="compile">
+		<replace file="${build.dir}\plugin.yml" token="VERSION_STRING" value="${version}"/>
+	</target>
+
+	<!-- Creates the deployable jar file  -->
+	<target name="jar" depends="compile">
+		<mkdir dir="${dist.dir}" />
+		<jar destfile="${dist.dir}\MagicSpells-${version}-${datestamp}.jar" basedir="${build.dir}"/>
+		<copy file="${dist.dir}\MagicSpells-${version}-${datestamp}.jar" tofile="${dist.dir}\MagicSpells.jar"/>
+	</target>
+	
+	<!-- Builds -->
+	<target name="build" depends="compile, versiondev, jar">
+		<description>Build Dev</description>
+	</target>	
+	<target name="buildrelease" depends="compile, versionrel, jar">
+		<description>Build Release</description>
+	</target>
+
+</project>

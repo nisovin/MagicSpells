@@ -1,8 +1,8 @@
 name: MagicSpells
 main: com.nisovin.magicspells.MagicSpells
-version: 2.15
+version: VERSION_STRING
 author: nisovin
-softdepend: [WorldGuard,Residence]
+softdepend: [Vault,ProtocolLib,WorldGuard,Residence]
 commands:
     magicspellcast:
         description: Cast a spell
@@ -12,3 +12,7 @@ commands:
         description: Show mana bar
         usage: /<command>
         aliases: [mana]
+    magicspellxp:
+        description: Show magic XP info
+        usage: /<command>
+        aliases: [magicxp,spellxp]

@@ -3,6 +3,7 @@ package com.nisovin.magicspells.spells;
 import java.util.HashMap;
 
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -12,16 +13,23 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 
 import com.nisovin.magicspells.BuffManager;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
+import com.nisovin.magicspells.events.SpellCastEvent;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
+import com.nisovin.magicspells.spelleffects.SpellEffect;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.SpellReagents;
 
 public abstract class BuffSpell extends Spell {
+	
+	private BuffSpell thisSpell;
 	
 	protected boolean toggle;
 	protected int healthCost = 0;
@@ -32,36 +40,53 @@ public abstract class BuffSpell extends Spell {
 	protected SpellReagents reagents;
 	protected int useCostInterval;
 	protected int numUses;
-	protected int duration;
+	protected float duration;
+	protected boolean powerAffectsDuration;
 	protected boolean cancelOnGiveDamage;
 	protected boolean cancelOnTakeDamage;
 	protected boolean cancelOnDeath;
+	protected boolean cancelOnTeleport;
+	protected boolean cancelOnChangeWorld;
+	protected boolean cancelOnSpellCast;
 	protected boolean cancelOnLogout;
 	protected String strFade;
 	private boolean castWithItem;
 	private boolean castByCommand;
 	
 	private HashMap<String,Integer> useCounter;
-	private HashMap<String,Long> durationStartTime;
+	private HashMap<String,Long> durationEndTime;
 	
 	public BuffSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
+		thisSpell = this;
 		
 		toggle = getConfigBoolean("toggle", true);
 		reagents = getConfigReagents("use-cost");
 		useCostInterval = getConfigInt("use-cost-interval", 0);
 		numUses = getConfigInt("num-uses", 0);
-		duration = getConfigInt("duration", 0);
-		
+		duration = getConfigFloat("duration", 0);
+		powerAffectsDuration = getConfigBoolean("power-affects-duration", true);
 		cancelOnGiveDamage = getConfigBoolean("cancel-on-give-damage", false);
 		cancelOnTakeDamage = getConfigBoolean("cancel-on-take-damage", false);
 		cancelOnDeath = getConfigBoolean("cancel-on-death", false);
+		cancelOnTeleport = getConfigBoolean("cancel-on-teleport", false);
+		cancelOnChangeWorld = getConfigBoolean("cancel-on-change-world", false);
+		cancelOnSpellCast = getConfigBoolean("cancel-on-spell-cast", false);
 		cancelOnLogout = getConfigBoolean("cancel-on-logout", false);
 		if (cancelOnGiveDamage || cancelOnTakeDamage) {
 			registerEvents(new DamageListener());
 		}
 		if (cancelOnDeath) {
 			registerEvents(new DeathListener());
+		}
+		if (cancelOnTeleport) {
+			registerEvents(new TeleportListener());
+		}
+		if (cancelOnChangeWorld) {
+			registerEvents(new ChangeWorldListener());
+		}
+		if (cancelOnSpellCast) {
+			registerEvents(new SpellCastListener());
 		}
 		if (cancelOnLogout) {
 			registerEvents(new QuitListener());
@@ -73,7 +98,7 @@ public abstract class BuffSpell extends Spell {
 			useCounter = new HashMap<String,Integer>();
 		}
 		if (duration > 0) {
-			durationStartTime = new HashMap<String,Long>();
+			durationEndTime = new HashMap<String,Long>();
 		}
 				
 		castWithItem = getConfigBoolean("can-cast-with-item", true);
@@ -88,13 +113,52 @@ public abstract class BuffSpell extends Spell {
 		return castByCommand;
 	}
 	
+	@Override
+	public final PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
+		if (isActive(player)) {
+			if (toggle) {
+				turnOff(player);
+				return PostCastAction.ALREADY_HANDLED;
+			} else {
+				if (state == SpellCastState.NORMAL) {
+					boolean ok = recastBuff(player, power, args);
+					if (ok) {
+						startSpellDuration(player, power);
+					}
+				}
+				return PostCastAction.HANDLE_NORMALLY;
+			}
+		}
+		if (state == SpellCastState.NORMAL) {
+			boolean ok = castBuff(player, power, args);
+			if (ok) {
+				startSpellDuration(player, power);
+			}
+		}
+		return PostCastAction.HANDLE_NORMALLY;
+	}
+	
+	public abstract boolean castBuff(Player player, float power, String[] args);
+	
+	public boolean recastBuff(Player player, float power, String[] args) {
+		return true;
+	}
+	
+	public void setAsEverlasting() {
+		duration = 0;
+		numUses = 0;
+		useCostInterval = 0;
+	}
+	
 	/**
 	 * Begins counting the spell duration for a player
 	 * @param player the player to begin counting duration
 	 */
-	protected void startSpellDuration(Player player) {
-		if (duration > 0 && durationStartTime != null) {
-			durationStartTime.put(player.getName(), System.currentTimeMillis());
+	protected void startSpellDuration(Player player, float power) {
+		if (duration > 0 && durationEndTime != null) {
+			float dur = duration;
+			if (powerAffectsDuration) dur *= power;
+			durationEndTime.put(player.getName(), System.currentTimeMillis() + Math.round(dur * 1000));
 			final String name = player.getName();
 			Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new Runnable() {
 				public void run() {
@@ -103,7 +167,14 @@ public abstract class BuffSpell extends Spell {
 						turnOff(p);
 					}
 				}
-			}, duration * 20 + 20); // overestimate ticks, since the duration is real-time ms based
+			}, Math.round(dur * 20) + 20); // overestimate ticks, since the duration is real-time ms based
+			
+			playSpellEffectsBuff(player, new SpellEffect.SpellEffectActiveChecker() {							
+				@Override
+				public boolean isActive(Entity entity) {
+					return thisSpell.isActive((Player)entity);
+				}
+			});
 		}
 		BuffManager buffman = MagicSpells.getBuffManager();
 		if (buffman != null) buffman.addBuff(player, this);
@@ -116,13 +187,13 @@ public abstract class BuffSpell extends Spell {
 	 * @return true if the spell has expired, false otherwise
 	 */
 	protected boolean isExpired(Player player) {
-		if (duration <= 0 || durationStartTime == null) {
+		if (duration <= 0 || durationEndTime == null) {
 			return false;
 		} else {
-			Long startTime = durationStartTime.get(player.getName());
-			if (startTime == null) {
+			Long endTime = durationEndTime.get(player.getName());
+			if (endTime == null) {
 				return false;
-			} else if (startTime + duration*1000 > System.currentTimeMillis()) {
+			} else if (endTime > System.currentTimeMillis()) {
 				return false;
 			} else {
 				return true;
@@ -200,21 +271,33 @@ public abstract class BuffSpell extends Spell {
 	 * When overriding this function, you should always be sure to call super.turnOff(player).
 	 * @param player
 	 */
-	public void turnOff(Player player) {
-		if (useCounter != null) useCounter.remove(player.getName());
-		if (durationStartTime != null) durationStartTime.remove(player.getName());
-		BuffManager buffman = MagicSpells.getBuffManager();
-		if (buffman != null) buffman.removeBuff(player, this);
-		playSpellEffects(EffectPosition.DISABLED, player);
+	public final void turnOff(Player player) {
+		if (isActive(player)) {
+			if (useCounter != null) useCounter.remove(player.getName());
+			if (durationEndTime != null) durationEndTime.remove(player.getName());
+			BuffManager buffman = MagicSpells.getBuffManager();
+			if (buffman != null) buffman.removeBuff(player, this);
+			sendMessage(player, strFade);
+			playSpellEffects(EffectPosition.DISABLED, player);
+			turnOffBuff(player);
+		}
 	}
 	
-	@Override
-	protected
-	abstract void turnOff();
+	protected abstract void turnOffBuff(Player player);
 	
 	@Override
-	public boolean isBeneficial() {
+	protected abstract void turnOff();
+	
+	@Override
+	public boolean isBeneficialDefault() {
 		return true;
+	}
+	
+	@EventHandler
+	public void onJoin(PlayerJoinEvent event) {
+		if (isActive(event.getPlayer()) && isExpired(event.getPlayer())) {
+			turnOff(event.getPlayer());
+		}
 	}
 	
 	public class DamageListener implements Listener {
@@ -227,7 +310,7 @@ public abstract class BuffSpell extends Spell {
 				if (evt.getDamager() instanceof Player && isActive((Player)evt.getDamager())) {
 					turnOff((Player)evt.getDamager());
 				} else if (evt.getDamager() instanceof Projectile) {
-					LivingEntity shooter = ((Projectile)evt.getDamager()).getShooter();
+					LivingEntity shooter = (LivingEntity)((Projectile)evt.getDamager()).getShooter();
 					if (shooter instanceof Player && isActive((Player)shooter)) {
 						turnOff((Player)shooter);
 					}
@@ -241,6 +324,35 @@ public abstract class BuffSpell extends Spell {
 		public void onPlayerDeath(PlayerDeathEvent event) {
 			if (isActive(event.getEntity())) {
 				turnOff(event.getEntity());
+			}
+		}
+	}
+	
+	public class TeleportListener implements Listener {
+		@EventHandler(priority=EventPriority.LOWEST)
+		public void onTeleport(PlayerTeleportEvent event) {
+			if (isActive(event.getPlayer())) {
+				if (!event.getFrom().getWorld().getName().equals(event.getTo().getWorld().getName()) || event.getFrom().toVector().distanceSquared(event.getTo().toVector()) > 25) {
+					turnOff(event.getPlayer());
+				}
+			}
+		}
+	}
+	
+	public class ChangeWorldListener implements Listener {
+		@EventHandler(priority=EventPriority.LOWEST)
+		public void onChangeWorld(PlayerChangedWorldEvent event) {
+			if (isActive(event.getPlayer())) {
+				turnOff(event.getPlayer());
+			}
+		}
+	}
+	
+	public class SpellCastListener implements Listener {
+		@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
+		public void onChangeWorld(SpellCastEvent event) {
+			if (thisSpell != event.getSpell() && event.getSpellCastState() == SpellCastState.NORMAL && isActive(event.getCaster())) {
+				turnOff(event.getCaster());
 			}
 		}
 	}

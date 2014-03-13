@@ -14,10 +14,12 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.events.SpellTargetLocationEvent;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
+import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class ExplodeSpell extends TargetedLocationSpell {
+public class ExplodeSpell extends TargetedSpell implements TargetedLocationSpell {
 	
 	private int explosionSize;
 	private int backfireChance;
@@ -49,9 +51,18 @@ public class ExplodeSpell extends TargetedLocationSpell {
 		if (state == SpellCastState.NORMAL) {
 			Block target = null;
 			try {
-				target = player.getTargetBlock(null, range);
+				target = getTargetedBlock(player, power);
 			} catch (IllegalStateException e) {
 				target = null;
+			}
+			if (target != null && target.getType() != Material.AIR) {
+				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, target.getLocation());
+				Bukkit.getPluginManager().callEvent(event);
+				if (event.isCancelled()) {
+					target = null;
+				} else {
+					target = event.getTargetLocation().getBlock();
+				}
 			}
 			if (target == null || target.getType() == Material.AIR) {
 				// fail: no target
@@ -95,6 +106,11 @@ public class ExplodeSpell extends TargetedLocationSpell {
 	@Override
 	public boolean castAtLocation(Player caster, Location target, float power) {
 		return explode(caster, target, power);
+	}
+
+	@Override
+	public boolean castAtLocation(Location target, float power) {
+		return false;
 	}
 
 	@EventHandler(priority=EventPriority.HIGH)

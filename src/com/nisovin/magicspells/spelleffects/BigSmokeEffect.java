@@ -3,11 +3,20 @@ package com.nisovin.magicspells.spelleffects;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.configuration.ConfigurationSection;
 
 class BigSmokeEffect extends SpellEffect {
 
 	@Override
-	public void playEffect(Location location, String param) {
+	public void loadFromString(String string) {
+	}
+
+	@Override
+	public void loadFromConfig(ConfigurationSection config) {
+	}
+
+	@Override
+	public void playEffectLocation(Location location) {
 		World world = location.getWorld();
 		int lx = location.getBlockX();
 		int ly = location.getBlockY();

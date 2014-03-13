@@ -7,18 +7,19 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 
 public class BlockPlatform {
 
-	private int platformType;
-	private int replaceType;
+	private Material platformType;
+	private Material replaceType;
 	private Block center;
 	private int size;
 	private boolean moving;
 	private String type;
 	private List<Block> blocks;
 		
-	public BlockPlatform(int platformType, int replaceType, Block center, int size, boolean moving, String type) {
+	public BlockPlatform(Material platformType, Material replaceType, Block center, int size, boolean moving, String type) {
 		this.platformType = platformType;
 		this.replaceType = replaceType;
 		this.center = center;
@@ -48,7 +49,7 @@ public class BlockPlatform {
 				for (int z = cz-size; z <= cz+size; z++) {
 					block = world.getBlockAt(x,cy,z);
 					above = block.getRelative(0,1,0);
-					if ((block.getTypeId() == replaceType && (cy >= max-1 || (blocks != null && blocks.contains(above)) || above.getType() == Material.AIR)) || (blocks != null && blocks.contains(block))) {
+					if ((block.getType() == replaceType && (cy >= max-1 || (blocks != null && blocks.contains(above)) || above.getType() == Material.AIR)) || (blocks != null && blocks.contains(block))) {
 						// only add if it's a replaceable block and has air above, or if it is already part of the platform
 						platform.add(block);
 					}
@@ -60,7 +61,7 @@ public class BlockPlatform {
 				for (int y = center.getY()-size; y <= center.getY()+size; y++) {
 					for (int z = center.getZ()-size; z <= center.getZ()+size; z++) {
 						block = center.getWorld().getBlockAt(x,y,z);
-						if (block.getTypeId() == replaceType || (blocks != null && blocks.contains(block))) {
+						if (block.getType() == replaceType || (blocks != null && blocks.contains(block))) {
 							// only add if it's a replaceable block or if it is already part of the block set
 							platform.add(block);
 						}
@@ -72,8 +73,10 @@ public class BlockPlatform {
 		// remove old platform blocks
 		if (moving) {
 			for (Block block : blocks) {
-				if (!platform.contains(block) && block.getTypeId() == platformType) {
-					block.setTypeIdAndData(replaceType, (byte) 0, false);
+				if (!platform.contains(block) && block.getType() == platformType) {
+					BlockState state = block.getState();
+					state.setType(replaceType);
+					state.update(true, false);
 				}
 			}
 		}
@@ -81,7 +84,9 @@ public class BlockPlatform {
 		// add new platform blocks
 		for (Block block : platform) {
 			if (blocks == null || !blocks.contains(block)) {
-				block.setTypeIdAndData(platformType, (byte) 0, false);
+				BlockState state = block.getState();
+				state.setType(platformType);
+				state.update(true, false);
 			}
 		}
 		
@@ -131,8 +136,10 @@ public class BlockPlatform {
 		// remove platform blocks
 		if (moving) {
 			for (Block block : blocks) {
-				if (block.getTypeId() == platformType) {
-					block.setTypeIdAndData(replaceType, (byte)0, false);
+				if (block.getType() == platformType) {
+					BlockState state = block.getState();
+					state.setType(replaceType);
+					state.update(true, false);
 				}
 			}
 		}

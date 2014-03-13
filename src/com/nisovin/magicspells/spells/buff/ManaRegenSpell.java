@@ -15,33 +15,24 @@ public class ManaRegenSpell extends BuffSpell {
 
 	private int regenModAmt;
 
-	private HashSet<Player> regenning;
+	private HashSet<String> regenning;
 
 	public ManaRegenSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		regenModAmt = getConfigInt("regen-mod-amt", 3);
-		regenning = new HashSet<Player>();
+		regenning = new HashSet<String>();
 	}
 
 	@Override
-	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
-		if (regenning.contains(player)){
-			turnOff(player);
-			if (toggle) {
-				return PostCastAction.ALREADY_HANDLED;
-			}
-		}
-		if (state == SpellCastState.NORMAL) {
-			regenning.add(player);
-			startSpellDuration(player);
-		}
-		return PostCastAction.HANDLE_NORMALLY;  
+	public boolean castBuff(Player player, float power, String[] args) {
+		regenning.add(player.getName());
+		return true;
 	}
 
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onManaRegenTick(ManaChangeEvent event) {
 		Player p = event.getPlayer();
-		if(!isExpired(p) && regenning.contains(p) && event.getReason().equals(ManaChangeReason.REGEN)) {
+		if(!isExpired(p) && isActive(p) && event.getReason().equals(ManaChangeReason.REGEN)) {
 			int newAmt = event.getNewAmount() + regenModAmt;
 			if (newAmt > event.getMaxMana()) {
 				newAmt = event.getMaxMana();
@@ -54,12 +45,8 @@ public class ManaRegenSpell extends BuffSpell {
 	}
 
 	@Override
-	public void turnOff(Player player) {
-		if(regenning.contains(player)){
-			super.turnOff(player);
-			regenning.remove(player);
-			sendMessage(player, strFade);
-		}
+	public void turnOffBuff(Player player) {
+		regenning.remove(player.getName());
 	}
 
 	@Override
@@ -69,7 +56,7 @@ public class ManaRegenSpell extends BuffSpell {
 
 	@Override
 	public boolean isActive(Player player) {
-		return regenning.contains(player);
+		return regenning.contains(player.getName());
 	}
 
 }

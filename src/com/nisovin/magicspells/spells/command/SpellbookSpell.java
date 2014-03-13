@@ -24,19 +24,17 @@ import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.Spellbook;
 import com.nisovin.magicspells.events.SpellLearnEvent;
 import com.nisovin.magicspells.events.SpellLearnEvent.LearnSource;
+import com.nisovin.magicspells.materials.MagicMaterial;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.CommandSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.MagicLocation;
 
 public class SpellbookSpell extends CommandSpell {
-
-	@SuppressWarnings("unused")
-	private static final String SPELL_NAME = "spellbook";
 	
 	private int defaultUses;
 	private boolean destroyBookcase;
-	private Material spellbookBlock;
+	private MagicMaterial spellbookBlock;
 	private String strUsage;
 	private String strNoSpell;
 	private String strCantTeach;
@@ -57,7 +55,7 @@ public class SpellbookSpell extends CommandSpell {
 		
 		defaultUses = getConfigInt("default-uses", -1);
 		destroyBookcase = getConfigBoolean("destroy-when-used-up", false);
-		spellbookBlock = Material.getMaterial(getConfigInt("spellbook-block", Material.BOOKSHELF.getId()));
+		spellbookBlock = MagicSpells.getItemNameResolver().resolveBlock(getConfigString("spellbook-block", "bookshelf"));
 		strUsage = getConfigString("str-usage", "Usage: /cast spellbook <spell> [uses]");
 		strNoSpell = getConfigString("str-no-spell", "You do not know a spell by that name.");
 		strCantTeach = getConfigString("str-cant-teach", "You can't create a spellbook with that spell.");
@@ -101,8 +99,8 @@ public class SpellbookSpell extends CommandSpell {
 					// fail: can't teach
 					sendMessage(player, strCantTeach);
 				} else {
-					Block target = player.getTargetBlock(null, 10);
-					if (target == null || target.getType() != spellbookBlock) {
+					Block target = getTargetedBlock(player, 10);
+					if (target == null || !spellbookBlock.equals(target)) {
 						// fail: must target a bookcase
 						sendMessage(player, strNoTarget);
 					} else if (bookLocations.contains(target.getLocation())) {
@@ -139,7 +137,7 @@ public class SpellbookSpell extends CommandSpell {
 	@EventHandler(priority=EventPriority.HIGH)
 	public void onPlayerInteract(PlayerInteractEvent event) {
 		if (event.isCancelled()) return;
-		if (event.hasBlock() && event.getClickedBlock().getType() == spellbookBlock && event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+		if (event.hasBlock() && spellbookBlock.equals(event.getClickedBlock()) && event.getAction() == Action.RIGHT_CLICK_BLOCK) {
 			MagicLocation loc = new MagicLocation(event.getClickedBlock().getLocation());
 			if (bookLocations.contains(loc)) {
 				event.setCancelled(true);
@@ -191,7 +189,7 @@ public class SpellbookSpell extends CommandSpell {
 	@EventHandler
 	public void onBlockBreak(BlockBreakEvent event) {
 		if (event.isCancelled()) return;
-		if (event.getBlock().getType() == spellbookBlock) {
+		if (spellbookBlock.equals(event.getBlock())) {
 			MagicLocation loc = new MagicLocation(event.getBlock().getLocation());
 			if (bookLocations.contains(loc)) {
 				if (event.getPlayer().isOp() || event.getPlayer().hasPermission("magicspells.advanced.spellbook")) {

@@ -2,19 +2,21 @@ package com.nisovin.magicspells.spells.targeted;
 
 import java.util.HashSet;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BlockIterator;
 
-import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.events.SpellTargetLocationEvent;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
+import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.BlockUtils;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class BlinkSpell extends TargetedLocationSpell {
+public class BlinkSpell extends TargetedSpell implements TargetedLocationSpell {
 	
 	private boolean passThroughCeiling;
 	private boolean smokeTrail;
@@ -31,7 +33,7 @@ public class BlinkSpell extends TargetedLocationSpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			int range = Math.round(this.range*power);
+			int range = getRange(power);
 			if (range <= 0) range = 25;
 			if (range > 125) range = 125;
 			BlockIterator iter; 
@@ -50,7 +52,7 @@ public class BlinkSpell extends TargetedLocationSpell {
 			if (iter != null) {
 				while (iter.hasNext()) {
 					b = iter.next();
-					if (MagicSpells.getTransparentBlocks().contains((byte)b.getTypeId())) {
+					if (BlockUtils.isTransparent(b)) {
 						prev = b;
 						if (smokeTrail) {
 							smokes.add(b.getLocation());
@@ -79,6 +81,15 @@ public class BlinkSpell extends TargetedLocationSpell {
 					loc = prev.getLocation();
 				}
 				if (loc != null) {
+					SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, loc);
+					Bukkit.getPluginManager().callEvent(event);
+					if (event.isCancelled()) {
+						loc = null;
+					} else {
+						loc = event.getTargetLocation();
+					}
+				}
+				if (loc != null) {
 					loc.setX(loc.getX()+.5);
 					loc.setZ(loc.getZ()+.5);
 					loc.setPitch(player.getLocation().getPitch());
@@ -87,7 +98,7 @@ public class BlinkSpell extends TargetedLocationSpell {
 					playSpellEffects(EffectPosition.CASTER, origLoc);
 					teleport(player, loc, smokes);
 					playSpellEffects(EffectPosition.TARGET, loc);
-					playSpellEffectsTrail(origLoc, loc, null);
+					playSpellEffectsTrail(origLoc, loc);
 				} else {
 					return noTarget(player, strCantBlink);
 				}
@@ -114,6 +125,11 @@ public class BlinkSpell extends TargetedLocationSpell {
 		target.setPitch(caster.getLocation().getPitch());
 		teleport(caster, target, null);
 		return true;
+	}
+
+	@Override
+	public boolean castAtLocation(Location target, float power) {
+		return false;
 	}
 
 }

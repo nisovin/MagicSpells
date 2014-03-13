@@ -1,7 +1,6 @@
 package com.nisovin.magicspells;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 
 import org.bukkit.Material;
@@ -22,8 +21,8 @@ public class CastListener implements Listener {
 
 	MagicSpells plugin;
 	
-	private HashSet<Player> noCast = new HashSet<Player>();
-	private HashMap<Player,Long> lastCast = new HashMap<Player, Long>();
+	private HashMap<String, Long> noCastUntil = new HashMap<String, Long>();
+	//private HashMap<String,Long> lastCast = new HashMap<String, Long>();
 
 	public CastListener(MagicSpells plugin) {
 		this.plugin = plugin;
@@ -36,16 +35,23 @@ public class CastListener implements Listener {
 		
 		// first check if player is interacting with a special block
 		boolean noInteract = false;
-		if (event.hasBlock()) {
+		if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
 			Material m = event.getClickedBlock().getType();
 			if (m == Material.WOODEN_DOOR || 
+					m == Material.TRAP_DOOR ||
 					m == Material.BED || 
 					m == Material.WORKBENCH ||
 					m == Material.CHEST || 
+					m == Material.TRAPPED_CHEST ||
+					m == Material.ENDER_CHEST ||
 					m == Material.FURNACE || 
+					m == Material.HOPPER ||
 					m == Material.LEVER ||
 					m == Material.STONE_BUTTON ||
+					m == Material.WOOD_BUTTON ||
 					m == Material.ENCHANTMENT_TABLE) {
+				noInteract = true;
+			} else if (event.hasItem() && event.getItem().getType().isBlock()) {
 				noInteract = true;
 			}
 			if (m == Material.ENCHANTMENT_TABLE) {
@@ -55,17 +61,17 @@ public class CastListener implements Listener {
 		}
 		if (noInteract) {
 			// special block -- don't do normal interactions
-			noCast.add(event.getPlayer());
+			noCastUntil.put(event.getPlayer().getName(), System.currentTimeMillis() + 150);
 		} else if (event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) {
 			// left click - cast
-			if (!MagicSpells.castOnAnimate) {
+			if (!plugin.castOnAnimate) {
 				castSpell(event.getPlayer());
 			}
 		} else if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
 			// right click -- cycle spell and/or process mana pots
 			ItemStack inHand = player.getItemInHand();
 			
-			if ((inHand != null && inHand.getType() != Material.AIR) || MagicSpells.allowCastWithFist) {
+			if ((inHand != null && inHand.getType() != Material.AIR) || plugin.allowCastWithFist) {
 			
 				// cycle spell
 				Spell spell = null;
@@ -76,10 +82,10 @@ public class CastListener implements Listener {
 				}
 				if (spell != null) {
 					// send message
-					MagicSpells.sendMessage(player, MagicSpells.strSpellChange, "%s", spell.getName());
+					MagicSpells.sendMessage(player, plugin.strSpellChange, "%s", spell.getName());
 					// show spell icon
-					if (MagicSpells.spellIconSlot >= 0) {
-						showIcon(player, MagicSpells.spellIconSlot, spell.getSpellIcon());
+					if (plugin.spellIconSlot >= 0) {
+						showIcon(player, plugin.spellIconSlot, spell.getSpellIcon());
 					}
 					// use cool new text thingy
 					boolean yay = false;
@@ -97,10 +103,10 @@ public class CastListener implements Listener {
 				}
 				
 				// check for mana pots
-				if (MagicSpells.enableManaBars && MagicSpells.manaPotions != null) {
+				if (plugin.enableManaBars && plugin.manaPotions != null) {
 					// find mana potion TODO: fix this, it's not good
 					int restoreAmt = 0;
-					for (Map.Entry<ItemStack, Integer> entry : MagicSpells.manaPotions.entrySet()) {
+					for (Map.Entry<ItemStack, Integer> entry : plugin.manaPotions.entrySet()) {
 						if (inHand.isSimilar(entry.getKey())) {
 							restoreAmt = entry.getValue();
 							break;
@@ -108,19 +114,19 @@ public class CastListener implements Listener {
 					}
 					if (restoreAmt > 0) {
 						// check cooldown
-						if (MagicSpells.manaPotionCooldown > 0) {
-							Long c = MagicSpells.manaPotionCooldowns.get(player);
+						if (plugin.manaPotionCooldown > 0) {
+							Long c = plugin.manaPotionCooldowns.get(player);
 							if (c != null && c > System.currentTimeMillis()) {
-								MagicSpells.sendMessage(player, MagicSpells.strManaPotionOnCooldown.replace("%c", ""+(int)((c-System.currentTimeMillis())/1000)));
+								MagicSpells.sendMessage(player, plugin.strManaPotionOnCooldown.replace("%c", ""+(int)((c-System.currentTimeMillis())/1000)));
 								return;
 							}
 						}
 						// add mana
-						boolean added = MagicSpells.mana.addMana(player, restoreAmt, ManaChangeReason.POTION);
+						boolean added = plugin.mana.addMana(player, restoreAmt, ManaChangeReason.POTION);
 						if (added) {
 							// set cooldown
-							if (MagicSpells.manaPotionCooldown > 0) {
-								MagicSpells.manaPotionCooldowns.put(player, System.currentTimeMillis() + MagicSpells.manaPotionCooldown*1000);
+							if (plugin.manaPotionCooldown > 0) {
+								plugin.manaPotionCooldowns.put(player, System.currentTimeMillis() + plugin.manaPotionCooldown*1000);
 							}
 							// remove item
 							if (inHand.getAmount() == 1) {
@@ -140,17 +146,17 @@ public class CastListener implements Listener {
 	
 	@EventHandler
 	public void onItemHeldChange(final PlayerItemHeldEvent event) {
-		if (MagicSpells.spellIconSlot >= 0 && MagicSpells.spellIconSlot <= 8) {
+		if (plugin.spellIconSlot >= 0 && plugin.spellIconSlot <= 8) {
 			Player player = event.getPlayer();
-			if (event.getNewSlot() == MagicSpells.spellIconSlot) {
-				showIcon(player, MagicSpells.spellIconSlot, null);
+			if (event.getNewSlot() == plugin.spellIconSlot) {
+				showIcon(player, plugin.spellIconSlot, null);
 			} else {
 				Spellbook spellbook = MagicSpells.getSpellbook(player);
 				Spell spell = spellbook.getActiveSpell(player.getInventory().getItem(event.getNewSlot()));
 				if (spell != null) {
-					showIcon(player, MagicSpells.spellIconSlot, spell.getSpellIcon());
+					showIcon(player, plugin.spellIconSlot, spell.getSpellIcon());
 				} else {
-					showIcon(player, MagicSpells.spellIconSlot, null);
+					showIcon(player, plugin.spellIconSlot, null);
 				}
 			}
 		}
@@ -158,33 +164,22 @@ public class CastListener implements Listener {
 	
 	@EventHandler(priority=EventPriority.MONITOR)
 	public void onPlayerAnimation(PlayerAnimationEvent event) {		
-		if (!MagicSpells.castOnAnimate) return;
-		
-		Player p = event.getPlayer();
-		if (noCast.contains(p)) {
-			// clicking on special block -- don't cast
-			noCast.remove(p);
-			lastCast.put(p, System.currentTimeMillis());
-		} else {
-			// left click -- cast spell
-			castSpell(p);
+		if (plugin.castOnAnimate) {
+			castSpell(event.getPlayer());
 		}
 	}
 	
 	private void castSpell(Player player) {
+		if (noCastUntil.containsKey(player.getName()) && noCastUntil.get(player.getName()) > System.currentTimeMillis()) return;
+		
 		ItemStack inHand = player.getItemInHand();
-		if (!MagicSpells.allowCastWithFist && (inHand == null || inHand.getType() == Material.AIR)) return;
+		if (!plugin.allowCastWithFist && (inHand == null || inHand.getType() == Material.AIR)) return;
 		
 		Spell spell = MagicSpells.getSpellbook(player).getActiveSpell(inHand);
 		if (spell != null && spell.canCastWithItem()) {
 			// first check global cooldown
-			if (MagicSpells.globalCooldown > 0 && !spell.ignoreGlobalCooldown) {
-				Long lastCastTime = lastCast.get(player);
-				if (lastCastTime != null && lastCastTime + MagicSpells.globalCooldown > System.currentTimeMillis()) {
-					return;
-				} else {
-					lastCast.put(player, System.currentTimeMillis());
-				}
+			if (plugin.globalCooldown > 0 && !spell.ignoreGlobalCooldown) {
+				noCastUntil.put(player.getName(), System.currentTimeMillis() + plugin.globalCooldown);
 			}
 			// cast spell
 			spell.cast(player);
@@ -192,7 +187,7 @@ public class CastListener implements Listener {
 	}
 	
 	private void showIcon(Player player, int slot, ItemStack icon) {
-		if (icon == null) icon = player.getInventory().getItem(MagicSpells.spellIconSlot);
+		if (icon == null) icon = player.getInventory().getItem(plugin.spellIconSlot);
 		MagicSpells.getVolatileCodeHandler().sendFakeSlotUpdate(player, slot, icon);
 	}
 

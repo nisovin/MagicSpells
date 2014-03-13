@@ -32,18 +32,9 @@ public class FrostwalkSpell extends BuffSpell {
 	}
 
 	@Override
-	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
-		if (frostwalkers.containsKey(player.getName())) {
-			turnOff(player);
-			if (toggle) {
-				return PostCastAction.ALREADY_HANDLED;
-			}
-		}
-		if (state == SpellCastState.NORMAL) {
-			frostwalkers.put(player.getName(), new BlockPlatform(Material.ICE.getId(), Material.STATIONARY_WATER.getId(), player.getLocation().getBlock().getRelative(0,-1,0), size, !leaveFrozen, "square"));
-			startSpellDuration(player);
-		}
-		return PostCastAction.HANDLE_NORMALLY;
+	public boolean castBuff(Player player, float power, String[] args) {
+		frostwalkers.put(player.getName(), new BlockPlatform(Material.ICE, Material.STATIONARY_WATER, player.getLocation().getBlock().getRelative(0,-1,0), size, !leaveFrozen, "square"));
+		return true;
 	}
 
 	@EventHandler(priority=EventPriority.MONITOR)
@@ -89,13 +80,11 @@ public class FrostwalkSpell extends BuffSpell {
 	}
 	
 	@Override
-	public void turnOff(Player player) {
+	public void turnOffBuff(Player player) {
 		BlockPlatform platform = frostwalkers.get(player.getName());
 		if (platform != null) {
-			super.turnOff(player);
 			platform.destroyPlatform();
 			frostwalkers.remove(player.getName());
-			sendMessage(player, strFade);
 		}
 	}
 	

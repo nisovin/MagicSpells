@@ -14,44 +14,41 @@ import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.mana.ManaChangeReason;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
+import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.ExperienceUtils;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.SpellAnimation;
 
-public class DrainlifeSpell extends TargetedEntitySpell {
+public class DrainlifeSpell extends TargetedSpell implements TargetedEntitySpell {
 	
 	private String takeType;
-	private int takeAmt;
+	private double takeAmt;
 	private String giveType;
-	private int giveAmt;
+	private double giveAmt;
 	private boolean showSpellEffect;
 	private int animationSpeed;
 	private boolean instant;
 	private boolean ignoreArmor;
-	private boolean obeyLos;
-	private boolean targetPlayers;
 	private boolean checkPlugins;
 	
 	public DrainlifeSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
 		takeType = getConfigString("take-type", "health");
-		takeAmt = getConfigInt("take-amt", 2);
+		takeAmt = getConfigFloat("take-amt", 2);
 		giveType = getConfigString("give-type", "health");
-		giveAmt = getConfigInt("give-amt", 2);
+		giveAmt = getConfigFloat("give-amt", 2);
 		showSpellEffect = getConfigBoolean("show-spell-effect", true);
 		animationSpeed = getConfigInt("animation-speed", 2);
 		instant = getConfigBoolean("instant", true);
 		ignoreArmor = getConfigBoolean("ignore-armor", false);
-		obeyLos = getConfigBoolean("obey-los", true);
-		targetPlayers = getConfigBoolean("target-players", false);
 		checkPlugins = getConfigBoolean("check-plugins", true);
 	}
 	
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, minRange, range, targetPlayers, obeyLos);
+			LivingEntity target = getTargetedEntity(player, power);
 			if (target == null) {
 				// fail: no target
 				return noTarget(player);
@@ -69,8 +66,8 @@ public class DrainlifeSpell extends TargetedEntitySpell {
 	}
 	
 	private boolean drain(Player player, LivingEntity target, float power) {
-		int take = Math.round(takeAmt*power);
-		int give = Math.round(giveAmt*power);
+		double take = takeAmt * power;
+		double give = giveAmt * power;
 		
 		// drain from target
 		if (takeType.equals("health")) {
@@ -84,7 +81,7 @@ public class DrainlifeSpell extends TargetedEntitySpell {
 				player.setLastDamageCause(event);
 			}
 			if (ignoreArmor) {
-				int health = target.getHealth() - take;
+				double health = target.getHealth() - take;
 				if (health < 0) health = 0;
 				target.setHealth(health);
 				target.playEffect(EntityEffect.HURT);
@@ -93,7 +90,7 @@ public class DrainlifeSpell extends TargetedEntitySpell {
 			}
 		} else if (takeType.equals("mana")) {
 			if (target instanceof Player) {
-				boolean removed = MagicSpells.getManaHandler().removeMana((Player)target, take, ManaChangeReason.OTHER);
+				boolean removed = MagicSpells.getManaHandler().removeMana((Player)target, (int)Math.round(take), ManaChangeReason.OTHER);
 				if (!removed) {
 					give = 0;
 				}
@@ -112,7 +109,7 @@ public class DrainlifeSpell extends TargetedEntitySpell {
 				Player p = (Player)target;
 				int exp = ExperienceUtils.getCurrentExp(p);
 				if (give > exp) give = exp;
-				ExperienceUtils.changeExp(p, -take);
+				ExperienceUtils.changeExp(p, (int)Math.round(-take));
 			}
 		}
 		
@@ -126,36 +123,41 @@ public class DrainlifeSpell extends TargetedEntitySpell {
 		
 		// show animation
 		if (showSpellEffect) {
-			new DrainlifeAnim(target.getLocation(), player, give);
+			new DrainlifeAnim(target.getLocation(), player, give, power);
 		}
 		
 		return true;
 	}
 	
-	private void giveToCaster(Player player, int give) {
+	private void giveToCaster(Player player, double give) {
 		if (giveType.equals("health")) {
-			int h = player.getHealth()+Math.round(give);
-			if (h>20) h=20;
+			double h = player.getHealth() + give;
+			if (h > player.getMaxHealth()) h = player.getMaxHealth();
 			player.setHealth(h);
 		} else if (giveType.equals("mana")) {
-			MagicSpells.getManaHandler().addMana(player, give, ManaChangeReason.OTHER);
-		} else if (takeType.equals("hunger")) {
+			MagicSpells.getManaHandler().addMana(player, (int)give, ManaChangeReason.OTHER);
+		} else if (giveType.equals("hunger")) {
 			int food = player.getFoodLevel();
 			food += give;
 			if (food > 20) food = 20;
 			player.setFoodLevel(food);
-		} else if (takeType.equals("experience")) {
-			ExperienceUtils.changeExp(player, give);
+		} else if (giveType.equals("experience")) {
+			ExperienceUtils.changeExp(player, (int)give);
 		}
 	}
 
 	@Override
 	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
-		if (target instanceof Player && !targetPlayers) {
+		if (!validTargetList.canTarget(caster, target)) {
 			return false;
 		} else {
 			return drain(caster, target, power);
 		}
+	}
+
+	@Override
+	public boolean castAtEntity(LivingEntity target, float power) {
+		return false;
 	}
 	
 	private class DrainlifeAnim extends SpellAnimation {
@@ -163,15 +165,17 @@ public class DrainlifeSpell extends TargetedEntitySpell {
 		Vector current;
 		Player caster;
 		World world;
-		int giveAmt;
+		double giveAmt;
+		int range;
 		
-		public DrainlifeAnim(Location start, Player caster, int giveAmt) {
+		public DrainlifeAnim(Location start, Player caster, double giveAmt, float power) {
 			super(animationSpeed, true);
 			
 			this.current = start.toVector();
 			this.caster = caster;
 			this.world = caster.getWorld();
 			this.giveAmt = giveAmt;
+			this.range = getRange(power);
 		}
 
 		@Override

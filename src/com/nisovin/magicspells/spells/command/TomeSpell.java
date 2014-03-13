@@ -80,7 +80,7 @@ public class TomeSpell extends CommandSpell {
 			}
 			
 			ItemStack item = player.getItemInHand();
-			if (item.getTypeId() != 386 && item.getTypeId() != 387) {
+			if (item.getType() != Material.WRITTEN_BOOK) {
 				// fail -- no book
 				sendMessage(player, strNoBook);
 				return PostCastAction.ALREADY_HANDLED;

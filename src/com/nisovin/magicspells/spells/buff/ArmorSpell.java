@@ -12,6 +12,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -31,6 +32,7 @@ import com.nisovin.magicspells.util.Util;
 public class ArmorSpell extends BuffSpell {
 
 	private boolean permanent;
+	private boolean replace;
 	
 	private ItemStack helmet;
 	private ItemStack chestplate;
@@ -46,6 +48,7 @@ public class ArmorSpell extends BuffSpell {
 		super(config, spellName);
 		
 		permanent = getConfigBoolean("permanent", false);
+		replace = getConfigBoolean("replace", false);
 		
 		strLoreText = ChatColor.translateAlternateColorCodes('&', getConfigString("str-lore-text", "Conjured"));
 		
@@ -61,8 +64,9 @@ public class ArmorSpell extends BuffSpell {
 	
 	@Override
 	public void initialize() {
+		super.initialize();
 		if (!permanent) {
-			registerEvents();
+			registerEvents(new ArmorListener());
 		}
 	}
 	
@@ -73,6 +77,7 @@ public class ArmorSpell extends BuffSpell {
 				
 				// get type and data
 				ItemStack item = Util.getItemStackFromString(info[0]);
+				if (item == null) return null;
 				item.setAmount(1);
 				if (!permanent) {
 					ItemMeta meta = item.getItemMeta();
@@ -91,12 +96,7 @@ public class ArmorSpell extends BuffSpell {
 				if (info.length > 1) {
 					for (int i = 1; i < info.length; i++) {
 						String[] enchinfo = info[i].split(":");
-						Enchantment ench = null;
-						if (enchinfo[0].matches("[0-9]+")) {
-							ench = Enchantment.getById(Integer.parseInt(enchinfo[0]));
-						} else {
-							ench = Enchantment.getByName(enchinfo[0].toUpperCase());
-						}
+						Enchantment ench = Util.getEnchantmentType(enchinfo[0]);
 						int lvl = 1;
 						if (enchinfo.length > 1) {
 							lvl = Integer.parseInt(enchinfo[1].toUpperCase().replace(" ", "_"));
@@ -117,29 +117,20 @@ public class ArmorSpell extends BuffSpell {
 	}
 
 	@Override
-	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
-		if (armored.contains(player)) {
-			turnOff(player);
-			if (toggle) {
-				return PostCastAction.ALREADY_HANDLED;
-			}
+	public boolean castBuff(Player player, float power, String[] args) {
+		PlayerInventory inv = player.getInventory();
+		if (!replace && ((helmet != null && inv.getHelmet() != null) || (chestplate != null && inv.getChestplate() != null) || (leggings != null && inv.getLeggings() != null) || (boots != null && inv.getBoots() != null))) {
+			// error
+			sendMessage(player, strHasArmor);
+			return false;
 		}
-		if (state == SpellCastState.NORMAL) {
-			PlayerInventory inv = player.getInventory();
-			if ((helmet != null && inv.getHelmet() != null) || (chestplate != null && inv.getChestplate() != null) || (leggings != null && inv.getLeggings() != null) || (boots != null && inv.getBoots() != null)) {
-				// error
-				sendMessage(player, strHasArmor);
-				return PostCastAction.ALREADY_HANDLED;
-			}
-			
-			setArmor(inv);
-			
-			if (!permanent) {
-				armored.add(player.getName());
-				startSpellDuration(player);
-			}
+		
+		setArmor(inv);
+		
+		if (!permanent) {
+			armored.add(player.getName());
 		}
-		return PostCastAction.HANDLE_NORMALLY;
+		return true;
 	}
 	
 	private void setArmor(PlayerInventory inv) {
@@ -172,77 +163,78 @@ public class ArmorSpell extends BuffSpell {
 		}
 	}
 	
-	@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
-	public void onEntityDamage(EntityDamageEvent event) {
-		if (event.getEntity() instanceof Player) {
-			Player p = (Player)event.getEntity();
-			if (isActive(p) && p.getNoDamageTicks() < 10) {
-				addUseAndChargeCost(p);
-			}
-		}
-	}
+	class ArmorListener implements Listener {
 	
-	@EventHandler(ignoreCancelled=true)
-	public void onInventoryClick(InventoryClickEvent event) {
-		if (event.getSlotType() == SlotType.ARMOR && event.getWhoClicked() instanceof Player) {
-			Player p = (Player)event.getWhoClicked();
-			if (isActive(p)) {
-				event.setCancelled(true);
-			}
-		}
-	}
-	
-	@EventHandler
-	public void onPlayerDeath(PlayerDeathEvent event) {
-		Iterator<ItemStack> drops = event.getDrops().iterator();
-		while (drops.hasNext()) {
-			ItemStack drop = drops.next();
-			List<String> lore = drop.getItemMeta().getLore();
-			if (lore != null && lore.size() > 0 && lore.get(lore.size()-1).equals(strLoreText)) {
-				drops.remove();
-			}
-		}
-	}
-	
-	@EventHandler
-	public void onPlayerRespawn(PlayerRespawnEvent event) {
-		if (isActive(event.getPlayer()) && !isExpired(event.getPlayer())) {
-			final PlayerInventory inv = event.getPlayer().getInventory();
-			Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new Runnable() {
-				public void run() {
-					setArmor(inv);
+		@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
+		public void onEntityDamage(EntityDamageEvent event) {
+			if (event.getEntity() instanceof Player) {
+				Player p = (Player)event.getEntity();
+				if (isActive(p) && p.getNoDamageTicks() < 10) {
+					addUseAndChargeCost(p);
 				}
-			});
-		}
-	}
-	
-	@EventHandler
-	public void onPlayerQuit(PlayerQuitEvent event) {
-		if (isActive(event.getPlayer())) {
-			if (cancelOnLogout) {
-				turnOff(event.getPlayer());
-			} else {
-				removeArmor(event.getPlayer().getInventory());
 			}
 		}
-	}
-	
-	@EventHandler
-	public void onPlayerJoin(PlayerJoinEvent event) {
-		if (isActive(event.getPlayer())) {
-			if (!isExpired(event.getPlayer())) {
-				setArmor(event.getPlayer().getInventory());
-			} else {
-				turnOff(event.getPlayer());
+		
+		@EventHandler(ignoreCancelled=true)
+		public void onInventoryClick(InventoryClickEvent event) {
+			if (event.getSlotType() == SlotType.ARMOR && event.getWhoClicked() instanceof Player) {
+				Player p = (Player)event.getWhoClicked();
+				if (isActive(p)) {
+					event.setCancelled(true);
+				}
+			}
+		}
+		
+		@EventHandler
+		public void onPlayerDeath(PlayerDeathEvent event) {
+			Iterator<ItemStack> drops = event.getDrops().iterator();
+			while (drops.hasNext()) {
+				ItemStack drop = drops.next();
+				List<String> lore = drop.getItemMeta().getLore();
+				if (lore != null && lore.size() > 0 && lore.get(lore.size()-1).equals(strLoreText)) {
+					drops.remove();
+				}
+			}
+		}
+		
+		@EventHandler
+		public void onPlayerRespawn(PlayerRespawnEvent event) {
+			if (isActive(event.getPlayer()) && !isExpired(event.getPlayer())) {
+				final PlayerInventory inv = event.getPlayer().getInventory();
+				Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new Runnable() {
+					public void run() {
+						setArmor(inv);
+					}
+				});
+			}
+		}
+		
+		@EventHandler
+		public void onPlayerQuit(PlayerQuitEvent event) {
+			if (isActive(event.getPlayer())) {
+				if (cancelOnLogout) {
+					turnOff(event.getPlayer());
+				} else {
+					removeArmor(event.getPlayer().getInventory());
+				}
+			}
+		}
+		
+		@EventHandler
+		public void onPlayerJoin(PlayerJoinEvent event) {
+			if (isActive(event.getPlayer())) {
+				if (!isExpired(event.getPlayer())) {
+					setArmor(event.getPlayer().getInventory());
+				} else {
+					turnOff(event.getPlayer());
+				}
 			}
 		}
 	}
 	
 	@Override
-	public void turnOff(Player player) {
-		if (armored.contains(player.getName())) {
-			super.turnOff(player);
-			armored.remove(player.getName());
+	public void turnOffBuff(Player player) {
+		if (armored.remove(player.getName())) {
 			PlayerInventory inv = player.getInventory();
 			removeArmor(inv);
 		}

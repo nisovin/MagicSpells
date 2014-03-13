@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
@@ -22,7 +23,10 @@ import org.bukkit.metadata.MetadataValue;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.Spellbook;
+import com.nisovin.magicspells.events.SpellCastEvent;
+import com.nisovin.magicspells.events.SpellTargetEvent;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.SpellReagents;
 
 public class ArrowSpell extends Spell {
 
@@ -64,6 +68,15 @@ public class ArrowSpell extends Spell {
 		}
 		handler.registerSpell(this);
 	}
+	
+	@Override
+	public void turnOff() {
+		super.turnOff();
+		if (handler != null) {
+			handler.turnOff();
+			handler = null;
+		}
+	}
 
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
@@ -103,7 +116,15 @@ public class ArrowSpell extends Spell {
 				Spellbook spellbook = MagicSpells.getSpellbook(shooter);
 				ArrowSpell spell = spells.get(bowName);
 				if (spell != null && spellbook.hasSpell(spell) && spellbook.canCast(spell)) {
-					event.getProjectile().setMetadata("MSArrowSpell", new FixedMetadataValue(MagicSpells.plugin, new ArrowSpellData(spell)));
+					SpellReagents reagents = spell.reagents.clone();
+					SpellCastEvent castEvent = new SpellCastEvent(spell, shooter, SpellCastState.NORMAL, 1.0F, null, cooldown, reagents, castTime);
+					Bukkit.getPluginManager().callEvent(castEvent);
+					if (!castEvent.isCancelled()) {
+						event.getProjectile().setMetadata("MSArrowSpell", new FixedMetadataValue(MagicSpells.plugin, new ArrowSpellData(spell, castEvent.getPower(), castEvent.getReagents())));
+					} else {
+						event.setCancelled(true);
+						event.getProjectile().remove();
+					}
 				}
 			}
 		}
@@ -120,9 +141,12 @@ public class ArrowSpell extends Spell {
 					MagicSpells.scheduleDelayedTask(new Runnable() {
 						public void run() {
 							Player shooter = (Player)arrow.getShooter();
-							if (!data.casted && !data.spell.onCooldown(shooter)) {
-								data.spell.spellOnHitGround.castAtLocation(shooter, arrow.getLocation(), 1.0F);
-								data.spell.setCooldown(shooter, data.spell.cooldown);
+							if (!data.casted && !data.spell.onCooldown(shooter) && data.spell.hasReagents(shooter, data.reagents)) {
+								boolean success = data.spell.spellOnHitGround.castAtLocation(shooter, arrow.getLocation(), data.power);
+								if (success) {
+									data.spell.setCooldown(shooter, data.spell.cooldown);
+									data.spell.removeReagents(shooter, data.reagents);
+								}
 								data.casted = true;
 								arrow.removeMetadata("MSArrowSpell", MagicSpells.plugin);
 							}
@@ -134,7 +158,7 @@ public class ArrowSpell extends Spell {
 			arrow.remove();
 		}
 
-		@EventHandler
+		@EventHandler(ignoreCancelled=true)
 		public void onArrowHitEntity(EntityDamageByEntityEvent event) {
 			if (event.getDamager().getType() != EntityType.ARROW) return;
 			if (!(event.getEntity() instanceof LivingEntity)) return;
@@ -146,11 +170,15 @@ public class ArrowSpell extends Spell {
 				ArrowSpellData data = (ArrowSpellData)meta.value();
 				if (!data.spell.onCooldown(shooter)) {
 					if (data.spell.spellOnHitEntity != null) {
-						data.spell.spellOnHitEntity.castAtEntity(shooter, (LivingEntity)event.getEntity(), 1.0F);
-						data.spell.setCooldown(shooter, data.spell.cooldown);
+						SpellTargetEvent evt = new SpellTargetEvent(data.spell, shooter, (LivingEntity)event.getEntity());
+						Bukkit.getPluginManager().callEvent(evt);
+						if (!evt.isCancelled()) {
+							data.spell.spellOnHitEntity.castAtEntity(shooter, (LivingEntity)event.getEntity(), data.power);
+							data.spell.setCooldown(shooter, data.spell.cooldown);
+						}
 						data.casted = true;
 					} else if (data.spell.spellOnHitGround != null) {
-						data.spell.spellOnHitGround.castAtLocation(shooter, arrow.getLocation(), 1.0F);
+						data.spell.spellOnHitGround.castAtLocation(shooter, arrow.getLocation(), data.power);
 						data.spell.setCooldown(shooter, data.spell.cooldown);
 						data.casted = true;
 					}
@@ -161,13 +189,22 @@ public class ArrowSpell extends Spell {
 			arrow.removeMetadata("MSArrowSpell", MagicSpells.plugin);
 		}
 		
+		public void turnOff() {
+			unregisterEvents(this);
+			spells.clear();
+		}
+		
 	}
 	
 	class ArrowSpellData {
 		ArrowSpell spell;
 		boolean casted = false;
-		public ArrowSpellData(ArrowSpell spell) {
+		float power = 1.0F;
+		SpellReagents reagents;
+		public ArrowSpellData(ArrowSpell spell, float power, SpellReagents reagents) {
 			this.spell = spell;
+			this.power = power;
+			this.reagents = reagents;
 		}
 	}
 

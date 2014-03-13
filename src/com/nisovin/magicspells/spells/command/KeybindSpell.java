@@ -22,6 +22,7 @@ import com.nisovin.magicspells.spells.CommandSpell;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.Util;
 
 public class KeybindSpell extends CommandSpell {
 
@@ -33,20 +34,8 @@ public class KeybindSpell extends CommandSpell {
 	public KeybindSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		String temp = getConfigString("wand-item", Material.BLAZE_ROD.getId()+"");
-		if (temp.contains(":")) {
-			String[] data = temp.split(":");
-			wandItem = new ItemStack(Integer.parseInt(data[0]), 0, Short.parseShort(data[1]));
-		} else {
-			wandItem = new ItemStack(Integer.parseInt(temp), 0, (short)0);
-		}
-		temp = getConfigString("default-spell-icon", Material.REDSTONE.getId()+"");
-		if (temp.contains(":")) {
-			String[] data = temp.split(":");
-			defaultSpellIcon = new ItemStack(Integer.parseInt(data[0]), 0, Short.parseShort(data[1]));
-		} else {
-			defaultSpellIcon = new ItemStack(Integer.parseInt(temp), 0, (short)0);
-		}
+		wandItem = Util.getItemStackFromString(getConfigString("wand-item", "blaze_rod"));
+		defaultSpellIcon = Util.getItemStackFromString(getConfigString("default-spell-icon", "redstone"));
 		
 		playerKeybinds = new HashMap<String, KeybindSpell.Keybinds>();
 	}

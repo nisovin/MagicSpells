@@ -8,29 +8,24 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
+import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.BlockUtils;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class ShadowstepSpell extends TargetedEntitySpell {
+public class ShadowstepSpell extends TargetedSpell implements TargetedEntitySpell {
 
-	private boolean targetPlayers;
-	private boolean obeyLos;
 	private String strNoLandingSpot;
 	
 	public ShadowstepSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		targetPlayers = getConfigBoolean("target-players", false);
-		obeyLos = getConfigBoolean("obey-los", true);
 		strNoLandingSpot = getConfigString("str-no-landing-spot", "Cannot shadowstep there.");
 	}
 
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			int range = Math.round(this.range * power);
-			
-			LivingEntity target = getTargetedEntity(player, minRange, range, targetPlayers, obeyLos);
+			LivingEntity target = getTargetedEntity(player, power);
 			if (target == null) {
 				// fail
 				return noTarget(player);
@@ -72,11 +67,16 @@ public class ShadowstepSpell extends TargetedEntitySpell {
 
 	@Override
 	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
-		if (target instanceof Player && !targetPlayers) {
+		if (!validTargetList.canTarget(caster, target)) {
 			return false;
 		} else {
 			return shadowstep(caster, target);
 		}
+	}
+
+	@Override
+	public boolean castAtEntity(LivingEntity target, float power) {
+		return false;
 	}
 
 }

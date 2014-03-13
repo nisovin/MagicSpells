@@ -30,18 +30,9 @@ public class HasteSpell extends BuffSpell {
 	}
 
 	@Override
-	public PostCastAction castSpell(final Player player, SpellCastState state, float power, String[] args) {
-		if (isActive(player)) {
-			turnOff(player);
-			if (toggle) {
-				return PostCastAction.ALREADY_HANDLED;
-			}
-		}
-		if (state == SpellCastState.NORMAL) {
-			hasted.put(player, Math.round(strength*power));
-			startSpellDuration(player);
-		}
-		return PostCastAction.HANDLE_NORMALLY;
+	public boolean castBuff(final Player player, float power, String[] args) {
+		hasted.put(player, Math.round(strength*power));
+		return true;
 	}
 
 	@EventHandler(priority=EventPriority.MONITOR)
@@ -65,13 +56,10 @@ public class HasteSpell extends BuffSpell {
 	}
 
 	@Override
-	public void turnOff(Player player) {
-		if (hasted.containsKey(player)) {
-			super.turnOff(player);
-			hasted.remove(player);
+	public void turnOffBuff(Player player) {
+		if (hasted.remove(player) != null) {
 			player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 1, 0), true);
 			player.removePotionEffect(PotionEffectType.SPEED);
-			sendMessage(player, strFade);
 		}
 	}
 	

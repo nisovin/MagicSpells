@@ -3,6 +3,7 @@ package com.nisovin.magicspells.spells.targeted;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -11,16 +12,20 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.inventory.ItemStack;
 
+import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.materials.MagicMaterial;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
+import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class BuildSpell extends TargetedLocationSpell {
+public class BuildSpell extends TargetedSpell implements TargetedLocationSpell {
 	
 	private int slot;
 	private boolean consumeBlock;
-	private int[] allowedTypes;
+	private Material[] allowedTypes;
 	private boolean checkPlugins;
+	private boolean playBreakEffect;
 	private String strInvalidBlock;
 	private String strCantBuild;
 	
@@ -30,11 +35,15 @@ public class BuildSpell extends TargetedLocationSpell {
 		slot = getConfigInt("slot", 0);
 		consumeBlock = getConfigBoolean("consume-block", true);
 		String[] allowed = getConfigString("allowed-types", "1,2,3,4,5,12,13,17,20,22,24,35,41,42,43,44,45,47,48,49,50,53,57,65,67,80,85,87,88,89,91,92").split(",");
-		allowedTypes = new int[allowed.length];
+		allowedTypes = new Material[allowed.length];
 		for (int i = 0; i < allowed.length; i++) {
-			allowedTypes[i] = Integer.parseInt(allowed[i]);
+			MagicMaterial mat = MagicSpells.getItemNameResolver().resolveBlock(allowed[i]);
+			if (mat != null) {
+				allowedTypes[i] = mat.getMaterial();
+			}
 		}
 		checkPlugins = getConfigBoolean("check-plugins", true);
+		playBreakEffect = getConfigBoolean("show-effect", true);
 		strInvalidBlock = getConfigString("str-invalid-block", "You can't build that block.");
 		strCantBuild = getConfigString("str-cant-build", "You can't build there.");
 	}
@@ -51,7 +60,7 @@ public class BuildSpell extends TargetedLocationSpell {
 			// get target
 			List<Block> lastBlocks = null;
 			try {
-				lastBlocks = player.getLastTwoTargetBlocks(null, range);
+				lastBlocks = getLastTwoTargetedBlocks(player, power);
 			} catch (IllegalStateException e) {
 				lastBlocks = null;
 			}
@@ -70,19 +79,25 @@ public class BuildSpell extends TargetedLocationSpell {
 
 	private boolean build(Player player, Block block, Block against, ItemStack item) {
 		// check plugins
-		BlockState blockState = block.getState();
-		block.setTypeIdAndData(item.getTypeId(), (byte)item.getDurability(), true);
+		BlockState previousState = block.getState();
+		item.getData();
+		BlockState state = block.getState();
+		state.setData(item.getData());
+		state.update(true);
 		if (checkPlugins) {
-			BlockPlaceEvent event = new BlockPlaceEvent(block, blockState, against, player.getItemInHand(), player, true);
+			BlockPlaceEvent event = new BlockPlaceEvent(block, previousState, against, player.getItemInHand(), player, true);
 			Bukkit.getServer().getPluginManager().callEvent(event);
 			if (event.isCancelled() && block.getType() == item.getType()) {
-				blockState.update(true);
+				previousState.update(true);
 				return false;
 			}
 		}
+		if (playBreakEffect) {
+			block.getWorld().playEffect(block.getLocation(), Effect.STEP_SOUND, block.getType());
+		}
 		playSpellEffects(EffectPosition.CASTER, player);
-		playSpellEffects(EffectPosition.TARGET, block.getLocation(), item.getTypeId()+"");
-		playSpellEffectsTrail(player.getLocation(), block.getLocation(), null);
+		playSpellEffects(EffectPosition.TARGET, block.getLocation());
+		playSpellEffectsTrail(player.getLocation(), block.getLocation());
 		if (consumeBlock) {
 			int amt = item.getAmount()-1;
 			if (amt > 0) {
@@ -109,10 +124,15 @@ public class BuildSpell extends TargetedLocationSpell {
 		// build
 		return build(caster, block, block, item);
 	}
+
+	@Override
+	public boolean castAtLocation(Location target, float power) {
+		return false;
+	}
 	
 	private boolean isAllowed(Material mat) {
 		for (int i = 0; i < allowedTypes.length; i++) {
-			if (allowedTypes[i] == mat.getId()) {
+			if (allowedTypes[i] != null && allowedTypes[i] == mat) {
 				return true;
 			}
 		}

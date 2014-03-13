@@ -9,16 +9,19 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 
+import com.nisovin.magicspells.spells.TargetedEntityFromLocationSpell;
+import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.BlockUtils;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class SummonSpell extends TargetedSpell {
+public class SummonSpell extends TargetedSpell implements TargetedEntitySpell, TargetedEntityFromLocationSpell {
 
 	private boolean requireExactName;
 	private boolean requireAcceptance;
@@ -61,7 +64,7 @@ public class SummonSpell extends TargetedSpell {
 				targetName = args[0];
 				landLoc = player.getLocation().add(0, .25, 0);
 			} else {
-				Block block = player.getTargetBlock(null, 10);
+				Block block = getTargetedBlock(player, 10);
 				if (block != null && (block.getType() == Material.WALL_SIGN || block.getType() == Material.SIGN_POST)) {
 					Sign sign = (Sign)block.getState();
 					targetName = sign.getLine(0);
@@ -141,6 +144,26 @@ public class SummonSpell extends TargetedSpell {
 			return null;
 		}
 		return tabCompletePlayerName(sender, partial);
+	}
+
+	@Override
+	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
+		return target.teleport(caster);
+	}
+
+	@Override
+	public boolean castAtEntity(LivingEntity target, float power) {
+		return false;
+	}
+
+	@Override
+	public boolean castAtEntityFromLocation(Player caster, Location from, LivingEntity target, float power) {
+		return target.teleport(from);
+	}
+
+	@Override
+	public boolean castAtEntityFromLocation(Location from, LivingEntity target, float power) {
+		return target.teleport(from);
 	}
 
 }

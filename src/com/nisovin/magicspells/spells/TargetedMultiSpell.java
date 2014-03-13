@@ -2,6 +2,7 @@ package com.nisovin.magicspells.spells;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -12,25 +13,32 @@ import org.bukkit.entity.Player;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
+import com.nisovin.magicspells.castmodifiers.ModifierSet;
+import com.nisovin.magicspells.events.SpellCastEvent;
+import com.nisovin.magicspells.events.SpellTargetEvent;
+import com.nisovin.magicspells.events.SpellTargetLocationEvent;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public final class TargetedMultiSpell extends TargetedSpell {
+public final class TargetedMultiSpell extends TargetedSpell implements TargetedEntitySpell, TargetedLocationSpell {
 
 	private boolean checkIndividualCooldowns;
+	private boolean checkIndividualModifiers;
+	private boolean showIndividualMessages;
 	private boolean requireEntityTarget;
-	private boolean targetPlayers;
-	private boolean obeyLos;
+	private boolean castRandomSpellInstead;
 	
 	private List<String> spellList;
 	private ArrayList<Action> actions;
+	private Random random = new Random();
 	
 	public TargetedMultiSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
 		checkIndividualCooldowns = getConfigBoolean("check-individual-cooldowns", false);
+		checkIndividualModifiers = getConfigBoolean("check-individual-modifiers", false);
+		showIndividualMessages = getConfigBoolean("show-individual-messages", false);
 		requireEntityTarget = getConfigBoolean("require-entity-target", false);
-		targetPlayers = getConfigBoolean("target-players", false);
-		obeyLos = getConfigBoolean("obey-los", true);
+		castRandomSpellInstead = getConfigBoolean("cast-random-spell-instead", false);
 
 		actions = new ArrayList<Action>();
 		spellList = getConfigStringList("spells", null);
@@ -82,11 +90,11 @@ public final class TargetedMultiSpell extends TargetedSpell {
 			Location locTarget = null;
 			LivingEntity entTarget = null;
 			if (requireEntityTarget) {
-				entTarget = getTargetedEntity(player, minRange, range, targetPlayers, obeyLos);
+				entTarget = getTargetedEntity(player, power);
 			} else {
 				Block b = null;
 				try {
-					b = player.getTargetBlock(null, range);
+					b = getTargetedBlock(player, power);
 					if (b != null && b.getType() != Material.AIR) {
 						locTarget = b.getLocation();
 					}
@@ -98,6 +106,45 @@ public final class TargetedMultiSpell extends TargetedSpell {
 				return noTarget(player);
 			}
 			
+			boolean somethingWasDone = runSpells(player, entTarget, locTarget, power);
+			
+			if (!somethingWasDone) {
+				return noTarget(player);
+			}
+			
+			if (entTarget != null) {
+				sendMessages(player, entTarget);
+				playSpellEffects(player, entTarget);
+				return PostCastAction.NO_MESSAGES;
+			} else if (locTarget != null) {
+				playSpellEffects(player, locTarget);
+			}
+		}
+		return PostCastAction.HANDLE_NORMALLY;
+	}
+
+	@Override
+	public boolean castAtLocation(Player caster, Location target, float power) {
+		return runSpells(caster, null, target, power);
+	}
+	
+	@Override
+	public boolean castAtLocation(Location location, float power) {
+		return false;
+	}
+
+	@Override
+	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
+		return runSpells(caster, target, null, power);
+	}
+
+	@Override
+	public boolean castAtEntity(LivingEntity target, float power) {
+		return false;
+	}
+	
+	boolean runSpells(Player player, LivingEntity entTarget, Location locTarget, float power) {
+		if (!castRandomSpellInstead) {
 			boolean somethingWasDone = false;
 			int delay = 0;
 			TargetedSpell spell;
@@ -123,33 +170,66 @@ public final class TargetedMultiSpell extends TargetedSpell {
 					}
 				}
 			}
-			
-			if (!somethingWasDone) {
-				return noTarget(player);
-			}
-			
-			if (entTarget != null) {
-				sendMessages(player, entTarget);
-				playSpellEffects(player, entTarget);
-				return PostCastAction.NO_MESSAGES;
-			} else if (locTarget != null) {
-				playSpellEffects(player, locTarget);
+			return somethingWasDone;
+		} else {
+			Action action = actions.get(random.nextInt(actions.size()));
+			if (action.isSpell()) {
+				castTargetedSpell(action.getSpell(), player, entTarget, locTarget, power);
+				return true;
+			} else {
+				return false;
 			}
 		}
-		return PostCastAction.HANDLE_NORMALLY;
 	}
 	
 	private boolean castTargetedSpell(TargetedSpell spell, Player caster, LivingEntity entTarget, Location locTarget, float power) {
-		if (spell instanceof TargetedEntitySpell && entTarget != null) {
-			return ((TargetedEntitySpell)spell).castAtEntity(caster, entTarget, power);
-		} else if (spell instanceof TargetedLocationSpell) {
-			if (entTarget != null) {
-				return ((TargetedLocationSpell)spell).castAtLocation(caster, entTarget.getLocation(), power);
-			} else if (locTarget != null) {
-				return ((TargetedLocationSpell)spell).castAtLocation(caster, locTarget, power);
+		boolean success = false;
+		if (checkIndividualModifiers) {
+			ModifierSet castModifiers = spell.getModifiers();
+			if (castModifiers != null) {
+				SpellCastEvent event = new SpellCastEvent(spell, caster, SpellCastState.NORMAL, power, null, 0, null, 0);
+				castModifiers.apply(event);
+				if (event.isCancelled()) {
+					return false;
+				}
+				power = event.getPower();
+			}
+			ModifierSet targetModifers = spell.getTargetModifiers();
+			if (targetModifers != null) {
+				if (entTarget != null) {
+					SpellTargetEvent event = new SpellTargetEvent(spell, caster, entTarget);
+					targetModifiers.apply(event);
+					if (event.isCancelled()) {
+						return false;
+					}
+					entTarget = event.getTarget();
+				} else if (locTarget != null) {
+					SpellTargetLocationEvent event = new SpellTargetLocationEvent(spell, caster, locTarget);
+					targetModifiers.apply(event);
+					if (event.isCancelled()) {
+						return false;
+					}
+					locTarget = event.getTargetLocation();
+				}
 			}
 		}
-		return false;
+		if (spell instanceof TargetedEntitySpell && entTarget != null) {
+			success = ((TargetedEntitySpell)spell).castAtEntity(caster, entTarget, power);
+		} else if (spell instanceof TargetedLocationSpell) {
+			if (entTarget != null) {
+				success = ((TargetedLocationSpell)spell).castAtLocation(caster, entTarget.getLocation(), power);
+			} else if (locTarget != null) {
+				success = ((TargetedLocationSpell)spell).castAtLocation(caster, locTarget, power);
+			}
+		}
+		if (success && showIndividualMessages) {
+			if (entTarget != null) {
+				spell.sendMessages(caster, entTarget);
+			} else {
+				spell.sendMessages(caster);
+			}
+		}
+		return success;
 	}
 	
 	private class Action {
@@ -208,20 +288,28 @@ public final class TargetedMultiSpell extends TargetedSpell {
 			delayedSpells = null;
 		}
 		
+		public void cancelAll() {
+			for (DelayedSpell ds : delayedSpells) {
+				if (ds != this) {
+					ds.cancel();
+				}
+			}
+			delayedSpells.clear();
+			cancel();
+		}
+		
 		@Override
 		public void run() {
 			if (!cancelled) {
-				boolean ok = castTargetedSpell(spell, player, entTarget, locTarget, power);
-				if (ok) {
-					delayedSpells.remove(this);
-				} else {
-					for (DelayedSpell ds : delayedSpells) {
-						if (ds != this) {
-							ds.cancel();
-						}
+				if (player.isValid()) {
+					boolean ok = castTargetedSpell(spell, player, entTarget, locTarget, power);
+					if (ok) {
+						delayedSpells.remove(this);
+					} else {
+						cancelAll();
 					}
-					delayedSpells.clear();
-					cancel();
+				} else {
+					cancelAll();
 				}
 			}
 			delayedSpells = null;

@@ -11,17 +11,16 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
-import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.events.SpellTargetEvent;
+import com.nisovin.magicspells.events.SpellTargetLocationEvent;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
+import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class ForcebombSpell extends TargetedLocationSpell {
+public class ForcebombSpell extends TargetedSpell implements TargetedLocationSpell {
 
 	private int radiusSquared;
-	private boolean targetPlayers;
-	private boolean dontPushCaster;
 	private int force;
 	private int yForce;
 	private int maxYForce;
@@ -32,8 +31,6 @@ public class ForcebombSpell extends TargetedLocationSpell {
 		
 		radiusSquared = getConfigInt("radius", 3);
 		radiusSquared *= radiusSquared;
-		targetPlayers = getConfigBoolean("target-players", false);
-		dontPushCaster = getConfigBoolean("dont-push-caster", true);
 		force = getConfigInt("pushback-force", 30);
 		yForce = getConfigInt("additional-vertical-force", 15);
 		maxYForce = getConfigInt("max-vertical-force", 20);
@@ -43,7 +40,16 @@ public class ForcebombSpell extends TargetedLocationSpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			Block block = player.getTargetBlock(MagicSpells.getTransparentBlocks(), range);
+			Block block = getTargetedBlock(player, power);
+			if (block != null && block.getType() != Material.AIR) {
+				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, block.getLocation());
+				Bukkit.getPluginManager().callEvent(event);
+				if (event.isCancelled()) {
+					block = null;
+				} else {
+					block = event.getTargetLocation().getBlock();
+				}
+			}
 			if (block != null && block.getType() != Material.AIR) {
 				knockback(player, block.getLocation(), power);
 			} else {
@@ -58,14 +64,20 @@ public class ForcebombSpell extends TargetedLocationSpell {
 		knockback(caster, target, power);
 		return true;
 	}
+
+	@Override
+	public boolean castAtLocation(Location target, float power) {
+		knockback(null, target, power);
+		return true;
+	}
 	
 	public void knockback(Player player, Location location, float power) {
 	    Vector t = location.toVector();
 		Collection<Entity> entities = location.getWorld().getEntitiesByClasses(LivingEntity.class);
 		Vector e, v;
 		for (Entity entity : entities) {
-			if ((targetPlayers || !(entity instanceof Player)) && (!dontPushCaster || !entity.equals(player)) && entity.getLocation().distanceSquared(location) <= radiusSquared) {
-				if (callTargetEvents) {
+			if (entity instanceof LivingEntity && (player == null || validTargetList.canTarget(player, (LivingEntity)entity)) && entity.getLocation().distanceSquared(location) <= radiusSquared) {
+				if (callTargetEvents && player != null) {
 					SpellTargetEvent event = new SpellTargetEvent(this, player, (LivingEntity)entity);
 					Bukkit.getPluginManager().callEvent(event);
 					if (event.isCancelled()) {
@@ -86,7 +98,11 @@ public class ForcebombSpell extends TargetedLocationSpell {
 				playSpellEffects(EffectPosition.TARGET, entity);
 			}
 	    }
-		playSpellEffects(EffectPosition.CASTER, player);
+		if (player != null) {
+			playSpellEffects(EffectPosition.CASTER, player);
+		} else {
+			playSpellEffects(EffectPosition.CASTER, location);
+		}
 	}
 
 }

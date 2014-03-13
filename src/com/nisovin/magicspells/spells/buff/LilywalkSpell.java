@@ -18,6 +18,7 @@ import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 
 import com.nisovin.magicspells.spells.BuffSpell;
+import com.nisovin.magicspells.util.BlockUtils;
 import com.nisovin.magicspells.util.MagicConfig;
 
 public class LilywalkSpell extends BuffSpell {
@@ -44,21 +45,12 @@ public class LilywalkSpell extends BuffSpell {
 	}
 
 	@Override
-	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
-		if (lilywalkers.containsKey(player.getName())) {
-			turnOff(player);
-			if (toggle) {
-				return PostCastAction.ALREADY_HANDLED;
-			}
-		}
-		if (state == SpellCastState.NORMAL) {
-			Lilies lilies = new Lilies();
-			lilies.move(player.getLocation().getBlock());
-			lilywalkers.put(player.getName(), lilies);
-			startSpellDuration(player);
-			registerListener();
-		}
-		return PostCastAction.HANDLE_NORMALLY;
+	public boolean castBuff(Player player, float power, String[] args) {
+		Lilies lilies = new Lilies();
+		lilies.move(player.getLocation().getBlock());
+		lilywalkers.put(player.getName(), lilies);
+		registerListener();
+		return true;
 	}
 	
 	private void registerListener() {
@@ -98,7 +90,7 @@ public class LilywalkSpell extends BuffSpell {
 	
 		@EventHandler(priority=EventPriority.NORMAL, ignoreCancelled=true)
 		public void onBlockBreak(BlockBreakEvent event) {
-			if (lilywalkers.size() > 0 && event.getBlock().getTypeId() == Material.WATER_LILY.getId()) {
+			if (lilywalkers.size() > 0 && event.getBlock().getType() == Material.WATER_LILY) {
 				for (Lilies lilies : lilywalkers.values()) {
 					if (lilies.contains(event.getBlock())) {
 						event.setCancelled(true);
@@ -140,7 +132,7 @@ public class LilywalkSpell extends BuffSpell {
 		private void setToLily(Block block) {
 			if (block.getType() == Material.AIR) {
 				BlockState state = block.getRelative(BlockFace.DOWN).getState();
-				if ((state.getType() == Material.WATER || state.getType() == Material.STATIONARY_WATER) && state.getRawData() == (byte)0) {
+				if ((state.getType() == Material.WATER || state.getType() == Material.STATIONARY_WATER) && BlockUtils.getWaterLevel(state) == 0) {
 					block.setType(Material.WATER_LILY);
 					blocks.add(block);
 				}
@@ -186,13 +178,10 @@ public class LilywalkSpell extends BuffSpell {
 	}
 	
 	@Override
-	public void turnOff(Player player) {
-		Lilies lilies = lilywalkers.get(player.getName());
+	public void turnOffBuff(Player player) {
+		Lilies lilies = lilywalkers.remove(player.getName());
 		if (lilies != null) {
-			super.turnOff(player);
 			lilies.remove();
-			lilywalkers.remove(player.getName());
-			sendMessage(player, strFade);
 			unregisterListener();
 		}
 	}

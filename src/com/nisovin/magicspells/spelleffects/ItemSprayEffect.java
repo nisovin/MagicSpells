@@ -3,23 +3,27 @@ package com.nisovin.magicspells.spelleffects;
 import java.util.Random;
 
 import org.bukkit.Location;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Item;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.materials.MagicMaterial;
+import com.nisovin.magicspells.materials.MagicUnknownMaterial;
 
 class ItemSprayEffect extends SpellEffect {
 
+	MagicMaterial mat;
+	int num = 15;
+	int duration = 10;
+	float force = 1.0F;
+
 	@Override
-	public void playEffect(Location location, String param) {
-		int type = 331;
-		short dura = 0;
-		int num = 15;
-		int duration = 6;
-		float force = 1.0F;
-		if (param != null) {
-			String[] data = param.split(" ");
+	public void loadFromString(String string) {
+		if (string != null) {
+			String[] data = string.split(" ");
+			int type = 331;
+			short dura = 0;
 			if (data.length >= 1) {
 				if (data[0].contains(":")) {
 					try {
@@ -35,6 +39,7 @@ class ItemSprayEffect extends SpellEffect {
 					}
 				}
 			}
+			mat = new MagicUnknownMaterial(type, dura);
 			if (data.length >= 2) {
 				try {
 					num = Integer.parseInt(data[1]);
@@ -54,13 +59,26 @@ class ItemSprayEffect extends SpellEffect {
 				}
 			}
 		}
+	}
+
+	@Override
+	public void loadFromConfig(ConfigurationSection config) {
+		mat = MagicSpells.getItemNameResolver().resolveItem(config.getString("type", "redstone"));
+		num = config.getInt("quantity", num);
+		duration = config.getInt("duration", duration);
+		force = (float)config.getDouble("force", force);
+	}
+	
+	@Override
+	public void playEffectLocation(Location location) {
+		if (mat == null) return;
 		
 		// spawn items
 		Random rand = new Random();
 		Location loc = location.clone().add(0, 1, 0);
 		final Item[] items = new Item[num];
 		for (int i = 0; i < num; i++) {
-			items[i] = loc.getWorld().dropItem(loc, new ItemStack(type, 0, dura));
+			items[i] = loc.getWorld().dropItem(loc, mat.toItemStack(0));
 			items[i].setVelocity(new Vector((rand.nextDouble()-.5) * force, (rand.nextDouble()-.5) * force, (rand.nextDouble()-.5) * force));
 			items[i].setPickupDelay(duration * 2);
 		}

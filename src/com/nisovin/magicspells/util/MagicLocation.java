@@ -65,6 +65,18 @@ public class MagicLocation {
 	}
 	
 	@Override
+	public int hashCode() {
+		int hash = 3;
+	    hash = 19 * hash + this.world.hashCode();
+	    hash = 19 * hash + (int) (Double.doubleToLongBits(this.x) ^ (Double.doubleToLongBits(this.x) >>> 32));
+	    hash = 19 * hash + (int) (Double.doubleToLongBits(this.y) ^ (Double.doubleToLongBits(this.y) >>> 32));
+	    hash = 19 * hash + (int) (Double.doubleToLongBits(this.z) ^ (Double.doubleToLongBits(this.z) >>> 32));
+	    hash = 19 * hash + Float.floatToIntBits(this.pitch);
+	    hash = 19 * hash + Float.floatToIntBits(this.yaw);
+	    return hash;
+	}
+	
+	@Override
 	public boolean equals(Object o) {
 		if (o instanceof MagicLocation) {
 			MagicLocation loc = (MagicLocation)o;

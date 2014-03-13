@@ -1,14 +1,18 @@
 package com.nisovin.magicspells.spells.instant;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.materials.MagicMaterial;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
 import com.nisovin.magicspells.util.MagicConfig;
@@ -17,7 +21,8 @@ public class RepairSpell extends InstantSpell {
 
 	private int repairAmt;
 	private String[] toRepair;
-	private List<Integer> ignoreItems;
+	private Set<Material> ignoreItems;
+	private Set<Material> allowedItems;
 	private String strNothingToRepair;
 	
 	public RepairSpell(MagicConfig config, String spellName) {
@@ -29,7 +34,7 @@ public class RepairSpell extends InstantSpell {
 			toRepairList = new ArrayList<String>();
 		}
 		if (toRepairList.size() == 0) {
-			toRepairList.add("held");			
+			toRepairList.add("held");
 		}
 		Iterator<String> iter = toRepairList.iterator();
 		while (iter.hasNext()) {
@@ -41,7 +46,30 @@ public class RepairSpell extends InstantSpell {
 		}
 		toRepair = new String[toRepairList.size()];
 		toRepair = toRepairList.toArray(toRepair);
-		ignoreItems = getConfigIntList("ignore-items", new ArrayList<Integer>());
+		
+		ignoreItems = EnumSet.noneOf(Material.class);
+		List<String> list = getConfigStringList("ignore-items", null);
+		if (list != null) {
+			for (String s : list) {
+				MagicMaterial m = MagicSpells.getItemNameResolver().resolveItem(s);
+				if (m != null && m.getMaterial() != null) {
+					ignoreItems.add(m.getMaterial());
+				}
+			}
+		}
+		if (ignoreItems.size() == 0) ignoreItems = null;
+		
+		allowedItems = EnumSet.noneOf(Material.class);
+		list = getConfigStringList("allowed-items", null);
+		if (list != null) {
+			for (String s : list) {
+				MagicMaterial m = MagicSpells.getItemNameResolver().resolveItem(s);
+				if (m != null && m.getMaterial() != null) {
+					allowedItems.add(m.getMaterial());
+				}
+			}
+		}
+		if (allowedItems.size() == 0) allowedItems = null;
 		
 		strNothingToRepair = getConfigString("str-nothing-to-repair", "Nothing to repair.");
 	}
@@ -125,7 +153,8 @@ public class RepairSpell extends InstantSpell {
 	}
 	
 	private boolean isRepairable(Material material) {
-		if (ignoreItems.contains(material.getId())) return false;
+		if (ignoreItems != null && ignoreItems.contains(material)) return false;
+		if (allowedItems != null && !allowedItems.contains(material)) return false;
 		String s = material.name();
 		return 
 				material == Material.BOW ||

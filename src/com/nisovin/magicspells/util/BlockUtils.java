@@ -1,11 +1,54 @@
 package com.nisovin.magicspells.util;
 
+import java.util.List;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
+import org.bukkit.entity.FallingBlock;
+import org.bukkit.entity.LivingEntity;
+
+import com.nisovin.magicspells.MagicSpells;
 
 public class BlockUtils {
 
+	public static boolean isTransparent(Block block) {
+		return MagicSpells.getTransparentBlocks().contains((byte)block.getTypeId());
+	}
+	
+	public static Block getTargetBlock(LivingEntity entity, int range) {
+		return entity.getTargetBlock(MagicSpells.getTransparentBlocks(), range);
+	}
+	
+	public static List<Block> getLastTwoTargetBlock(LivingEntity entity, int range) {
+		return entity.getLastTwoTargetBlocks(MagicSpells.getTransparentBlocks(), range);
+	}
+	
+	public static void setTypeAndData(Block block, Material material, byte data, boolean physics) {
+		block.setTypeIdAndData(material.getId(), data, physics);
+	}
+	
+	public static void setBlockFromFallingBlock(Block block, FallingBlock fallingBlock, boolean physics) {
+		block.setTypeIdAndData(fallingBlock.getBlockId(), fallingBlock.getBlockData(), physics);
+	}
+	
+	public static int getWaterLevel(Block block) {
+		return block.getData();
+	}
+	
+	public static int getGrowthLevel(Block block) {
+		return block.getData();
+	}
+	
+	public static void setGrowthLevel(Block block, int level) {
+		block.setData((byte)level);
+	}
+	
+	public static int getWaterLevel(BlockState blockState) {
+		return blockState.getRawData();
+	}
+	
 	public static boolean isPathable(Block block) {
 		return isPathable(block.getType());
 	}

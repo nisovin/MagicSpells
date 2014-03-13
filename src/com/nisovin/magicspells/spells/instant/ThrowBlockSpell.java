@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.FallingBlock;
@@ -20,17 +21,17 @@ import org.bukkit.util.Vector;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.events.SpellTargetEvent;
+import com.nisovin.magicspells.materials.MagicMaterial;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
-import com.nisovin.magicspells.util.ItemNameResolver.ItemTypeAndData;
+import com.nisovin.magicspells.util.BlockUtils;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.Util;
 
-public class ThrowBlockSpell extends InstantSpell {
+public class ThrowBlockSpell extends InstantSpell implements TargetedLocationSpell {
 
-	int blockType;
-	byte blockData;
+	MagicMaterial material;
 	float velocity;
 	boolean applySpellPowerToVelocity;
 	float verticalAdjustment;
@@ -42,6 +43,8 @@ public class ThrowBlockSpell extends InstantSpell {
 	boolean preventBlocks;
 	boolean callTargetEvent;
 	boolean checkPlugins;
+	boolean ensureSpellCast;
+	boolean stickyBlocks;
 	String spellOnLand;
 	TargetedLocationSpell spell;
 	
@@ -51,10 +54,8 @@ public class ThrowBlockSpell extends InstantSpell {
 	public ThrowBlockSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		String blockTypeInfo = getConfigString("block-type", Material.ANVIL.getId() + "");
-		ItemTypeAndData typeAndData = MagicSpells.getItemNameResolver().resolve(blockTypeInfo);
-		blockType = typeAndData.id;
-		blockData = (byte)typeAndData.data;
+		String blockTypeInfo = getConfigString("block-type", "anvil");
+		material = MagicSpells.getItemNameResolver().resolveBlock(blockTypeInfo);
 		velocity = getConfigFloat("velocity", 1);
 		applySpellPowerToVelocity = getConfigBoolean("apply-spell-power-to-velocity", false);
 		verticalAdjustment = getConfigFloat("vertical-adjustment", 0.5F);
@@ -66,21 +67,26 @@ public class ThrowBlockSpell extends InstantSpell {
 		preventBlocks = getConfigBoolean("prevent-blocks", false);
 		callTargetEvent = getConfigBoolean("call-target-event", true);
 		checkPlugins = getConfigBoolean("check-plugins", false);
+		ensureSpellCast = getConfigBoolean("ensure-spell-cast", true);
+		stickyBlocks = getConfigBoolean("sticky-blocks", false);
 		spellOnLand = getConfigString("spell-on-land", null);
 	}	
 	
 	@Override
 	public void initialize() {
 		super.initialize();
+		if (material == null) {
+			MagicSpells.error("Invalid block-type for " + internalName + " spell");
+		}
 		if (spellOnLand != null && !spellOnLand.isEmpty()) {
 			Spell s = MagicSpells.getSpellByInternalName(spellOnLand);
 			if (s != null && s instanceof TargetedLocationSpell) {
 				spell = (TargetedLocationSpell)s;
 			} else {
-				MagicSpells.error("Invalid spell-on-land for " + name + " spell");
+				MagicSpells.error("Invalid spell-on-land for " + internalName + " spell");
 			}
 		}
-		if (fallDamage > 0 || removeBlocks || preventBlocks || spell != null) {
+		if (fallDamage > 0 || removeBlocks || preventBlocks || spell != null || ensureSpellCast || stickyBlocks) {
 			fallingBlocks = new HashMap<FallingBlock, ThrowBlockSpell.FallingBlockInfo>();
 			registerEvents(new ThrowBlockListener(this));
 		}
@@ -100,21 +106,31 @@ public class ThrowBlockSpell extends InstantSpell {
 			if (applySpellPowerToVelocity) {
 				v.multiply(power);
 			}
-			FallingBlock block = player.getWorld().spawnFallingBlock(player.getEyeLocation().add(v), blockType, blockData);
-			block.setVelocity(v);
-			block.setDropItem(dropItem);
-			if (fallDamage > 0) {
-				MagicSpells.getVolatileCodeHandler().setFallingBlockHurtEntities(block, fallDamage, fallDamageMax);
-			}
+			spawnFallingBlock(player, power, player.getEyeLocation().add(v), v);
+			playSpellEffects(EffectPosition.CASTER, player);
+		}
+		return PostCastAction.HANDLE_NORMALLY;
+	}
+	
+	private void spawnFallingBlock(Player player, float power, Location location, Vector velocity) {
+		FallingBlock block = material.spawnFallingBlock(location);
+		block.setVelocity(velocity);
+		block.setDropItem(dropItem);
+		if (fallDamage > 0) {
+			MagicSpells.getVolatileCodeHandler().setFallingBlockHurtEntities(block, fallDamage, fallDamageMax);
+		}
+		if (fallingBlocks != null) {
+			FallingBlockInfo info = new FallingBlockInfo(player, power);
 			if (fallingBlocks != null) {
-				fallingBlocks.put(block, new FallingBlockInfo(player, power));
+				fallingBlocks.put(block, info);
 				if (cleanTask < 0) {
 					startTask();
 				}
 			}
-			playSpellEffects(EffectPosition.CASTER, player);
+			if (ensureSpellCast || stickyBlocks) {
+				new ThrowBlockMonitor(block, info);
+			}
 		}
-		return PostCastAction.HANDLE_NORMALLY;
 	}
 	
 	private void startTask() {
@@ -127,7 +143,7 @@ public class ThrowBlockSpell extends InstantSpell {
 						iter.remove();
 						if (removeBlocks) {
 							Block b = block.getLocation().getBlock();
-							if (b.getTypeId() == blockType && (b.getData() == blockData || blockType == Material.ANVIL.getId())) {
+							if (material.equals(b) || (material.getMaterial() == Material.ANVIL && b.getType() == Material.ANVIL)) {
 								b.setType(Material.AIR);
 							}
 						}
@@ -139,9 +155,58 @@ public class ThrowBlockSpell extends InstantSpell {
 					startTask();
 				}
 			}
-		}, 100);
+		}, 500);
 	}
 
+	class ThrowBlockMonitor implements Runnable {
+		FallingBlock block;
+		FallingBlockInfo info;
+		int task;
+		int counter = 0;
+		
+		public ThrowBlockMonitor(FallingBlock block, FallingBlockInfo info) {
+			this.block = block;
+			this.info = info;
+			this.task = MagicSpells.scheduleRepeatingTask(this, 20, 1);
+		}
+		
+		@Override
+		public void run() {
+			if (stickyBlocks && !block.isDead()) {
+				if (block.getVelocity().lengthSquared() < .01) {
+					if (!preventBlocks) {
+						Block b = block.getLocation().getBlock();
+						if (b.getType() == Material.AIR) {
+							BlockUtils.setBlockFromFallingBlock(b, block, true);
+						}
+					}
+					if (!info.spellActivated && spell != null) {
+						if (info.player != null) {
+							spell.castAtLocation(info.player, block.getLocation(), info.power);
+						} else {
+							spell.castAtLocation(block.getLocation(), info.power);
+						}
+						info.spellActivated = true;
+					}
+					block.remove();
+				}
+			}
+			if (ensureSpellCast && block.isDead()) {
+				if (!info.spellActivated && spell != null) {
+					if (info.player != null) {
+						spell.castAtLocation(info.player, block.getLocation(), info.power);
+					} else {
+						spell.castAtLocation(block.getLocation(), info.power);
+					}
+				}
+				info.spellActivated = true;
+				MagicSpells.cancelTask(task);
+			}
+			if (counter++ > 1500) {
+				MagicSpells.cancelTask(task);
+			}
+		}
+	}
 
 	class ThrowBlockListener implements Listener {
 		
@@ -160,8 +225,8 @@ public class ThrowBlockSpell extends InstantSpell {
 				info = fallingBlocks.remove(event.getDamager());
 			}
 			if (info != null && event.getEntity() instanceof LivingEntity) {
-				int damage = Math.round(event.getDamage() * info.power);
-				if (callTargetEvent) {
+				double damage = event.getDamage() * info.power;
+				if (callTargetEvent && info.player != null) {
 					SpellTargetEvent evt = new SpellTargetEvent(thisSpell, info.player, (LivingEntity)event.getEntity());
 					Bukkit.getPluginManager().callEvent(evt);
 					if (evt.isCancelled()) {
@@ -169,7 +234,7 @@ public class ThrowBlockSpell extends InstantSpell {
 						return;
 					}
 				}
-				if (checkPlugins) {
+				if (checkPlugins && info.player != null) {
 					EntityDamageByEntityEvent evt = new EntityDamageByEntityEvent(info.player, event.getEntity(), DamageCause.ENTITY_ATTACK, damage);
 					Bukkit.getPluginManager().callEvent(evt);
 					if (evt.isCancelled()) {
@@ -179,7 +244,11 @@ public class ThrowBlockSpell extends InstantSpell {
 				}
 				event.setDamage(damage);
 				if (spell != null && !info.spellActivated) {
-					spell.castAtLocation(info.player, event.getEntity().getLocation(), info.power);
+					if (info.player != null) {
+						spell.castAtLocation(info.player, event.getEntity().getLocation(), info.power);
+					} else {
+						spell.castAtLocation(event.getEntity().getLocation(), info.power);
+					}
 					info.spellActivated = true;
 				}
 			}
@@ -188,14 +257,18 @@ public class ThrowBlockSpell extends InstantSpell {
 		@EventHandler(ignoreCancelled=true)
 		public void onBlockLand(EntityChangeBlockEvent event) {
 			if (!preventBlocks && spell == null) return;
-			FallingBlockInfo info = fallingBlocks.remove(event.getEntity());
+			FallingBlockInfo info = fallingBlocks.get(event.getEntity());
 			if (info != null) {
 				if (preventBlocks) {
 					event.getEntity().remove();
 					event.setCancelled(true);
 				}
 				if (spell != null && !info.spellActivated) {
-					spell.castAtLocation(info.player, event.getBlock().getLocation().add(.5, .5, .5), info.power);
+					if (info.player != null) {
+						spell.castAtLocation(info.player, event.getBlock().getLocation().add(.5, .5, .5), info.power);
+					} else {
+						spell.castAtLocation(event.getBlock().getLocation().add(.5, .5, .5), info.power);
+					}
 					info.spellActivated = true;
 				}
 			}
@@ -219,6 +292,18 @@ public class ThrowBlockSpell extends InstantSpell {
 			this.power = power;
 			this.spellActivated = false;
 		}
+	}
+
+	@Override
+	public boolean castAtLocation(Player caster, Location target, float power) {
+		spawnFallingBlock(caster, power, target, target.getDirection().multiply(velocity).add(new Vector(0, verticalAdjustment, 0)));
+		return true;
+	}
+
+	@Override
+	public boolean castAtLocation(Location target, float power) {
+		spawnFallingBlock(null, power, target, new Vector(0, velocity + verticalAdjustment, 0));
+		return true;
 	}
 
 }

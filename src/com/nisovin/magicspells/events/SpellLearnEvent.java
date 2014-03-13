@@ -86,6 +86,7 @@ public class SpellLearnEvent extends Event implements Cancellable {
 		TEACH,
 		SPELLBOOK,
 		TOME,
+		MAGIC_XP,
 		OTHER
 	}
 

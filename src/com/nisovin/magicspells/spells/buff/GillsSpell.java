@@ -33,25 +33,16 @@ public class GillsSpell extends BuffSpell {
 	}
 
 	@Override
-	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
-		if (fishes.contains(player.getName())) {
-			turnOff(player);
-			if (toggle) {
-				return PostCastAction.ALREADY_HANDLED;
+	public boolean castBuff(Player player, float power, String[] args) {
+		fishes.add(player.getName());
+		if (glassHeadEffect) {
+			ItemStack helmet = player.getInventory().getHelmet();
+			if (helmet != null && helmet.getType() != Material.AIR) {
+				helmets.put(player, helmet);
 			}
+			player.getInventory().setHelmet(new ItemStack(Material.GLASS, 1));
 		}
-		if (state == SpellCastState.NORMAL) {
-			fishes.add(player.getName());
-			if (glassHeadEffect) {
-				ItemStack helmet = player.getInventory().getHelmet();
-				if (helmet != null && helmet.getType() != Material.AIR) {
-					helmets.put(player, helmet);
-				}
-				player.getInventory().setHelmet(new ItemStack(Material.GLASS, 1));
-			}
-			startSpellDuration(player);
-		}
-		return PostCastAction.HANDLE_NORMALLY;
+		return true;
 	}
 
 	@EventHandler
@@ -75,10 +66,8 @@ public class GillsSpell extends BuffSpell {
 	}
 
 	@Override
-	public void turnOff(Player player) {
-		if (fishes.contains(player.getName())) {
-			super.turnOff(player);
-			fishes.remove(player.getName());
+	public void turnOffBuff(Player player) {
+		if (fishes.remove(player.getName())) {
 			if (glassHeadEffect) {
 				if (helmets.containsKey(player)) {
 					player.getInventory().setHelmet(helmets.get(player));
@@ -87,7 +76,6 @@ public class GillsSpell extends BuffSpell {
 					player.getInventory().setHelmet(null);				
 				}
 			}
-			sendMessage(player, strFade);
 		}
 	}
 	

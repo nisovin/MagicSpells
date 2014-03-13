@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.bukkit.BlockChangeDelegate;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.TreeType;
@@ -14,12 +15,13 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 
-import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.events.SpellTargetLocationEvent;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
+import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.SpellAnimation;
 
-public class TreeSpell extends TargetedLocationSpell {
+public class TreeSpell extends TargetedSpell implements TargetedLocationSpell {
 
 	private TreeType treeType;
 	private int speed;
@@ -36,7 +38,18 @@ public class TreeSpell extends TargetedLocationSpell {
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
 			// get target block
-			Block target = player.getTargetBlock(MagicSpells.getTransparentBlocks(), range);
+			Block target = getTargetedBlock(player, power);
+
+			if (target != null && target.getType() != Material.AIR) {
+				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, target.getLocation());
+				Bukkit.getPluginManager().callEvent(event);
+				if (event.isCancelled()) {
+					target = null;
+				} else {
+					target = event.getTargetLocation().getBlock();
+				}
+			}
+			
 			if (target == null || target.getType() == Material.AIR) {
 				return noTarget(player);
 			}
@@ -85,6 +98,11 @@ public class TreeSpell extends TargetedLocationSpell {
 			playSpellEffects(caster, target);
 		}
 		return ret;
+	}
+
+	@Override
+	public boolean castAtLocation(Location target, float power) {
+		return false;
 	}
 	
 	private class GrowAnimation extends SpellAnimation {

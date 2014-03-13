@@ -21,23 +21,26 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
+import com.nisovin.magicspells.events.SpellTargetLocationEvent;
+import com.nisovin.magicspells.materials.MagicMaterial;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
-import com.nisovin.magicspells.util.ItemNameResolver.ItemTypeAndData;
+import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class PulserSpell extends TargetedLocationSpell {
+public class PulserSpell extends TargetedSpell implements TargetedLocationSpell {
 
 	private int totalPulses;
 	private int interval;
 	private int capPerPlayer;
 	private int maxDistanceSquared;
-	private int typeId;
-	private byte data;
+	private MagicMaterial material;
 	private boolean unbreakable;
 	private boolean onlyCountOnSuccess;
 	private List<String> spellNames;
 	private List<TargetedLocationSpell> spells;
+	private String spellNameOnBreak;
+	private TargetedLocationSpell spellOnBreak;
 
 	private String strAtCap;
 
@@ -52,12 +55,11 @@ public class PulserSpell extends TargetedLocationSpell {
 		capPerPlayer = getConfigInt("cap-per-player", 10);
 		maxDistanceSquared = getConfigInt("max-distance", 30);
 		maxDistanceSquared *= maxDistanceSquared;
-		ItemTypeAndData type = MagicSpells.getItemNameResolver().resolve(getConfigString("block-type", "diamond_block"));
-		typeId = type.id;
-		data = (byte) type.data;
+		material = MagicSpells.getItemNameResolver().resolveBlock(getConfigString("block-type", "diamond_block"));
 		unbreakable = getConfigBoolean("unbreakable", false);
 		onlyCountOnSuccess = getConfigBoolean("only-count-on-success", false);
 		spellNames = getConfigStringList("spells", null);
+		spellNameOnBreak = getConfigString("spell-on-break", null);
 
 		strAtCap = getConfigString("str-at-cap", "You have too many effects at once.");
 
@@ -77,14 +79,21 @@ public class PulserSpell extends TargetedLocationSpell {
 				}
 			}
 		}
+		if (spellNameOnBreak != null) {
+			Spell spell = MagicSpells.getSpellByInternalName(spellNameOnBreak);
+			if (spell != null && spell instanceof TargetedLocationSpell) {
+				spellOnBreak = (TargetedLocationSpell)spell;
+			} else {
+				MagicSpells.error("Pulser spell '" + internalName + "' has an invalid spell-on-break spell defined");
+			}
+		}
 		if (spells.size() == 0) {
-			MagicSpells.error("Pulse spell '" + internalName + "' has no spells defined!");
+			MagicSpells.error("Pulser spell '" + internalName + "' has no spells defined!");
 		}
 	}
 
 	@Override
-	public PostCastAction castSpell(Player player, SpellCastState state,
-			float power, String[] args) {
+	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
 			if (capPerPlayer > 0) {
 				int count = 0;
@@ -98,8 +107,7 @@ public class PulserSpell extends TargetedLocationSpell {
 					}
 				}
 			}
-			Block target = player.getTargetBlock(
-					MagicSpells.getTransparentBlocks(), range);
+			Block target = getTargetedBlock(player, power);
 			if (target == null || target.getType() == Material.AIR) {
 				return noTarget(player);
 			}
@@ -109,16 +117,29 @@ public class PulserSpell extends TargetedLocationSpell {
 					&& target.getType() != Material.LONG_GRASS) {
 				return noTarget(player);
 			}
+			if (target != null) {
+				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, target.getLocation());
+				Bukkit.getPluginManager().callEvent(event);
+				if (event.isCancelled()) {
+					return noTarget(player);
+				} else {
+					target = event.getTargetLocation().getBlock();
+				}
+			}
 			createPulser(player, target, power);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}
 
 	private void createPulser(Player caster, Block block, float power) {
-		block.setTypeIdAndData(typeId, data, true);
+		material.setBlock(block);
 		pulsers.put(block, new Pulser(caster, block, power));
 		ticker.start();
-		playSpellEffects(caster, block.getLocation());
+		if (caster != null) {
+			playSpellEffects(caster, block.getLocation());
+		} else {
+			playSpellEffects(EffectPosition.TARGET, block.getLocation());
+		}
 	}
 
 	@Override
@@ -140,6 +161,11 @@ public class PulserSpell extends TargetedLocationSpell {
 				return false;
 			}
 		}
+	}
+
+	@Override
+	public boolean castAtLocation(Location target, float power) {
+		return castAtLocation(null, target, power);
 	}
 
 	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -230,36 +256,60 @@ public class PulserSpell extends TargetedLocationSpell {
 		}
 
 		public boolean pulse() {
-			if (caster.isValid() && caster.isOnline()
-					&& block.getTypeId() == typeId
+			if (caster == null) {
+				if (material.equals(block)
+					&& block.getChunk().isLoaded()) {
+					return activate();
+				} else {
+					stop();
+					return true;
+				}
+			} else if (caster.isValid() && caster.isOnline()
+					&& material.equals(block)
 					&& block.getChunk().isLoaded()) {
 				if (maxDistanceSquared > 0
 						&& (!location.getWorld().equals(caster.getLocation().getWorld()) || location.distanceSquared(caster.getLocation()) > maxDistanceSquared)) {
 					stop();
 					return true;
 				} else {
-					boolean activated = false;
-					for (TargetedLocationSpell spell : spells) {
-						activated = spell.castAtLocation(caster, location, power) || activated;
-					}
-					playSpellEffects(EffectPosition.DELAYED, location);
-					if (totalPulses > 0 && (activated || !onlyCountOnSuccess)) {
-						pulseCount += 1;
-						if (pulseCount >= totalPulses) {
-							stop();
-							return true;
-						}
-					}
-					return false;
+					return activate();
 				}
 			} else {
 				stop();
 				return true;
 			}
 		}
+		
+		private boolean activate() {
+			boolean activated = false;
+			for (TargetedLocationSpell spell : spells) {
+				if (caster != null) {
+					activated = spell.castAtLocation(caster, location, power) || activated;
+				} else {
+					activated = spell.castAtLocation(location, power) || activated;
+				}
+			}
+			playSpellEffects(EffectPosition.DELAYED, location);
+			if (totalPulses > 0 && (activated || !onlyCountOnSuccess)) {
+				pulseCount += 1;
+				if (pulseCount >= totalPulses) {
+					stop();
+					return true;
+				}
+			}
+			return false;
+		}
 
 		public void stop() {
+			if (!block.getChunk().isLoaded()) block.getChunk().load();
 			block.setType(Material.AIR);
+			if (spellOnBreak != null) {
+				if (caster == null) {
+					spellOnBreak.castAtLocation(location, power);
+				} else if (caster.isValid()) {
+					spellOnBreak.castAtLocation(caster, location, power);
+				}
+			}
 		}
 
 	}

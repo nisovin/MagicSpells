@@ -1,17 +1,24 @@
 package com.nisovin.magicspells;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.command.BlockCommandSender;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import com.nisovin.magicspells.mana.ManaChangeReason;
+import com.nisovin.magicspells.spells.TargetedEntitySpell;
+import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.util.Util;
 
 public class CastCommand implements CommandExecutor, TabCompleter {
@@ -31,19 +38,19 @@ public class CastCommand implements CommandExecutor, TabCompleter {
 				args = Util.splitParams(args);
 				if (args == null || args.length == 0) {
 					if (sender instanceof Player) {
-						MagicSpells.sendMessage((Player)sender, MagicSpells.strCastUsage);
+						MagicSpells.sendMessage((Player)sender, plugin.strCastUsage);
 					} else {
-						sender.sendMessage(MagicSpells.textColor + MagicSpells.strCastUsage);
+						sender.sendMessage(plugin.textColor + plugin.strCastUsage);
 					}
 				} else if (sender.isOp() && args[0].equals("forcecast") && args.length >= 3) {
 					Player target = Bukkit.getPlayer(args[1]);
 					if (target == null) {
-						sender.sendMessage(MagicSpells.textColor + "No matching player found");
+						sender.sendMessage(plugin.textColor + "No matching player found");
 						return true;
 					}
 					Spell spell = MagicSpells.getSpellByInGameName(args[2]);
 					if (spell == null) {
-						sender.sendMessage(MagicSpells.textColor + "No such spell");
+						sender.sendMessage(plugin.textColor + "No such spell");
 						return true;
 					}
 					String[] spellArgs = null;
@@ -51,20 +58,20 @@ public class CastCommand implements CommandExecutor, TabCompleter {
 						spellArgs = Arrays.copyOfRange(args, 3, args.length);
 					}
 					spell.cast(target, spellArgs);
-					sender.sendMessage(MagicSpells.textColor + "Player " + target.getName() + " forced to cast " + spell.getName());
+					sender.sendMessage(plugin.textColor + "Player " + target.getName() + " forced to cast " + spell.getName());
 				} else if (sender.isOp() && args[0].equals("reload")) {
 					if (args.length == 1) {
 						plugin.unload();
 						plugin.load();
-						sender.sendMessage(MagicSpells.textColor + "MagicSpells config reloaded.");
+						sender.sendMessage(plugin.textColor + "MagicSpells config reloaded.");
 					} else {
 						List<Player> players = plugin.getServer().matchPlayer(args[1]);
 						if (players.size() != 1) {
-							sender.sendMessage(MagicSpells.textColor + "Player not found.");
+							sender.sendMessage(plugin.textColor + "Player not found.");
 						} else {
 							Player player = players.get(0);
-							MagicSpells.spellbooks.put(player.getName(), new Spellbook(player, plugin));
-							sender.sendMessage(MagicSpells.textColor + player.getName() + "'s spellbook reloaded.");
+							plugin.spellbooks.put(player.getName(), new Spellbook(player, plugin));
+							sender.sendMessage(plugin.textColor + player.getName() + "'s spellbook reloaded.");
 						}
 					}
 				} else if (sender.isOp() && args[0].equals("resetcd")) {
@@ -72,31 +79,67 @@ public class CastCommand implements CommandExecutor, TabCompleter {
 					if (args.length > 1) {
 						p = Bukkit.getPlayer(args[1]);
 						if (p == null) {
-							sender.sendMessage(MagicSpells.textColor + "No matching player found");
+							sender.sendMessage(plugin.textColor + "No matching player found");
 							return true;
 						}
 					}
-					for (Spell spell : MagicSpells.spells.values()) {
+					for (Spell spell : plugin.spells.values()) {
 						if (p != null) {
 							spell.setCooldown(p, 0);
 						} else {
 							spell.getCooldowns().clear();
 						}
 					}
-					sender.sendMessage(MagicSpells.textColor + "Cooldowns reset" + (p != null ? " for " + p.getName() : ""));
-				} else if (sender.isOp() && args[0].equals("resetmana") && args.length > 1 && MagicSpells.mana != null) {
+					sender.sendMessage(plugin.textColor + "Cooldowns reset" + (p != null ? " for " + p.getName() : ""));
+				} else if (sender.isOp() && args[0].equals("resetmana") && args.length > 1 && plugin.mana != null) {
 					Player p = Bukkit.getPlayer(args[1]);
 					if (p != null) {
-						MagicSpells.mana.createManaBar(p);
-						MagicSpells.mana.addMana(p, MagicSpells.mana.getMaxMana(p), ManaChangeReason.OTHER);
-						sender.sendMessage(MagicSpells.textColor + p.getName() + "'s mana reset.");
+						plugin.mana.createManaBar(p);
+						plugin.mana.addMana(p, plugin.mana.getMaxMana(p), ManaChangeReason.OTHER);
+						sender.sendMessage(plugin.textColor + p.getName() + "'s mana reset.");
+					}
+				} else if (sender.isOp() && args[0].equals("modifyvariable") && args.length == 4) {
+					String var = args[1];
+					String player = args[2];
+					boolean set = false;
+					double num = 0;
+					if (args[3].startsWith("=")) {
+						set = true;
+						num = Double.parseDouble(args[3].substring(1));
+					} else {
+						num = Double.parseDouble(args[3]);
+					}
+					if (set) {
+						MagicSpells.getVariableManager().set(var, player, num);
+					} else {
+						MagicSpells.getVariableManager().modify(var, player, num);
+					}
+				} else if (sender.isOp() && args[0].equals("magicitem") && args.length > 1 && sender instanceof Player) {
+					ItemStack item = Util.getItemStackFromString(args[1]);
+					if (item != null) {
+						if (args.length > 2 && args[2].matches("^[0-9]+$")) {
+							item.setAmount(Integer.parseInt(args[2]));
+						}
+						((Player)sender).getInventory().addItem(item);
+					}
+				} else if (sender.isOp() && args[0].equals("download") && args.length == 3) {
+					File file = new File(plugin.getDataFolder(), "spells-" + args[1] + ".yml");
+					if (file.exists()) {
+						sender.sendMessage(plugin.textColor + "ERROR: The file spells-" + args[1] + ".yml already exists!");
+					} else {
+						boolean downloaded = Util.downloadFile(args[2], file);
+						if (downloaded) {
+							sender.sendMessage(plugin.textColor + "SUCCESS! You will need to do a /cast reload to load the new spells.");
+						} else {
+							sender.sendMessage(plugin.textColor + "ERROR: The file could not be downloaded.");
+						}
 					}
 				} else if (sender.isOp() && args[0].equals("profilereport")) {
-					sender.sendMessage(MagicSpells.textColor + "Creating profiling report");
+					sender.sendMessage(plugin.textColor + "Creating profiling report");
 					MagicSpells.profilingReport();
 				} else if (sender.isOp() && args[0].equals("debug")) {
-					MagicSpells.debug = !MagicSpells.debug;
-					sender.sendMessage("MagicSpells: debug mode " + (MagicSpells.debug?"enabled":"disabled"));
+					plugin.debug = !plugin.debug;
+					sender.sendMessage("MagicSpells: debug mode " + (plugin.debug?"enabled":"disabled"));
 				} else if (sender instanceof Player) {
 					Player player = (Player)sender;
 					Spellbook spellbook = MagicSpells.getSpellbook(player);
@@ -115,10 +158,10 @@ public class CastCommand implements CommandExecutor, TabCompleter {
 							MagicSpells.sendMessage(player, spell.getStrWrongCastItem());
 						}
 					} else {
-						MagicSpells.sendMessage(player, MagicSpells.strUnknownSpell);
+						MagicSpells.sendMessage(player, plugin.strUnknownSpell);
 					}
 				} else { // not a player
-					Spell spell = MagicSpells.spellNames.get(args[0].toLowerCase());
+					Spell spell = plugin.spellNames.get(args[0].toLowerCase());
 					if (spell == null) {
 						sender.sendMessage("Unknown spell.");
 					} else {
@@ -129,17 +172,75 @@ public class CastCommand implements CommandExecutor, TabCompleter {
 								spellArgs[i-1] = args[i];
 							}
 						}
-						boolean ok = spell.castFromConsole(sender, spellArgs);
-						if (!ok) {
-							sender.sendMessage("Cannot cast that spell from console.");
+						boolean casted = false;
+						if (sender instanceof BlockCommandSender) {
+							if (spell instanceof TargetedLocationSpell) {
+								Location loc = ((BlockCommandSender)sender).getBlock().getLocation().add(.5, .5, .5);
+								if (spellArgs != null && spellArgs.length == 3) {
+									try {
+										int x = Integer.parseInt(spellArgs[0]);
+										int y = Integer.parseInt(spellArgs[1]);
+										int z = Integer.parseInt(spellArgs[2]);
+										loc.add(x, y, z);
+									} catch (NumberFormatException e) {}
+								}
+								((TargetedLocationSpell)spell).castAtLocation(loc, 1.0F);
+								casted = true;
+							}
+						}
+						if (!casted) {
+							boolean ok = spell.castFromConsole(sender, spellArgs);
+							if (!ok) {
+								if ((spell instanceof TargetedEntitySpell || spell instanceof TargetedLocationSpell) && spellArgs != null && spellArgs.length == 1 && spellArgs[0].matches("^[A-Za-z0-9_]+$")) {
+									Player target = Bukkit.getPlayer(spellArgs[0]);
+									if (target != null) {
+										if (spell instanceof TargetedEntitySpell) {
+											ok = ((TargetedEntitySpell)spell).castAtEntity(target, 1.0F);
+										} else if (spell instanceof TargetedLocationSpell) {
+											ok = ((TargetedLocationSpell)spell).castAtLocation(target.getLocation(), 1.0F);
+										}
+										if (ok) {
+											sender.sendMessage("Spell casted!");
+										} else {
+											sender.sendMessage("Spell failed, probably can't be cast from console.");
+										}
+									} else {
+										sender.sendMessage("Invalid target.");
+									}
+								} else if (spell instanceof TargetedLocationSpell && spellArgs != null && spellArgs.length == 1 && spellArgs[0].matches("^[^,]+,-?[0-9]+,-?[0-9]+,-?[0-9]+$")) {
+									String[] locData = spellArgs[0].split(",");
+									World world = Bukkit.getWorld(locData[0]);
+									if (world != null) {
+										Location loc = new Location(world, Integer.parseInt(locData[1]), Integer.parseInt(locData[2]), Integer.parseInt(locData[3]));
+										ok = ((TargetedLocationSpell)spell).castAtLocation(loc, 1.0F);
+										if (ok) {
+											sender.sendMessage("Spell casted!");
+										} else {
+											sender.sendMessage("Spell failed, probably can't be cast from console.");
+										}
+									} else {
+										sender.sendMessage("No such world.");
+									}
+								} else {
+									sender.sendMessage("Cannot cast that spell from console.");
+								}
+							}
 						}
 					}
 				}
 				return true;
 			} else if (command.getName().equalsIgnoreCase("magicspellmana")) {
-				if (MagicSpells.enableManaBars && sender instanceof Player) {
+				if (plugin.enableManaBars && sender instanceof Player) {
 					Player player = (Player)sender;
-					MagicSpells.mana.showMana(player, true);
+					plugin.mana.showMana(player, true);
+				}
+				return true;
+			} else if (command.getName().equalsIgnoreCase("magicspellxp")) {
+				if (sender instanceof Player) {
+					MagicXpHandler xpHandler = plugin.magicXpHandler;
+					if (xpHandler != null) {
+						xpHandler.showXpInfo((Player)sender);
+					}
 				}
 				return true;
 			}

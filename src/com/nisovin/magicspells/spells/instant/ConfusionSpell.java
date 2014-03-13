@@ -3,7 +3,7 @@ package com.nisovin.magicspells.spells.instant;
 import java.util.ArrayList;
 import java.util.List;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Monster;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 
 import com.nisovin.magicspells.MagicSpells;
@@ -26,10 +26,10 @@ public class ConfusionSpell extends InstantSpell {
 		if (state == SpellCastState.NORMAL) {
 			int range = Math.round(this.range*power);
 			List<Entity> entities = player.getNearbyEntities(range, range, range);
-			List<Monster> monsters = new ArrayList<Monster>();
+			List<LivingEntity> monsters = new ArrayList<LivingEntity>();
 			for (Entity e : entities) {
-				if (e instanceof Monster) {
-					monsters.add((Monster)e);
+				if (e instanceof LivingEntity && validTargetList.canTarget(player, (LivingEntity)e)) {
+					monsters.add((LivingEntity)e);
 				}
 			}
 			for (int i = 0; i < monsters.size(); i++) {

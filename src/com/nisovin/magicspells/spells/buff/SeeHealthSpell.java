@@ -26,16 +26,12 @@ public class SeeHealthSpell extends BuffSpell {
 
 	private String mode;
 	private int interval;
-	private int range;
-	private boolean targetPlayers;
-	private boolean targetNonPlayers;
-	private boolean obeyLos;
 	
 	private String symbol = "=";
 	private int barSize = 20;
 	private boolean colorBlind = false;
 	
-	private HashMap<Player, Integer> bars;
+	private HashMap<String, Integer> bars;
 	private Updater updater;
 	
 	public SeeHealthSpell(MagicConfig config, String spellName) {
@@ -43,16 +39,12 @@ public class SeeHealthSpell extends BuffSpell {
 		
 		mode = getConfigString("mode", "always");
 		interval = getConfigInt("update-interval", 5);
-		range = getConfigInt("range", 15);
-		targetPlayers = getConfigBoolean("target-players", true);
-		targetNonPlayers = getConfigBoolean("target-non-players", true);
-		obeyLos = getConfigBoolean("obey-los", true);
 		
 		if (!mode.equals("attack") && !mode.equals("always")) {
 			mode = "attack";
 		}
 		
-		bars = new HashMap<Player, Integer>();
+		bars = new HashMap<String, Integer>();
 	}
 	
 	@Override
@@ -65,26 +57,17 @@ public class SeeHealthSpell extends BuffSpell {
 	}
 
 	@Override
-	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
-		if (bars.containsKey(player) && toggle) {
-			turnOff(player);
-			return PostCastAction.ALREADY_HANDLED;
+	public boolean castBuff(Player player, float power, String[] args) {
+		bars.put(player.getName(), player.getInventory().getHeldItemSlot());
+		if (updater == null && mode.equals("always")) {
+			updater = new Updater();
 		}
-		if (state == SpellCastState.NORMAL) {
-			if (!bars.containsKey(player)) {
-				bars.put(player, player.getInventory().getHeldItemSlot());
-				if (updater == null && mode.equals("always")) {
-					updater = new Updater();
-				}
-			}
-			startSpellDuration(player);
-		}
-		return PostCastAction.HANDLE_NORMALLY;
+		return true;
 	}
 
 	@Override
 	public boolean isActive(Player player) {
-		return bars.containsKey(player);
+		return bars.containsKey(player.getName());
 	}
 	
 	private void showHealthBar(Player player, LivingEntity entity) {
@@ -92,7 +75,7 @@ public class SeeHealthSpell extends BuffSpell {
 		// get item
 		ItemStack item = player.getItemInHand();
 		if (item == null || item.getType() == Material.AIR) {
-			item = new ItemStack(36, 0);
+			item = new ItemStack(Material.PISTON_MOVING_PIECE, 0);
 		} else {
 			item = item.clone();
 		}
@@ -150,13 +133,10 @@ public class SeeHealthSpell extends BuffSpell {
 	
 	@SuppressWarnings("deprecation")
 	@Override
-	public void turnOff(Player player) {
-		Integer i = bars.remove(player);
+	public void turnOffBuff(Player player) {
+		Integer i = bars.remove(player.getName());
 		if (i != null) {
-			super.turnOff(player);
 			player.updateInventory();
-			sendMessage(player, strFade);
-			
 			if (updater != null && bars.size() == 0) {
 				updater.stop();
 				updater = null;
@@ -167,8 +147,9 @@ public class SeeHealthSpell extends BuffSpell {
 	@SuppressWarnings("deprecation")
 	@Override
 	protected void turnOff() {
-		for (Player player : bars.keySet()) {
-			if (player.isValid()) {
+		for (String playerName : bars.keySet()) {
+			Player player = Bukkit.getPlayerExact(playerName);
+			if (player != null && player.isValid()) {
 				player.updateInventory();
 			}
 		}
@@ -191,7 +172,7 @@ public class SeeHealthSpell extends BuffSpell {
 			if (event.getEntity() instanceof LivingEntity) {
 				Entity damager = event.getDamager();
 				if (damager instanceof Projectile && ((Projectile)damager).getShooter() != null) {
-					damager = ((Projectile)damager).getShooter();
+					damager = (LivingEntity)((Projectile)damager).getShooter();
 				}
 				// update bar?
 			}
@@ -208,12 +189,15 @@ public class SeeHealthSpell extends BuffSpell {
 		
 		@Override
 		public void run() {
-			for (Player player : bars.keySet()) {
-				LivingEntity target = getTargetedEntity(player, 2, range, targetPlayers, targetNonPlayers, obeyLos, false);
-				if (target != null) {
-					showHealthBar(player, target);
-				} else {
-					//resetHealthBar(player);
+			for (String playerName : bars.keySet()) {
+				Player player = Bukkit.getPlayerExact(playerName);
+				if (player != null && player.isValid()) {
+					LivingEntity target = getTargetedEntity(player, 1F);
+					if (target != null) {
+						showHealthBar(player, target);
+					} else {
+						//resetHealthBar(player);
+					}
 				}
 			}
 		}

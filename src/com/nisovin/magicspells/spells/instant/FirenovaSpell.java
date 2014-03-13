@@ -13,16 +13,17 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.materials.MagicMaterial;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
+import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class FirenovaSpell extends InstantSpell {
+public class FirenovaSpell extends InstantSpell implements TargetedLocationSpell {
 
 	private int range;
 	private int tickSpeed;
-	private int blockType;
-	private byte blockData;
+	private MagicMaterial mat;
 	private boolean burnTallGrass;
 	private boolean checkPlugins;
 	
@@ -36,17 +37,9 @@ public class FirenovaSpell extends InstantSpell {
 		burnTallGrass = getConfigBoolean("burn-tall-grass", true);
 		checkPlugins = getConfigBoolean("check-plugins", true);
 		
-		String type = getConfigString("block-type", "51:15");
-		if (type.contains(":")) {
-			String[] data = type.split(":");
-			blockType = Integer.parseInt(data[0]);
-			blockData = Byte.parseByte(data[1]);
-		} else {
-			blockType = Integer.parseInt(type);
-			blockData = (byte)0;
-		}
+		mat = MagicSpells.getItemNameResolver().resolveBlock(getConfigString("block-type", "51:15"));
 		
-		if (blockType == Material.FIRE.getId()) {
+		if (mat.getMaterial() == Material.FIRE) {
 			fireImmunity = new HashSet<Player>();
 		}
 	}
@@ -61,6 +54,17 @@ public class FirenovaSpell extends InstantSpell {
 			playSpellEffects(EffectPosition.CASTER, player);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+
+	@Override
+	public boolean castAtLocation(Player caster, Location target, float power) {
+		return castAtLocation(target, power);
+	}
+
+	@Override
+	public boolean castAtLocation(Location target, float power) {
+		new FirenovaAnimation(target);
+		return true;
 	}
 
 	@EventHandler
@@ -93,26 +97,27 @@ public class FirenovaSpell extends InstantSpell {
 	
 	private class FirenovaAnimation implements Runnable {
 		Player player;
-		int i;
+		int i = 0;
 		Block center;
-		HashSet<Block> fireBlocks;
+		HashSet<Block> fireBlocks = new HashSet<Block>();
 		int taskId;
 		
 		public FirenovaAnimation(Player player) {
 			this.player = player;
-			
-			i = 0;
 			center = player.getLocation().getBlock();
-			fireBlocks = new HashSet<Block>();
-			
-			taskId = Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(MagicSpells.plugin, this, 0, tickSpeed);
+			taskId = MagicSpells.scheduleRepeatingTask(this, 0, tickSpeed);
+		}
+		
+		public FirenovaAnimation(Location location) {
+			center = location.getBlock();
+			taskId = MagicSpells.scheduleRepeatingTask(this, 0, tickSpeed);
 		}
 		
 		public void run() {
 			// remove old fire blocks
 			for (Block block : fireBlocks) {
-				if (block.getTypeId() == blockType) {
-					block.setTypeIdAndData(0, (byte)0, false);
+				if (block.getType() == mat.getMaterial()) {
+					block.setType(Material.AIR);
 				}
 			}
 			fireBlocks.clear();
@@ -132,11 +137,11 @@ public class FirenovaSpell extends InstantSpell {
 								if (under.getType() == Material.AIR || (burnTallGrass && under.getType() == Material.LONG_GRASS)) {
 									b = under;
 								}
-								b.setTypeIdAndData(blockType, blockData, false);
+								mat.setBlock(b, false);
 								fireBlocks.add(b);
 							} else if (b.getRelative(BlockFace.UP).getType() == Material.AIR || (burnTallGrass && b.getRelative(BlockFace.UP).getType() == Material.LONG_GRASS)) {
 								b = b.getRelative(BlockFace.UP);
-								b.setTypeIdAndData(blockType, blockData, false);
+								mat.setBlock(b, false);
 								fireBlocks.add(b);
 							}
 						}
@@ -145,7 +150,7 @@ public class FirenovaSpell extends InstantSpell {
 			} else if (i > range+1) {
 				// stop if done
 				Bukkit.getServer().getScheduler().cancelTask(taskId);
-				if (fireImmunity != null) {
+				if (fireImmunity != null && player != null) {
 					fireImmunity.remove(player);
 				}
 			}

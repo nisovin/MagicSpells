@@ -9,6 +9,9 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import com.nisovin.magicspells.util.DisguiseManager;
+import com.nisovin.magicspells.util.MagicConfig;
+
 public interface VolatileCodeHandle {
 	
 	public void addPotionGraphicalEffect(LivingEntity entity, int color, int duration);
@@ -50,5 +53,19 @@ public interface VolatileCodeHandle {
 	//public void setHeldItemSlot(Player player, int slot);
 	
 	public void playParticleEffect(Location location, String name, float spreadHoriz, float spreadVert, float speed, int count, int radius, float yOffset);
+	
+	public void setKiller(LivingEntity entity, Player killer);
+	
+	public DisguiseManager getDisguiseManager(MagicConfig config);
+	
+	public void playDragonDeathEffect(Location location);
+	
+	public ItemStack addAttributes(ItemStack item, String[] names, String[] types, double[] amounts, int[] operations);
+	
+	public void addEntityAttribute(LivingEntity entity, String attribute, double amount, int operation);
+	
+	public void removeAI(LivingEntity entity);
+	
+	public void addAILookAtPlayer(LivingEntity entity, int range);
 	
 }

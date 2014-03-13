@@ -4,7 +4,6 @@ enable-error-logging: true
 enable-stat-collection: true
 enable-volatile-features: true
 enable-tab-completion: true
-enable-new-spell-handling: false
 str-cast-usage: |
     Usage: /cast <spell>. 
     Use /cast list to see a list of spells.
@@ -37,7 +36,7 @@ ignore-cast-item-names: false
 ignore-cast-item-durability: [ 268, 269, 270, 271, 283, 284, 285, 286, 290, 294, 314, 315, 316, 317 ]
 los-transparent-blocks: [ 0, 27, 28, 31, 32, 37, 38, 39, 40, 50, 51, 55, 63, 65, 66, 68, 69, 70, 72, 75, 76, 77, 78, 93, 94, 106, 111 ]
 global-cooldown: 500
-check-world-pvp-flag: false
+check-world-pvp-flag: true
 cast-on-animate: false
 use-exp-bar-as-cast-time-bar: true
 cooldowns-persist-through-reload: true

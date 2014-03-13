@@ -13,78 +13,62 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
+import org.bukkit.material.MaterialData;
 import org.bukkit.util.Vector;
 
+import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.materials.MagicBlockMaterial;
+import com.nisovin.magicspells.materials.MagicMaterial;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
+import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.SpellAnimation;
+import com.nisovin.magicspells.util.Util;
 
-public class GeyserSpell extends TargetedEntitySpell {
+public class GeyserSpell extends TargetedSpell implements TargetedEntitySpell {
 	
-	private int damage;
+	private double damage;
 	private double velocity;
 	private int tickInterval;
 	private int geyserHeight;
-	private Material geyserType;
+	private MagicMaterial geyserType;
 	private boolean ignoreArmor;
-	private boolean obeyLos;
-	private boolean targetPlayers;
 	private boolean checkPlugins;
 
 	public GeyserSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		damage = getConfigInt("damage", 0);
+		damage = getConfigFloat("damage", 0);
 		velocity = getConfigInt("velocity", 10) / 10.0D;
 		tickInterval = getConfigInt("animation-speed", 2);
 		geyserHeight = getConfigInt("geyser-height", 4);
 		String s = getConfigString("geyser-type", "water");
 		if (s.equalsIgnoreCase("lava")) {
-			geyserType = Material.STATIONARY_LAVA;
+			geyserType = new MagicBlockMaterial(new MaterialData(Material.STATIONARY_LAVA));
+		} else if (s.equalsIgnoreCase("water")) {
+			geyserType = new MagicBlockMaterial(new MaterialData(Material.STATIONARY_WATER));
 		} else {
-			geyserType = Material.STATIONARY_WATER;
+			geyserType = MagicSpells.getItemNameResolver().resolveBlock(s);
 		}
 		ignoreArmor = getConfigBoolean("ignore-armor", false);
-		obeyLos = getConfigBoolean("obey-los", true);
-		targetPlayers = getConfigBoolean("target-players", false);
 		checkPlugins = getConfigBoolean("check-plugins", true);
 	}
 
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, minRange, range, targetPlayers, obeyLos);
+			LivingEntity target = getTargetedEntity(player, power);
 			if (target == null) {
 				// fail -- no target
 				return noTarget(player);
 			}
 			
-			int dam = Math.round(damage*power);
-			
-			// check plugins
-			if (target instanceof Player && checkPlugins) {
-				EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, target, DamageCause.ENTITY_ATTACK, dam);
-				Bukkit.getServer().getPluginManager().callEvent(event);
-				if (event.isCancelled()) {
-					return noTarget(player);
-				}
-				dam = event.getDamage();
-			}
-			
-			// do damage and launch target
-			if (dam > 0) {
-				if (ignoreArmor) {
-					int health = target.getHealth() - dam;
-					if (health < 0) health = 0;
-					target.setHealth(health);
-					target.playEffect(EntityEffect.HURT);
-				} else {
-					target.damage(dam, player);
-				}
-			}
-			
 			// do geyser action + animation
-			geyser(target, power);
+			boolean ok = geyser(player, target, power);
+			if (!ok) {
+				return noTarget(player);
+			}
 			playSpellEffects(player, target);
 			
 			sendMessages(player, target);
@@ -93,7 +77,36 @@ public class GeyserSpell extends TargetedEntitySpell {
 		return PostCastAction.HANDLE_NORMALLY;
 	}
 	
-	private void geyser(LivingEntity target, float power) {
+	private boolean geyser(Player caster, LivingEntity target, float power) {
+		
+		double dam = damage * power;
+		
+		// check plugins
+		if (caster != null && target instanceof Player && checkPlugins && damage > 0) {
+			EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(caster, target, DamageCause.ENTITY_ATTACK, dam);
+			Bukkit.getServer().getPluginManager().callEvent(event);
+			if (event.isCancelled()) {
+				return false;
+			}
+			dam = event.getDamage();
+		}
+		
+		// do damage and launch target
+		if (dam > 0) {
+			if (ignoreArmor) {
+				double health = target.getHealth() - dam;
+				if (health < 0) health = 0;
+				target.setHealth(health);
+				target.playEffect(EntityEffect.HURT);
+			} else {
+				if (caster != null) {
+					target.damage(dam, caster);
+				} else {
+					target.damage(dam);
+				}
+			}
+		}
+		
 		// launch target into air
 		if (velocity > 0) {
 			target.setVelocity(new Vector(0, velocity*power, 0));
@@ -111,15 +124,28 @@ public class GeyserSpell extends TargetedEntitySpell {
 			}
 			new GeyserAnimation(target.getLocation(), playersNearby);
 		}
+		
+		return true;
 	}
 
 	@Override
 	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
-		if (target instanceof Player && !targetPlayers) {
+		if (!validTargetList.canTarget(caster, target)) {
 			return false;
 		} else {
-			geyser(target, power);
+			geyser(caster, target, power);
 			playSpellEffects(caster, target);
+			return true;
+		}
+	}
+
+	@Override
+	public boolean castAtEntity(LivingEntity target, float power) {
+		if (!validTargetList.canTarget(target)) {
+			return false;
+		} else {
+			geyser(null, target, power);
+			playSpellEffects(EffectPosition.TARGET, target);
 			return true;
 		}
 	}
@@ -143,15 +169,14 @@ public class GeyserSpell extends TargetedEntitySpell {
 				Block block = start.clone().add(0,tick,0).getBlock();
 				if (block.getType() == Material.AIR) {
 					for (Player p : nearby) {
-						p.sendBlockChange(block.getLocation(), geyserType, (byte)0);
+						Util.sendFakeBlockChange(p, block, geyserType);
 					}
 				}
 			} else {
 				int n = geyserHeight-(tick-geyserHeight)-1; // top to bottom
-				//int n = tick-height; // bottom to top
 				Block block = start.clone().add(0, n, 0).getBlock();
 				for (Player p : nearby) {
-					p.sendBlockChange(block.getLocation(), block.getType(), block.getData());
+					Util.restoreFakeBlockChange(p, block);
 				}
 			}
 		}

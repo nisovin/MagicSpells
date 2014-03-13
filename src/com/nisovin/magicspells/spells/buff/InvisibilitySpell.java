@@ -15,7 +15,6 @@ import org.bukkit.event.player.PlayerPickupItemEvent;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.events.SpellCastEvent;
-import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.BuffSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
@@ -42,36 +41,38 @@ public class InvisibilitySpell extends BuffSpell {
 	}
 
 	@Override
-	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
+	public boolean castBuff(Player player, float power, String[] args) {
+		makeInvisible(player);
+		invisibles.put(player.getName(), new CostCharger(player));
+		return true;
+	}
+	
+	@Override
+	public boolean recastBuff(Player player, float power, String[] args) {
+		makeInvisible(player);
 		if (invisibles.containsKey(player.getName())) {
-			turnOff(player);
-			if (toggle) {
-				return PostCastAction.ALREADY_HANDLED;
-			}
+			invisibles.put(player.getName(), new CostCharger(player));
 		}
-		if (state == SpellCastState.NORMAL) {
-			// make player invisible
-			for (Player p : Bukkit.getOnlinePlayers()) {
-				p.hidePlayer(player);
-			}
-			// detarget monsters
-			Creature creature;
-			for (Entity e : player.getNearbyEntities(30, 30, 30)) {
-				if (e instanceof Creature) {
-					creature = (Creature)e;
-					if (creature.getTarget() != null && creature.getTarget().equals(player)) {
-						creature.setTarget(null);
-					}
+		return true;
+	}
+	
+	private void makeInvisible(Player player) {
+		// make player invisible
+		for (Player p : Bukkit.getOnlinePlayers()) {
+			p.hidePlayer(player);
+		}
+		// detarget monsters
+		Creature creature;
+		for (Entity e : player.getNearbyEntities(30, 30, 30)) {
+			if (e instanceof Creature) {
+				creature = (Creature)e;
+				if (creature.getTarget() != null && creature.getTarget().equals(player)) {
+					creature.setTarget(null);
 				}
 			}
-			// start buff stuff
-			startSpellDuration(player);
-			invisibles.put(player.getName(), new CostCharger(player));
-			// spell effect
-			playSpellEffects(EffectPosition.CASTER, player);
 		}
-		return PostCastAction.HANDLE_NORMALLY;
 	}
+	
 	
 	@EventHandler
 	public void onPlayerItemPickup(PlayerPickupItemEvent event) {
@@ -106,17 +107,15 @@ public class InvisibilitySpell extends BuffSpell {
 	}
 	
 	@Override
-	public void turnOff(Player player) {
-		if (invisibles.containsKey(player.getName())) {
-			super.turnOff(player);
-			// stop charge ticker
-			CostCharger c = invisibles.remove(player.getName());
+	public void turnOffBuff(Player player) {
+		// stop charge ticker
+		CostCharger c = invisibles.remove(player.getName());
+		if (c != null) {
 			c.stop();
 			// force visible
 			for (Player p : Bukkit.getOnlinePlayers()) {
 				p.showPlayer(player);
 			}
-			sendMessage(player, strFade);
 		}
 	}
 

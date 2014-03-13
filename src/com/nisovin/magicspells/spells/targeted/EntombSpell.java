@@ -12,14 +12,15 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.BlockBreakEvent;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.materials.MagicMaterial;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
+import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 
-public class EntombSpell extends TargetedEntitySpell {
+public class EntombSpell extends TargetedSpell implements TargetedEntitySpell {
 
-	private boolean targetPlayers;
-	private boolean obeyLos;
-	private int tombBlockType;
+	private MagicMaterial tombBlockType;
 	private int tombDuration;
 	private boolean closeTopAndBottom;
 	private boolean allowBreaking;
@@ -29,20 +30,22 @@ public class EntombSpell extends TargetedEntitySpell {
 	public EntombSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 
-		targetPlayers = getConfigBoolean("target-players", false);
-		obeyLos = getConfigBoolean("obey-los", true);
-		tombBlockType = getConfigInt("tomb-block-type", Material.GLASS.getId());
+		tombBlockType = MagicSpells.getItemNameResolver().resolveBlock(getConfigString("tomb-block-type", "glass"));
 		tombDuration = getConfigInt("tomb-duration", 20);
 		closeTopAndBottom = getConfigBoolean("close-top-and-bottom", true);
 		allowBreaking = getConfigBoolean("allow-breaking", true);
 		
 		blocks = new HashSet<Block>();
+		
+		if (tombBlockType == null) {
+			MagicSpells.error("Entomb spell '" + spellName + "' has an invalid tomb-block-type!");
+		}
 	}
 
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, minRange, range, targetPlayers, obeyLos);
+			LivingEntity target = getTargetedEntity(player, power);
 			if (target != null) {
 				int x = target.getLocation().getBlockX();
 				int y = target.getLocation().getBlockY();
@@ -68,53 +71,53 @@ public class EntombSpell extends TargetedEntitySpell {
 		
 		Block temp = feet.getRelative(1,0,0);
 		if (temp.getType() == Material.AIR) {
-			temp.setTypeId(tombBlockType);
+			tombBlockType.setBlock(temp);
 			tombBlocks.add(temp);
 		}
 		temp = feet.getRelative(1,1,0);
 		if (temp.getType() == Material.AIR) {
-			temp.setTypeId(tombBlockType);
+			tombBlockType.setBlock(temp);
 			tombBlocks.add(temp);
 		}
 		temp = feet.getRelative(-1,0,0);
 		if (temp.getType() == Material.AIR) {
-			temp.setTypeId(tombBlockType);
+			tombBlockType.setBlock(temp);
 			tombBlocks.add(temp);
 		}
 		temp = feet.getRelative(-1,1,0);
 		if (temp.getType() == Material.AIR) {
-			temp.setTypeId(tombBlockType);
+			tombBlockType.setBlock(temp);
 			tombBlocks.add(temp);
 		}
 		temp = feet.getRelative(0,0,1);
 		if (temp.getType() == Material.AIR) {
-			temp.setTypeId(tombBlockType);
+			tombBlockType.setBlock(temp);
 			tombBlocks.add(temp);
 		}
 		temp = feet.getRelative(0,1,1);
 		if (temp.getType() == Material.AIR) {
-			temp.setTypeId(tombBlockType);
+			tombBlockType.setBlock(temp);
 			tombBlocks.add(temp);
 		}
 		temp = feet.getRelative(0,0,-1);
 		if (temp.getType() == Material.AIR) {
-			temp.setTypeId(tombBlockType);
+			tombBlockType.setBlock(temp);
 			tombBlocks.add(temp);
 		}
 		temp = feet.getRelative(0,1,-1);
 		if (temp.getType() == Material.AIR) {
-			temp.setTypeId(tombBlockType);
+			tombBlockType.setBlock(temp);
 			tombBlocks.add(temp);
 		}
 		if (closeTopAndBottom) {
 			temp = feet.getRelative(0,-1,0);
 			if (temp.getType() == Material.AIR) {
-				temp.setTypeId(tombBlockType);
+				tombBlockType.setBlock(temp);
 				tombBlocks.add(temp);
 			}
 			temp = feet.getRelative(0,2,0);
 			if (temp.getType() == Material.AIR) {
-				temp.setTypeId(tombBlockType);
+				tombBlockType.setBlock(temp);
 				tombBlocks.add(temp);
 			}
 		}				
@@ -127,11 +130,22 @@ public class EntombSpell extends TargetedEntitySpell {
 
 	@Override
 	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
-		if (target instanceof Player && !targetPlayers) {
+		if (!validTargetList.canTarget(caster, target)) {
 			return false;
 		} else {
 			createTomb(target, power);
 			playSpellEffects(caster, target);
+			return true;
+		}
+	}
+
+	@Override
+	public boolean castAtEntity(LivingEntity target, float power) {
+		if (!validTargetList.canTarget(target)) {
+			return false;
+		} else {
+			createTomb(target, power);
+			playSpellEffects(EffectPosition.TARGET, target);
 			return true;
 		}
 	}
@@ -157,7 +171,7 @@ public class EntombSpell extends TargetedEntitySpell {
 		@Override
 		public void run() {
 			for (Block block : tomb) {
-				if (block.getTypeId() == tombBlockType) {
+				if (tombBlockType.getMaterial() == block.getType()) {
 					block.setType(Material.AIR);
 				}
 			}

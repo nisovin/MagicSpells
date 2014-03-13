@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -20,6 +19,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.Spellbook;
+import com.nisovin.magicspells.materials.MagicMaterial;
 import com.nisovin.magicspells.spells.CommandSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.SpellReagents;
@@ -32,7 +32,7 @@ public class ScrollSpell extends CommandSpell {
 	private boolean bypassNormalChecks;
 	private int defaultUses;
 	private int maxUses;
-	private int itemId;
+	private MagicMaterial itemType;
 	private boolean rightClickCast;
 	private boolean leftClickCast;
 	private boolean removeScrollWhenDepleted;
@@ -60,7 +60,7 @@ public class ScrollSpell extends CommandSpell {
 		bypassNormalChecks = getConfigBoolean("bypass-normal-checks", false);
 		defaultUses = getConfigInt("default-uses", 5);
 		maxUses = getConfigInt("max-uses", 10);
-		itemId = getConfigInt("item-id", Material.PAPER.getId());
+		itemType = MagicSpells.getItemNameResolver().resolveItem(getConfigString("item-id", "paper"));
 		rightClickCast = getConfigBoolean("right-click-cast", true);
 		leftClickCast = getConfigBoolean("left-click-cast", false);
 		removeScrollWhenDepleted = getConfigBoolean("remove-scroll-when-depleted", true);
@@ -117,7 +117,7 @@ public class ScrollSpell extends CommandSpell {
 			
 			// get item in hand
 			ItemStack inHand = player.getItemInHand();
-			if (inHand.getTypeId() != itemId || inHand.getAmount() != 1) {
+			if (inHand.getAmount() != 1 || !itemType.equals(inHand)) {
 				// fail -- incorrect item in hand
 				sendMessage(player, strUsage);
 				return PostCastAction.ALREADY_HANDLED;
@@ -170,7 +170,7 @@ public class ScrollSpell extends CommandSpell {
 	
 	public ItemStack createScroll(Spell spell, int uses, ItemStack item) {
 		if (item == null) {
-			item = new ItemStack(itemId, 1);
+			item = itemType.toItemStack(1);
 		}
 		item.setDurability((short)0);
 		ItemMeta meta = item.getItemMeta();
@@ -215,7 +215,7 @@ public class ScrollSpell extends CommandSpell {
 			(leftClickCast && (event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK))) {
 			Player player = event.getPlayer();
 			ItemStack inHand = player.getItemInHand();
-			if (inHand.getTypeId() != itemId || inHand.getAmount() > 1) return;
+			if (itemType.getMaterial() != inHand.getType() || inHand.getAmount() > 1) return;
 			
 			// check for predefined scroll
 			if (inHand.getDurability() > 0 && predefinedScrollSpells != null) {
@@ -276,7 +276,7 @@ public class ScrollSpell extends CommandSpell {
 						if (removeScrollWhenDepleted) {
 							player.setItemInHand(null);
 						} else {
-							player.setItemInHand(new ItemStack(itemId, 1));
+							player.setItemInHand(itemType.toItemStack(1));
 						}
 					}
 				}
@@ -292,7 +292,7 @@ public class ScrollSpell extends CommandSpell {
 		Player player = event.getPlayer();
 		ItemStack inHand = player.getInventory().getItem(event.getNewSlot());
 		
-		if (inHand == null || inHand.getTypeId() != itemId) return;
+		if (inHand == null || inHand.getType() != itemType.getMaterial()) return;
 		
 		// check for predefined scroll
 		if (inHand.getDurability() > 0 && predefinedScrollSpells != null) {

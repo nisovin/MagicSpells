@@ -1,22 +1,24 @@
 package com.nisovin.magicspells.spelleffects;
 
 import org.bukkit.Location;
+import org.bukkit.configuration.ConfigurationSection;
 
 import com.nisovin.magicspells.MagicSpells;
 
 class ParticlesEffect extends SpellEffect {
+	
+	String name = "explode";
+	float horizSpread = 0.2F;
+	float vertSpread = 0.2F;
+	float speed = 0.2F;
+	int count = 5;
+	float yOffset = 0F;
+	int renderDistance = 32;
 
 	@Override
-	public void playEffect(Location location, String param) {
-		String name = "explode";
-		float horizSpread = 0.2F;
-		float vertSpread = 0.2F;
-		float speed = 0.2F;
-		int count = 5;
-		float yOffset = 1.9F;
-						
-		if (param != null && !param.isEmpty()) {
-			String[] data = param.split(" ");
+	public void loadFromString(String string) {
+		if (string != null && !string.isEmpty()) {
+			String[] data = string.split(" ");
 			
 			if (data.length >= 1) {
 				name = data[0];
@@ -37,8 +39,22 @@ class ParticlesEffect extends SpellEffect {
 				yOffset = Float.parseFloat(data[5]);
 			}
 		}
-		
-		MagicSpells.getVolatileCodeHandler().playParticleEffect(location, name, horizSpread, vertSpread, speed, count, 15, yOffset);
+	}
+
+	@Override
+	public void loadFromConfig(ConfigurationSection config) {
+		name = config.getString("particle-name", name);
+		horizSpread = (float)config.getDouble("horiz-spread", horizSpread);
+		vertSpread = (float)config.getDouble("vert-spread", vertSpread);
+		speed = (float)config.getDouble("speed", speed);
+		count = config.getInt("count", count);
+		yOffset = (float)config.getDouble("y-offset", yOffset);
+		renderDistance = config.getInt("render-distance", renderDistance);
+	}
+
+	@Override
+	public void playEffectLocation(Location location) {
+		MagicSpells.getVolatileCodeHandler().playParticleEffect(location, name, horizSpread, vertSpread, speed, count, renderDistance, yOffset);
 	}
 	
 }

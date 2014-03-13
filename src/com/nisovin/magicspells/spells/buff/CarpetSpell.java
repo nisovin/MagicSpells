@@ -15,13 +15,15 @@ import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 
+import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.materials.MagicMaterial;
 import com.nisovin.magicspells.spells.BuffSpell;
 import com.nisovin.magicspells.util.BlockPlatform;
 import com.nisovin.magicspells.util.MagicConfig;
 
 public class CarpetSpell extends BuffSpell {
 	
-	private int platformBlock;
+	private Material platformBlock;
 	private int size;
 	private boolean cancelOnTeleport;
 	
@@ -32,7 +34,12 @@ public class CarpetSpell extends BuffSpell {
 	public CarpetSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
-		platformBlock = getConfigInt("platform-block", Material.GLASS.getId());
+		MagicMaterial m = MagicSpells.getItemNameResolver().resolveBlock(getConfigString("platform-block", "glass"));
+		if (m != null) {
+			platformBlock = m.getMaterial();
+		} else {
+			platformBlock = Material.GLASS;
+		}
 		size = getConfigInt("size", 2);
 		cancelOnTeleport = getConfigBoolean("cancel-on-teleport", true);
 		
@@ -52,19 +59,10 @@ public class CarpetSpell extends BuffSpell {
 	}
 	
 	@Override
-	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
-		if (windwalkers.containsKey(player.getName())) {
-			turnOff(player);
-			if (toggle) {
-				return PostCastAction.ALREADY_HANDLED;
-			}
-		}
-		if (state == SpellCastState.NORMAL) {
-			windwalkers.put(player.getName(), new BlockPlatform(platformBlock, Material.AIR.getId(), player.getLocation().getBlock().getRelative(0,-1,0), size, true, "square"));
-			startSpellDuration(player);
-			registerListener();
-		}
-		return PostCastAction.HANDLE_NORMALLY;
+	public boolean castBuff(Player player, float power, String[] args) {
+		windwalkers.put(player.getName(), new BlockPlatform(platformBlock, Material.AIR, player.getLocation().getBlock().getRelative(0,-1,0), size, true, "square"));
+		registerListener();
+		return true;
 	}
 	
 	private void registerListener() {
@@ -131,7 +129,7 @@ public class CarpetSpell extends BuffSpell {
 	
 		@EventHandler(priority=EventPriority.NORMAL, ignoreCancelled=true)
 		public void onBlockBreak(BlockBreakEvent event) {
-			if (windwalkers.size() > 0 && event.getBlock().getTypeId() == platformBlock) {
+			if (windwalkers.size() > 0 && event.getBlock().getType() == platformBlock) {
 				for (BlockPlatform platform : windwalkers.values()) {
 					if (platform.blockInPlatform(event.getBlock())) {
 						event.setCancelled(true);
@@ -162,13 +160,11 @@ public class CarpetSpell extends BuffSpell {
 	}
 	
 	@Override
-	public void turnOff(Player player) {
+	public void turnOffBuff(Player player) {
 		BlockPlatform platform = windwalkers.get(player.getName());
 		if (platform != null) {
-			super.turnOff(player);
 			platform.destroyPlatform();
 			windwalkers.remove(player.getName());
-			sendMessage(player, strFade);
 			unregisterListener();
 		}
 	}
