@@ -4,4 +4,3 @@
 bin/
 dist/
 src/missing_api.txt
-lib/*.jar
