@@ -1,0 +1,17 @@
+http://dl.bukkit.org/downloads/bukkit/
+	http://dl.bukkit.org/downloads/bukkit/get/02534_1.7.2-R0.3/bukkit-beta.jar
+http://dl.bukkit.org/downloads/craftbukkit/
+	http://dl.bukkit.org/downloads/craftbukkit/get/02389_1.6.4-R2.0/craftbukkit.jar
+	http://dl.bukkit.org/downloads/craftbukkit/get/02535_1.7.2-R0.3/craftbukkit-beta.jar
+http://dev.bukkit.org/bukkit-plugins/protocollib/files/
+	http://dev.bukkit.org/media/files/743/623/ProtocolLib-2.7.3.jar
+	http://dev.bukkit.org/media/files/770/223/ProtocolLib-3.2.0.jar
+http://dev.bukkit.org/bukkit-plugins/worldedit/files/
+	http://dev.bukkit.org/media/files/776/557/worldedit-5.6.jar
+http://dev.bukkit.org/bukkit-plugins/worldguard/files/
+	http://dev.bukkit.org/media/files/776/555/worldguard-5.9.jar
+http://dev.bukkit.org/bukkit-plugins/vault/files/
+	http://dev.bukkit.org/media/files/770/208/Vault.jar
+http://dev.bukkit.org/bukkit-plugins/residence/files/
+	http://dev.bukkit.org/media/files/722/685/Residence.jar
+	
