@@ -1,24 +1,44 @@
 <?xml version="1.0"?>
 <project name="MagicSpells" default="build" basedir=".">
-	<property name="version" value="3.2"/>
-	<property name="src.dir" location="src"/>
-	<property name="build.dir" location="bin"/>
+	
+	<property name="core.version" value="3.2"/>
+	<property name="core.src.dir" location="src"/>
+	<property name="core.build.dir" location="bin"/>
+	
+	<property name="teams.version" value="1.0"/>
+	<property name="teams.src.dir" location="src_teams"/>
+	<property name="teams.build.dir" location="bin_teams"/>
+	
+	<property name="memory.version" value="1.2"/>
+	<property name="memory.src.dir" location="src_memory"/>
+	<property name="memory.build.dir" location="bin_memory"/>
+	
+	<property name="shop.version" value="1.6"/>
+	<property name="shop.src.dir" location="src_shop"/>
+	<property name="shop.build.dir" location="bin_shop"/>
+	
 	<property name="dist.dir" location="dist"/>
 	<property name="lib.dir" location="lib"/>
 	<property name="doc.dir" location="doc"/>
 	<tstamp><format property="datestamp" pattern="yyMMddHHmm"/></tstamp>
 		
-	<!-- Deletes the existing build, docs and dist directory-->
+	<target name="build" depends="clean, core-jar, teams-jar, memory-jar, shop-jar"/>
+	
+	<!-- Delete the existing build and dist folders -->
 	<target name="clean">
-		<delete dir="${build.dir}"/>
+		<delete dir="${core.build.dir}"/>
+		<delete dir="${teams.build.dir}"/>
+		<delete dir="${memory.build.dir}"/>
+		<delete dir="${shop.build.dir}"/>
 		<delete dir="${doc.dir}"/>
 		<delete dir="${dist.dir}"/>
+		<mkdir dir="${dist.dir}" />
 	</target>
 
-	<!-- Compiles the java code -->
-	<target name="compile" depends="clean">
-		<mkdir dir="${build.dir}" />
-		<javac srcdir="${src.dir}" destdir="${build.dir}" debug="true" source="1.6" target="1.6">
+	<!-- Compile the core -->
+	<target name="core-compile" depends="clean">
+		<mkdir dir="${core.build.dir}"/>
+		<javac srcdir="${core.src.dir}" destdir="${core.build.dir}" debug="true" source="1.6" target="1.6">
 			<classpath>
 				<fileset dir="${lib.dir}">
 					<include name="bukkit*.jar"/>
@@ -26,34 +46,94 @@
 				</fileset>
 			</classpath>
 		</javac>
-		<copy todir="${build.dir}">
-			<fileset dir="${src.dir}">
+		<copy todir="${core.build.dir}">
+			<fileset dir="${core.src.dir}">
 				<include name="*.yml"/>
 			</fileset>
 		</copy>
-	</target>
-	
-	<!-- Updates version in plugin.yml -->
-	<target name="versiondev" depends="compile">
-		<replace file="${build.dir}\plugin.yml" token="VERSION_STRING" value="${version}-dev-${datestamp}"/>
-	</target>	
-	<target name="versionrel" depends="compile">
-		<replace file="${build.dir}\plugin.yml" token="VERSION_STRING" value="${version}"/>
+		<replace file="${core.build.dir}\plugin.yml" token="VERSION_STRING" value="${core.version}-dev-${datestamp}"/>
 	</target>
 
-	<!-- Creates the deployable jar file  -->
-	<target name="jar" depends="compile">
-		<mkdir dir="${dist.dir}" />
-		<jar destfile="${dist.dir}\MagicSpells-${version}-${datestamp}.jar" basedir="${build.dir}"/>
-		<copy file="${dist.dir}\MagicSpells-${version}-${datestamp}.jar" tofile="${dist.dir}\MagicSpells.jar"/>
+	<!-- Create the core jar file  -->
+	<target name="core-jar" depends="core-compile">
+		<jar destfile="${dist.dir}\MagicSpells-${core.version}-${datestamp}.jar" basedir="${core.build.dir}"/>
+		<copy file="${dist.dir}\MagicSpells-${core.version}-${datestamp}.jar" tofile="${dist.dir}\MagicSpells.jar"/>
 	</target>
 	
-	<!-- Builds -->
-	<target name="build" depends="compile, versiondev, jar">
-		<description>Build Dev</description>
-	</target>	
-	<target name="buildrelease" depends="compile, versionrel, jar">
-		<description>Build Release</description>
+	<!-- Compile teams addon -->
+	<target name="teams-compile" depends="core-jar">
+		<mkdir dir="${teams.build.dir}"/>
+		<javac srcdir="${teams.src.dir}" destdir="${teams.build.dir}" debug="true" source="1.6" target="1.6">
+			<classpath>
+				<fileset dir="${lib.dir}">
+					<include name="bukkit*.jar"/>
+				</fileset>
+				<filelist dir="${dist.dir}" files="MagicSpells.jar"/>
+			</classpath>
+		</javac>
+		<copy todir="${teams.build.dir}">
+			<fileset dir="${teams.src.dir}">
+				<include name="*.yml"/>
+			</fileset>
+		</copy>
+		<replace file="${teams.build.dir}\plugin.yml" token="VERSION_STRING" value="${teams.version}-dev-${datestamp}"/>
+	</target>
+	
+	<!-- Create the teams jar file -->
+	<target name="teams-jar" depends="teams-compile">
+		<jar destfile="${dist.dir}\MagicSpellsTeams-${teams.version}-${datestamp}.jar" basedir="${teams.build.dir}"/>
+		<copy file="${dist.dir}\MagicSpellsTeams-${teams.version}-${datestamp}.jar" tofile="${dist.dir}\MagicSpellsTeams.jar"/>
+	</target>
+	
+	<!-- Compile memory addon -->
+	<target name="memory-compile" depends="core-jar">
+		<mkdir dir="${memory.build.dir}"/>
+		<javac srcdir="${memory.src.dir}" destdir="${memory.build.dir}" debug="true" source="1.6" target="1.6">
+			<classpath>
+				<fileset dir="${lib.dir}">
+					<include name="bukkit*.jar"/>
+				</fileset>
+				<filelist dir="${dist.dir}" files="MagicSpells.jar"/>
+			</classpath>
+		</javac>
+		<copy todir="${memory.build.dir}">
+			<fileset dir="${memory.src.dir}">
+				<include name="*.yml"/>
+			</fileset>
+		</copy>
+		<replace file="${memory.build.dir}\plugin.yml" token="VERSION_STRING" value="${memory.version}-dev-${datestamp}"/>
+	</target>
+	
+	<!-- Create the teams jar file -->
+	<target name="memory-jar" depends="memory-compile">
+		<jar destfile="${dist.dir}\MagicSpellsMemory-${memory.version}-${datestamp}.jar" basedir="${memory.build.dir}"/>
+		<copy file="${dist.dir}\MagicSpellsMemory-${memory.version}-${datestamp}.jar" tofile="${dist.dir}\MagicSpellsMemory.jar"/>
+	</target>
+	
+	<!-- Compile shop addon -->
+	<target name="shop-compile" depends="core-jar">
+		<mkdir dir="${shop.build.dir}"/>
+		<javac srcdir="${shop.src.dir}" destdir="${shop.build.dir}" debug="true" source="1.6" target="1.6">
+			<classpath>
+				<fileset dir="${lib.dir}">
+					<include name="bukkit*.jar"/>
+					<include name="Vault.jar"/>
+				</fileset>
+				<filelist dir="${dist.dir}" files="MagicSpells.jar"/>
+			</classpath>
+		</javac>
+		<copy todir="${shop.build.dir}">
+			<fileset dir="${shop.src.dir}">
+				<include name="*.yml"/>
+			</fileset>
+		</copy>
+		<replace file="${shop.build.dir}\plugin.yml" token="VERSION_STRING" value="${shop.version}-dev-${datestamp}"/>
+	</target>
+	
+	<!-- Create the shop jar file -->
+	<target name="shop-jar" depends="shop-compile">
+		<jar destfile="${dist.dir}\MagicSpellsShop-${shop.version}-${datestamp}.jar" basedir="${shop.build.dir}"/>
+		<copy file="${dist.dir}\MagicSpellsShop-${shop.version}-${datestamp}.jar" tofile="${dist.dir}\MagicSpellsShop.jar"/>
 	</target>
 
 </project>

@@ -1,0 +1,5 @@
+name: MagicSpellsTeams
+version: VERSION_STRING
+main: com.nisovin.magicspells.teams.MagicSpellsTeams
+author: nisovin
+depend: [MagicSpells]

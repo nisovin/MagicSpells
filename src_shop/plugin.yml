@@ -1,0 +1,10 @@
+name: MagicSpellsShop
+version: VERSION_STRING
+main: com.nisovin.magicspells.shop.MagicSpellsShop
+author: nisovin
+depend: [MagicSpells]
+softdepend: [Vault]
+permissions:
+    magicspells.createsignshop:
+        description: Create a spell shop
+        default: op

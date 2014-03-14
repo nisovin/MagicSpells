@@ -1,0 +1,8 @@
+str-out-of-memory: "You don't have enough memory to learn the %spell spell."
+str-memory-usage: "You have used %memory memory out of %total."
+max-memory-default: 10
+max-memory-perms:
+    admin: 1000
+    master: 20
+    adept: 10
+    novice: 5

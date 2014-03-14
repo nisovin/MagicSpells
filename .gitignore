@@ -2,5 +2,8 @@
 .classpath
 .project
 bin/
+bin_memory/
+bin_shop/
+bin_teams/
 dist/
 src/missing_api.txt
