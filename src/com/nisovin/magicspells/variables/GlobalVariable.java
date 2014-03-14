@@ -1,13 +1,11 @@
 package com.nisovin.magicspells.variables;
 
-import org.bukkit.entity.Player;
-
 public class GlobalVariable extends Variable {
 
 	double value = 0;
 	
-	public GlobalVariable(double defaultValue, double minValue, double maxValue, boolean permanent) {
-		super(defaultValue, minValue, maxValue, permanent);
+	@Override
+	protected void init() {
 		value = defaultValue;
 	}
 	
@@ -32,7 +30,7 @@ public class GlobalVariable extends Variable {
 	}
 
 	@Override
-	public void reset(Player player) {
+	public void reset(String player) {
 		value = defaultValue;
 	}
 

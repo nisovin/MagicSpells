@@ -12,6 +12,7 @@ import java.util.Scanner;
 import java.util.Set;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -19,6 +20,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.scoreboard.DisplaySlot;
+import org.bukkit.scoreboard.Objective;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.events.SpellCastedEvent;
@@ -41,10 +44,28 @@ public class VariableManager implements Listener {
 				boolean perm = section.getBoolean(var + ".permanent", true);
 				Variable variable;
 				if (type.equalsIgnoreCase("player")) {
-					variable = new PlayerVariable(def, min, max, perm);
+					variable = new PlayerVariable();
 				} else {
-					variable = new GlobalVariable(def, min, max, perm);
+					variable = new GlobalVariable();
 				}
+				String scoreName = section.getString("scoreboard-title", null);
+				String scorePos = section.getString("scoreboard-position", null);
+				Objective objective = null;
+				if (scoreName != null && scorePos != null) {
+					objective = Bukkit.getScoreboardManager().getMainScoreboard().getObjective("MagicSpells_var_" + var);
+					if (objective == null) {
+						objective = Bukkit.getScoreboardManager().getMainScoreboard().registerNewObjective("MagicSpells_var_" + var, "MagicSpells_var_" + var);
+						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', scoreName));
+						if (scorePos.equalsIgnoreCase("nameplate")) {
+							objective.setDisplaySlot(DisplaySlot.BELOW_NAME);
+						} else if (scorePos.equalsIgnoreCase("playerlist")) {
+							objective.setDisplaySlot(DisplaySlot.PLAYER_LIST);
+						} else {
+							objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+						}
+					}
+				}
+				variable.init(def, min, max, perm, objective);
 				variables.put(var, variable);
 			}
 		}

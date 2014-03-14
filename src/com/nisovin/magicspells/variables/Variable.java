@@ -1,6 +1,7 @@
 package com.nisovin.magicspells.variables;
 
 import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Objective;
 
 public abstract class Variable {
 
@@ -8,20 +9,29 @@ public abstract class Variable {
 	protected double maxValue = Double.MAX_VALUE;
 	protected double minValue = 0;
 	protected boolean permanent;
+	protected Objective objective;
 	
-	public Variable(double defaultValue, double minValue, double maxValue, boolean permanent) {
+	public Variable() {
+	}
+	
+	public final void init(double defaultValue, double minValue, double maxValue, boolean permanent, Objective objective) {
 		this.defaultValue = defaultValue;
 		this.minValue = minValue;
 		this.maxValue = maxValue;
+		this.permanent = permanent;
+		this.objective = objective;
+		init();
 	}
 	
-	public void modify(Player player, double amount) {
+	protected void init() {}
+	
+	public final void modify(Player player, double amount) {
 		modify(player.getName(), amount);
 	}
 	
 	public abstract void modify(String player, double amount);
 	
-	public void set(Player player, double amount) {
+	public final void set(Player player, double amount) {
 		set(player.getName(), amount);
 	}
 	
@@ -33,6 +43,10 @@ public abstract class Variable {
 	
 	public abstract double getValue(String player);
 	
-	public abstract void reset(Player player);
+	public final void reset(Player player) {
+		reset(player.getName());
+	}
+	
+	public abstract void reset(String player);
 	
 }

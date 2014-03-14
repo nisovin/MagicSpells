@@ -3,15 +3,11 @@ package com.nisovin.magicspells.variables;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.bukkit.entity.Player;
+import org.bukkit.Bukkit;
 
 public class PlayerVariable extends Variable {
 
 	Map<String, Double> map = new HashMap<String, Double>();
-
-	public PlayerVariable(double defaultValue, double minValue, double maxValue, boolean permanent) {
-		super(defaultValue, minValue, maxValue, permanent);
-	}
 	
 	@Override
 	public void modify(String player, double amount) {
@@ -23,11 +19,17 @@ public class PlayerVariable extends Variable {
 			value = minValue;
 		}
 		map.put(player, value);
+		if (objective != null) {
+			objective.getScore(Bukkit.getOfflinePlayer(player)).setScore((int)value);
+		}
 	}
 
 	@Override
 	public void set(String player, double amount) {
 		map.put(player, amount);
+		if (objective != null) {
+			objective.getScore(Bukkit.getOfflinePlayer(player)).setScore((int)amount);
+		}
 	}
 
 	@Override
@@ -40,8 +42,11 @@ public class PlayerVariable extends Variable {
 	}
 
 	@Override
-	public void reset(Player player) {
-		map.remove(player.getName());
+	public void reset(String player) {
+		map.remove(player);
+		if (objective != null) {
+			objective.getScore(Bukkit.getOfflinePlayer(player)).setScore((int)defaultValue);
+		}
 	}
 
 }
