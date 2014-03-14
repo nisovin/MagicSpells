@@ -22,7 +22,7 @@
 	<property name="doc.dir" location="doc"/>
 	<tstamp><format property="datestamp" pattern="yyMMddHHmm"/></tstamp>
 		
-	<target name="build" depends="clean, core-jar, teams-jar, memory-jar, shop-jar"/>
+	<target name="build" depends="clean, core-jar, teams-jar, memory-jar, shop-jar, zip"/>
 	
 	<!-- Delete the existing build and dist folders -->
 	<target name="clean">
@@ -32,7 +32,7 @@
 		<delete dir="${shop.build.dir}"/>
 		<delete dir="${doc.dir}"/>
 		<delete dir="${dist.dir}"/>
-		<mkdir dir="${dist.dir}" />
+		<mkdir dir="${dist.dir}"/>
 	</target>
 
 	<!-- Compile the core -->
@@ -134,6 +134,16 @@
 	<target name="shop-jar" depends="shop-compile">
 		<jar destfile="${dist.dir}\MagicSpellsShop-${shop.version}-${datestamp}.jar" basedir="${shop.build.dir}"/>
 		<copy file="${dist.dir}\MagicSpellsShop-${shop.version}-${datestamp}.jar" tofile="${dist.dir}\MagicSpellsShop.jar"/>
+	</target>
+	
+	<!-- Zip everything -->
+	<target name="zip" depends="core-jar, memory-jar, shop-jar, teams-jar">
+		<zip destfile="${dist.dir}\MagicSpells.zip" basedir="${dist.dir}">
+			<include name="MagicSpells.jar"/>
+			<include name="MagicSpellsMemory.jar"/>
+			<include name="MagicSpellsTeams.jar"/>
+			<include name="MagicSpellsShop.jar"/>
+		</zip>
 	</target>
 
 </project>
