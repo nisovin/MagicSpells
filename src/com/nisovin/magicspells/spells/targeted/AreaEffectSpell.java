@@ -33,13 +33,12 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 	private int maxTargets;
 	private List<String> spellNames;
 	private boolean spellSourceInCenter;
-	private List<TargetedSpell> spells;
+	private List<Spell> spells;
 	
 	public AreaEffectSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
 		radius = getConfigInt("horizontal-radius", 10);
-		//radiusSquared *= radiusSquared;
 		verticalRadius = getConfigInt("vertical-radius", 5);
 		pointBlank = getConfigBoolean("point-blank", true);
 		failIfNoTargets = getConfigBoolean("fail-if-no-targets", true);
@@ -52,13 +51,13 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 	public void initialize() {
 		super.initialize();
 		
-		spells = new ArrayList<TargetedSpell>();
+		spells = new ArrayList<Spell>();
 		
 		if (spellNames != null && spellNames.size() > 0) {
 			for (String spellName : spellNames) {
 				Spell spell = MagicSpells.getSpellByInternalName(spellName);
 				if (spell != null) {
-					if (spell instanceof TargetedLocationSpell || spell instanceof TargetedEntitySpell) {
+					if (spell instanceof TargetedLocationSpell || spell instanceof TargetedEntitySpell || spell instanceof TargetedEntityFromLocationSpell) {
 						spells.add((TargetedSpell)spell);
 					} else {
 						MagicSpells.error("AreaEffect spell '" + name + "' attempted to use non-targeted spell '" + spellName + "'");
@@ -138,7 +137,7 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 							target = event.getTarget();
 						}
 					}
-					for (TargetedSpell spell : spells) {
+					for (Spell spell : spells) {
 						if (player != null) {
 							if (spellSourceInCenter && spell instanceof TargetedEntityFromLocationSpell) {
 								((TargetedEntityFromLocationSpell)spell).castAtEntityFromLocation(player, location, target, power);
