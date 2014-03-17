@@ -703,4 +703,11 @@ public class Util {
 		return new ItemStack(Material.MONSTER_EGG, 1, type.getTypeId());
 	}
 	
+	public static String getStringNumber(double number, int places) {
+		if (places < 0) return number+"";
+		if (places == 0) return (int)Math.round(number) + "";
+		int x = (int)Math.pow(10, places);
+		return ((double)Math.round(number * x) / x) + "";
+	}
+	
 }

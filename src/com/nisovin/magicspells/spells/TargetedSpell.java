@@ -1,5 +1,8 @@
 package com.nisovin.magicspells.spells;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
@@ -8,6 +11,7 @@ import org.bukkit.entity.Player;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.Util;
 
 public abstract class TargetedSpell extends InstantSpell {
 
@@ -41,23 +45,36 @@ public abstract class TargetedSpell extends InstantSpell {
 			}
 		}
 	}
-
-	protected void sendMessageToTarget(Player caster, Player target) {
-		sendMessage(target, strCastTarget, "%a", caster.getDisplayName());
-	}
 	
 	protected void sendMessages(Player caster, LivingEntity target) {
-		String entityName = getTargetName(target);
+		String targetName = getTargetName(target);
 		Player playerTarget = null;
 		if (target instanceof Player) {
 			playerTarget = (Player)target;
 		}
-		sendMessage(caster, strCastSelf, "%a", caster.getDisplayName(), "%t", entityName);
+		sendMessage(caster, prepareMessage(strCastSelf, caster, targetName, playerTarget));
 		if (playerTarget != null) {
-			sendMessage(playerTarget, strCastTarget, "%a", caster.getDisplayName(), "%t", entityName);
+			sendMessage(playerTarget, prepareMessage(strCastTarget, caster, targetName, playerTarget));
 		}
-		sendMessageNear(caster, playerTarget, formatMessage(strCastOthers, "%a", caster.getDisplayName(), "%t", entityName), broadcastRange);
+		sendMessageNear(caster, playerTarget, prepareMessage(strCastOthers, caster, targetName, playerTarget), broadcastRange);
 	}
+	
+	private String prepareMessage(String message, Player caster, String targetName, Player playerTarget) {
+		message = message.replace("%a", caster.getDisplayName());
+		message = message.replace("%t", targetName);
+		if (playerTarget != null && MagicSpells.getVariableManager() != null && message.contains("%targetvar")) {
+			Matcher matcher = chatVarMatchPattern.matcher(message);
+			while (matcher.find()) {
+				String varText = matcher.group();
+				String[] varData = varText.substring(5, varText.length() - 1).split(":");
+				double val = MagicSpells.getVariableManager().getValue(varData[0], playerTarget);
+				String sval = varData.length == 1 ? Util.getStringNumber(val, -1) : Util.getStringNumber(val, Integer.parseInt(varData[1]));
+				message = message.replace(varText, sval);
+			}
+		}
+		return message;
+	}
+	static private Pattern chatVarMatchPattern = Pattern.compile("%targetvar:[A-Za-z0-9_]+(:[0-9]+)?%", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
 	
 	protected String getTargetName(LivingEntity target) {
 		if (target instanceof Player) {
