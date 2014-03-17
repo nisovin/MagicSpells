@@ -36,6 +36,7 @@ public class VariableManager implements Listener {
 	
 	public VariableManager(MagicSpells plugin, ConfigurationSection section) {
 		if (section != null) {
+			MagicSpells.debug(1, "Loading variables...");
 			for (String var : section.getKeys(false)) {
 				String type = section.getString(var + ".type", "global");
 				double def = section.getDouble(var + ".default", 0);
@@ -48,13 +49,15 @@ public class VariableManager implements Listener {
 				} else {
 					variable = new GlobalVariable();
 				}
-				String scoreName = section.getString("scoreboard-title", null);
-				String scorePos = section.getString("scoreboard-position", null);
+				String scoreName = section.getString(var + ".scoreboard-title", null);
+				String scorePos = section.getString(var + ".scoreboard-position", null);
 				Objective objective = null;
 				if (scoreName != null && scorePos != null) {
-					objective = Bukkit.getScoreboardManager().getMainScoreboard().getObjective("MagicSpells_var_" + var);
+					String objName = "MSV_" + var;
+					if (objName.length() > 16) objName = objName.substring(0, 16);
+					objective = Bukkit.getScoreboardManager().getMainScoreboard().getObjective(objName);
 					if (objective == null) {
-						objective = Bukkit.getScoreboardManager().getMainScoreboard().registerNewObjective("MagicSpells_var_" + var, "MagicSpells_var_" + var);
+						objective = Bukkit.getScoreboardManager().getMainScoreboard().registerNewObjective(objName, objName);
 						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', scoreName));
 						if (scorePos.equalsIgnoreCase("nameplate")) {
 							objective.setDisplaySlot(DisplaySlot.BELOW_NAME);
@@ -67,11 +70,14 @@ public class VariableManager implements Listener {
 				}
 				variable.init(def, min, max, perm, objective);
 				variables.put(var, variable);
+				MagicSpells.debug(2, "Loaded variable " + var);
 			}
+			MagicSpells.debug(1, variables.size() + " variables loaded!");
 		}
 		if (variables.size() > 0) {
 			MagicSpells.registerEvents(this);
 		}
+		
 		
 		// load vars
 		folder = new File(plugin.getDataFolder(), "vars");
@@ -228,7 +234,7 @@ public class VariableManager implements Listener {
 					String line = scanner.nextLine().trim();
 					if (!line.isEmpty()) {
 						String[] s = line.split("=");
-						Variable variable = variables.get(s);
+						Variable variable = variables.get(s[0]);
 						if (variable != null && variable instanceof PlayerVariable) {
 							variable.set(player, Double.parseDouble(s[1]));
 						}
@@ -325,6 +331,12 @@ public class VariableManager implements Listener {
 					} else {
 						variable.modify(player, val);
 					}
+					if (variable instanceof PlayerVariable) {
+						dirtyPlayerVars.add(event.getCaster().getName());
+					} else if (variable instanceof GlobalVariable) {
+						dirtyGlobalVars = true;
+					}
+					MagicSpells.debug(3, "Variable '" + var + "' for player '" + player.getName() + "' modified by " + val + " as a result of spell cast '" + event.getSpell().getName() + "'");
 				}
 			}
 		}
@@ -344,6 +356,12 @@ public class VariableManager implements Listener {
 					} else {
 						variable.modify(player, val);
 					}
+					if (variable instanceof PlayerVariable) {
+						dirtyPlayerVars.add(event.getCaster().getName());
+					} else if (variable instanceof GlobalVariable) {
+						dirtyGlobalVars = true;
+					}
+					MagicSpells.debug(3, "Variable '" + var + "' for player '" + player.getName() + "' modified by " + val + " as a result of spell target from '" + event.getSpell().getName() + "'");
 				}
 			}
 		}
