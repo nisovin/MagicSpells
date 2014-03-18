@@ -1,0 +1,8 @@
+disallowed-in-towns:
+- forcepush
+- fireball
+- lightning
+- explode
+- explosivearrow
+- phase
+- volley

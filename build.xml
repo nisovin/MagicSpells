@@ -17,12 +17,20 @@
 	<property name="shop.src.dir" location="src_shop"/>
 	<property name="shop.build.dir" location="bin_shop"/>
 	
+	<property name="towny.version" value="1.3"/>
+	<property name="towny.src.dir" location="src_towny"/>
+	<property name="towny.build.dir" location="bin_towny"/>
+	
+	<property name="factions.version" value="1.0"/>
+	<property name="factions.src.dir" location="src_factions"/>
+	<property name="factions.build.dir" location="bin_factions"/>
+	
 	<property name="dist.dir" location="dist"/>
 	<property name="lib.dir" location="lib"/>
 	<property name="doc.dir" location="doc"/>
 	<tstamp><format property="datestamp" pattern="yyMMddHHmm"/></tstamp>
 		
-	<target name="build" depends="clean, core-jar, teams-jar, memory-jar, shop-jar, zip"/>
+	<target name="build" depends="clean, core-jar, teams-jar, memory-jar, shop-jar, towny-jar, factions-jar, zip"/>
 	
 	<!-- Delete the existing build and dist folders -->
 	<target name="clean">
@@ -30,6 +38,8 @@
 		<delete dir="${teams.build.dir}"/>
 		<delete dir="${memory.build.dir}"/>
 		<delete dir="${shop.build.dir}"/>
+		<delete dir="${towny.build.dir}"/>
+		<delete dir="${factions.build.dir}"/>
 		<delete dir="${doc.dir}"/>
 		<delete dir="${dist.dir}"/>
 		<mkdir dir="${dist.dir}"/>
@@ -136,13 +146,68 @@
 		<copy file="${dist.dir}\MagicSpellsShop-${shop.version}-${datestamp}.jar" tofile="${dist.dir}\MagicSpellsShop.jar"/>
 	</target>
 	
+	<!-- Compile towny addon -->
+	<target name="towny-compile" depends="core-jar">
+		<mkdir dir="${towny.build.dir}"/>
+		<javac srcdir="${towny.src.dir}" destdir="${towny.build.dir}" debug="true" source="1.6" target="1.6">
+			<classpath>
+				<fileset dir="${lib.dir}">
+					<include name="bukkit*.jar"/>
+					<include name="Towny.jar"/>
+				</fileset>
+				<filelist dir="${dist.dir}" files="MagicSpells.jar"/>
+			</classpath>
+		</javac>
+		<copy todir="${towny.build.dir}">
+			<fileset dir="${towny.src.dir}">
+				<include name="*.yml"/>
+			</fileset>
+		</copy>
+		<replace file="${towny.build.dir}\plugin.yml" token="VERSION_STRING" value="${towny.version}-dev-${datestamp}"/>
+	</target>
+	
+	<!-- Create the towny jar file -->
+	<target name="towny-jar" depends="towny-compile">
+		<jar destfile="${dist.dir}\MagicSpellsTowny-${towny.version}-${datestamp}.jar" basedir="${towny.build.dir}"/>
+		<copy file="${dist.dir}\MagicSpellsTowny-${towny.version}-${datestamp}.jar" tofile="${dist.dir}\MagicSpellsTowny.jar"/>
+	</target>
+	
+	<!-- Compile factions addon -->
+	<target name="factions-compile" depends="core-jar">
+		<mkdir dir="${factions.build.dir}"/>
+		<javac srcdir="${factions.src.dir}" destdir="${factions.build.dir}" debug="true" source="1.6" target="1.6">
+			<classpath>
+				<fileset dir="${lib.dir}">
+					<include name="bukkit*.jar"/>
+					<include name="Factions.jar"/>
+					<include name="mcore.jar"/>
+				</fileset>
+				<filelist dir="${dist.dir}" files="MagicSpells.jar"/>
+			</classpath>
+		</javac>
+		<copy todir="${factions.build.dir}">
+			<fileset dir="${factions.src.dir}">
+				<include name="*.yml"/>
+			</fileset>
+		</copy>
+		<replace file="${factions.build.dir}\plugin.yml" token="VERSION_STRING" value="${factions.version}-dev-${datestamp}"/>
+	</target>
+	
+	<!-- Create the factions jar file -->
+	<target name="factions-jar" depends="factions-compile">
+		<jar destfile="${dist.dir}\MagicSpellsFactions-${factions.version}-${datestamp}.jar" basedir="${factions.build.dir}"/>
+		<copy file="${dist.dir}\MagicSpellsFactions-${factions.version}-${datestamp}.jar" tofile="${dist.dir}\MagicSpellsFactions.jar"/>
+	</target>
+	
 	<!-- Zip everything -->
-	<target name="zip" depends="core-jar, memory-jar, shop-jar, teams-jar">
+	<target name="zip" depends="core-jar, memory-jar, shop-jar, teams-jar, towny-jar, factions-jar">
 		<zip destfile="${dist.dir}\MagicSpells.zip" basedir="${dist.dir}">
 			<include name="MagicSpells.jar"/>
 			<include name="MagicSpellsMemory.jar"/>
 			<include name="MagicSpellsTeams.jar"/>
 			<include name="MagicSpellsShop.jar"/>
+			<include name="MagicSpellsTowny.jar"/>
+			<include name="MagicSpellsFactions.jar"/>
 		</zip>
 	</target>
 

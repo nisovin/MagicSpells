@@ -1,0 +1,4 @@
+name: MagicSpellsFactions
+version: 1.0-dev-1403181201
+main: com.nisovin.magicspells.factions.MagicSpellsFactions
+depend: [ MagicSpells, Factions ]

@@ -1,0 +1,4 @@
+name: MagicSpellsFactions
+version: VERSION_STRING
+main: com.nisovin.magicspells.factions.MagicSpellsFactions
+depend: [ MagicSpells, Factions ]
