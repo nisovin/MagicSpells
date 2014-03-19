@@ -5,5 +5,7 @@ bin/
 bin_memory/
 bin_shop/
 bin_teams/
+bin_towny/
+bin_factions/
 dist/
 src/missing_api.txt
