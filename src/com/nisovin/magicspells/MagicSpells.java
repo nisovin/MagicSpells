@@ -96,6 +96,7 @@ public class MagicSpells extends JavaPlugin {
 	boolean ignoreCastItemNames;
 	boolean ignoreCastItemNameColors;
 	boolean checkWorldPvpFlag;
+	boolean checkScoreboardTeams;
 	
 	boolean enableManaBars;
 	int manaPotionCooldown;
@@ -224,6 +225,7 @@ public class MagicSpells extends JavaPlugin {
 		ignoreCastItemNames = config.getBoolean("general.ignore-cast-item-names", false);
 		ignoreCastItemNameColors = config.getBoolean("general.ignore-cast-item-name-colors", false);
 		checkWorldPvpFlag = config.getBoolean("general.check-world-pvp-flag", true);
+		checkScoreboardTeams = config.getBoolean("general.check-scoreboard-teams", false);
 		showStrCostOnMissingReagents = config.getBoolean("general.show-str-cost-on-missing-reagents", true);
 		losTransparentBlocks = new HashSet<Byte>(config.getByteList("general.los-transparent-blocks", new ArrayList<Byte>()));
 		if (losTransparentBlocks.size() == 0) {

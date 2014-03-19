@@ -28,6 +28,8 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 import org.bukkit.util.BlockIterator;
 
 import com.nisovin.magicspells.castmodifiers.ModifierSet;
@@ -1241,6 +1243,26 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 						if (target != null && MagicSpells.getNoMagicZoneManager() != null && MagicSpells.getNoMagicZoneManager().willFizzle(target.getLocation(), this)) {
 							target = null;
 							continue;
+						}
+						
+						// check for teams
+						if (target != null && target instanceof Player && MagicSpells.plugin.checkScoreboardTeams) {
+							Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+							Team playerTeam = scoreboard.getPlayerTeam(player);
+							Team targetTeam = scoreboard.getPlayerTeam((Player)target);
+							if (playerTeam != null && targetTeam != null) {
+								if (playerTeam.equals(targetTeam)) {
+									if (!playerTeam.allowFriendlyFire() && !this.isBeneficial()) {
+										target = null;
+										continue;
+									}
+								} else {
+									if (this.isBeneficial()) {
+										target = null;
+										continue;
+									}
+								}
+							}
 						}
 						
 						// call event listeners
