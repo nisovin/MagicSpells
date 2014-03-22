@@ -60,16 +60,18 @@ public abstract class TargetedSpell extends InstantSpell {
 	}
 	
 	private String prepareMessage(String message, Player caster, String targetName, Player playerTarget) {
-		message = message.replace("%a", caster.getDisplayName());
-		message = message.replace("%t", targetName);
-		if (playerTarget != null && MagicSpells.getVariableManager() != null && message.contains("%targetvar")) {
-			Matcher matcher = chatVarMatchPattern.matcher(message);
-			while (matcher.find()) {
-				String varText = matcher.group();
-				String[] varData = varText.substring(5, varText.length() - 1).split(":");
-				double val = MagicSpells.getVariableManager().getValue(varData[0], playerTarget);
-				String sval = varData.length == 1 ? Util.getStringNumber(val, -1) : Util.getStringNumber(val, Integer.parseInt(varData[1]));
-				message = message.replace(varText, sval);
+		if (message != null && !message.isEmpty()) {
+			message = message.replace("%a", caster.getDisplayName());
+			message = message.replace("%t", targetName);
+			if (playerTarget != null && MagicSpells.getVariableManager() != null && message.contains("%targetvar")) {
+				Matcher matcher = chatVarMatchPattern.matcher(message);
+				while (matcher.find()) {
+					String varText = matcher.group();
+					String[] varData = varText.substring(5, varText.length() - 1).split(":");
+					double val = MagicSpells.getVariableManager().getValue(varData[0], playerTarget);
+					String sval = varData.length == 1 ? Util.getStringNumber(val, -1) : Util.getStringNumber(val, Integer.parseInt(varData[1]));
+					message = message.replace(varText, sval);
+				}
 			}
 		}
 		return message;
