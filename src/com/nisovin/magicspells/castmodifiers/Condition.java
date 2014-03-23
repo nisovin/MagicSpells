@@ -84,6 +84,10 @@ public abstract class Condition {
 		conditions.put("variablemorethan", VariableMoreThanCondition.class);
 		conditions.put("variablelessthan", VariableLessThanCondition.class);
 		conditions.put("variableequals", VariableEqualsCondition.class);
+		conditions.put("alivelessthan", AliveLessThan.class);
+		conditions.put("alivemorethan", AliveMoreThan.class);
+		conditions.put("lastlifelongerthan", LastLifeLongerThan.class);
+		conditions.put("lastlifeshorterthan", LastLifeShorterThan.class);
 	}
 	
 }

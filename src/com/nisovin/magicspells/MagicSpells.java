@@ -137,6 +137,7 @@ public class MagicSpells extends JavaPlugin {
 	MagicXpHandler magicXpHandler;
 	VariableManager variableManager;
 	MagicLogger magicLogger;
+	LifeLengthTracker lifeLengthTracker;
 	
 	// profiling
 	HashMap<String, Long> profilingTotalTime;
@@ -276,6 +277,7 @@ public class MagicSpells extends JavaPlugin {
 		if (getServer().getPluginManager().isPluginEnabled("Vault")) {
 			moneyHandler = new MoneyHandler();
 		}
+		lifeLengthTracker = new LifeLengthTracker();
 		
 		// call loading event
 		pm.callEvent(new MagicSpellsLoadingEvent(this));
@@ -746,6 +748,10 @@ public class MagicSpells extends JavaPlugin {
 	
 	public static VariableManager getVariableManager() {
 		return plugin.variableManager;
+	}
+	
+	public static LifeLengthTracker getLifeLengthTracker() {
+		return plugin.lifeLengthTracker;
 	}
 	
 	/**
