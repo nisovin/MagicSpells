@@ -9,6 +9,7 @@ import com.nisovin.magicspells.events.ManaChangeEvent;
 public class ManaBar {
 
 	private String playerName;
+	private ManaRank rank;
 	private int maxMana;
 	private int regenAmount;
 	private String prefix;
@@ -17,16 +18,25 @@ public class ManaBar {
 	
 	private int mana;
 	
-	public ManaBar(Player player, int maxMana, int regenAmount) {
-		this.playerName = player.getName().toLowerCase();
-		this.maxMana = maxMana;
-		this.regenAmount = regenAmount;
-		
-		this.mana = maxMana;
+	public ManaBar(Player player, ManaRank rank) {
+		this.playerName = player.getName().toLowerCase();		
+		setRank(rank);		
+	}
+	
+	public void setRank(ManaRank rank) {
+		this.rank = rank;
+		this.maxMana = rank.maxMana;
+		this.regenAmount = rank.regenAmount;
+		this.mana = rank.startingMana;
+		setDisplayData(rank.prefix, rank.colorFull, rank.colorEmpty);
 	}
 	
 	public Player getPlayer() {
 		return Bukkit.getPlayerExact(playerName);
+	}
+	
+	public ManaRank getManaRank() {
+		return rank;
 	}
 	
 	public int getMana() {
@@ -52,7 +62,7 @@ public class ManaBar {
 		this.regenAmount = amount;
 	}
 	
-	public void setDisplayData(String prefix, ChatColor colorFull, ChatColor colorEmpty) {
+	private void setDisplayData(String prefix, ChatColor colorFull, ChatColor colorEmpty) {
 		this.prefix = prefix;
 		this.colorFull = colorFull;
 		this.colorEmpty = colorEmpty;

@@ -24,6 +24,7 @@ public class ManaSystem extends ManaHandler {
 	private int manaBarToolSlot;
 	
 	private int regenInterval;
+	private int defaultStartingMana;
 	private int defaultMaxMana;
 	private int defaultRegenAmount;
 	
@@ -35,6 +36,7 @@ public class ManaSystem extends ManaHandler {
 	
 	private ModifierSet modifiers;
 	
+	private ManaRank defaultRank;
 	private ArrayList<ManaRank> ranks;
 	
 	private HashMap<String, ManaBar> manaBars;
@@ -49,6 +51,7 @@ public class ManaSystem extends ManaHandler {
 		manaBarToolSlot = config.getInt("mana.tool-slot", 8);
 		
 		regenInterval = config.getInt("mana.regen-interval", 20);
+		defaultStartingMana = config.getInt("mana.default-starting-mana", 100);
 		defaultMaxMana = config.getInt("mana.default-max-mana", 100);
 		defaultRegenAmount = config.getInt("mana.default-regen-amount", 5);
 		
@@ -66,12 +69,22 @@ public class ManaSystem extends ManaHandler {
 			}
 		}
 		
+		defaultRank = new ManaRank();
+		defaultRank.name = "default";
+		defaultRank.startingMana = defaultStartingMana;
+		defaultRank.maxMana = defaultMaxMana;
+		defaultRank.regenAmount = defaultRegenAmount;
+		defaultRank.prefix = manaBarPrefix;
+		defaultRank.colorFull = manaBarColorFull;
+		defaultRank.colorEmpty = manaBarColorEmpty;
+		
 		ranks = new ArrayList<ManaRank>();
 		Set<String> rankKeys = config.getKeys("mana.ranks");
 		if (rankKeys != null) {
 			for (String key : rankKeys) {
 				ManaRank r = new ManaRank();
 				r.name = key;
+				r.startingMana = config.getInt("mana.ranks." + key + ".starting-mana", defaultStartingMana);
 				r.maxMana = config.getInt("mana.ranks." + key + ".max-mana", defaultMaxMana);
 				r.regenAmount = config.getInt("mana.ranks." + key + ".regen-amount", defaultRegenAmount);
 				r.prefix = config.getString("mana.ranks." + key + ".prefix", manaBarPrefix);
@@ -91,12 +104,10 @@ public class ManaSystem extends ManaHandler {
 			// create the mana bar
 			ManaRank rank = getRank(player);
 			if (rank != null) {
-				bar = new ManaBar(player, rank.maxMana, rank.regenAmount);
-				bar.setDisplayData(rank.prefix, rank.colorFull, rank.colorEmpty);
+				bar = new ManaBar(player, rank);
 				MagicSpells.debug(1, "Creating mana bar for player " + player.getName() + " with rank " + rank.name);
 			} else {
-				bar = new ManaBar(player, defaultMaxMana, defaultRegenAmount);
-				bar.setDisplayData(manaBarPrefix, manaBarColorFull, manaBarColorEmpty);
+				bar = new ManaBar(player, defaultRank);
 				MagicSpells.debug(1, "Creating mana bar for player " + player.getName() + " with default rank");
 			}
 			manaBars.put(player.getName().toLowerCase(), bar);
@@ -113,18 +124,29 @@ public class ManaSystem extends ManaHandler {
 				ManaRank rank = getRank(player);
 				if (rank != null) {
 					MagicSpells.debug(1, "Creating mana bar for player " + player.getName() + " with rank " + rank.name);
-					bar.setMaxMana(rank.maxMana);
-					bar.setRegenAmount(rank.regenAmount);
-					bar.setDisplayData(rank.prefix, rank.colorFull, rank.colorEmpty);
+					bar.setRank(rank);
 				} else {
 					MagicSpells.debug(1, "Creating mana bar for player " + player.getName() + " with default rank");
-					bar.setMaxMana(defaultMaxMana);
-					bar.setRegenAmount(defaultRegenAmount);
-					bar.setDisplayData(manaBarPrefix, manaBarColorFull, manaBarColorEmpty);
+					bar.setRank(defaultRank);
 				}
 			}
 			showMana(player);
 		}
+	}
+	
+	@Override
+	public boolean updateManaRankIfNecessary(Player player) {
+		if (manaBars.containsKey(player.getName().toLowerCase())) {
+			ManaBar bar = getManaBar(player);
+			ManaRank rank = getRank(player);
+			if (bar.getManaRank() != rank) {
+				bar.setRank(rank);
+				return true;
+			}
+		} else {
+			getManaBar(player);
+		}
+		return false;
 	}
 	
 	private ManaRank getRank(Player player) {
@@ -271,15 +293,6 @@ public class ManaSystem extends ManaHandler {
 		if (taskId > 0) {
 			Bukkit.getScheduler().cancelTask(taskId);
 		}
-	}
-	
-	public class ManaRank {
-		String name;
-		int maxMana;
-		int regenAmount;
-		String prefix;
-		ChatColor colorFull;
-		ChatColor colorEmpty;
 	}
 	
 	public class Regenerator implements Runnable {

@@ -9,6 +9,8 @@ public abstract class ManaHandler {
 
 	public abstract void createManaBar(Player player);
 	
+	public abstract boolean updateManaRankIfNecessary(Player player);
+	
 	public abstract int getMaxMana(Player player);
 	
 	public abstract void setMaxMana(Player player, int amount);

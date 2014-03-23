@@ -16,7 +16,6 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import com.nisovin.magicspells.mana.ManaChangeReason;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.util.Util;
@@ -95,8 +94,17 @@ public class CastCommand implements CommandExecutor, TabCompleter {
 					Player p = Bukkit.getPlayer(args[1]);
 					if (p != null) {
 						plugin.mana.createManaBar(p);
-						plugin.mana.addMana(p, plugin.mana.getMaxMana(p), ManaChangeReason.OTHER);
 						sender.sendMessage(plugin.textColor + p.getName() + "'s mana reset.");
+					}
+				} else if (sender.isOp() && args[0].equals("updatemanarank") && args.length > 1 && plugin.mana != null) {
+					Player p = Bukkit.getPlayer(args[1]);
+					if (p != null) {
+						boolean updated = plugin.mana.updateManaRankIfNecessary(p);
+						if (updated) {
+							sender.sendMessage(plugin.textColor + p.getName() + "'s mana rank updated.");
+						} else {
+							sender.sendMessage(plugin.textColor + p.getName() + "'s mana rank already correct.");
+						}
 					}
 				} else if (sender.isOp() && args[0].equals("modifyvariable") && args.length == 4) {
 					String var = args[1];
