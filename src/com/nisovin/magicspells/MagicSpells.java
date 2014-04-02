@@ -807,7 +807,7 @@ public class MagicSpells extends JavaPlugin {
 	
 	static private Pattern chatVarMatchPattern = Pattern.compile("%var:[A-Za-z0-9_]+(:[0-9]+)?%", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);		
 	static public String doVariableReplacements(Player player, String string) {
-		if (plugin.variableManager != null && string.contains("%var")) {
+		if (string != null && plugin.variableManager != null && string.contains("%var")) {
 			Matcher matcher = chatVarMatchPattern.matcher(string);
 			while (matcher.find()) {
 				String varText = matcher.group();
