@@ -794,16 +794,7 @@ public class MagicSpells extends JavaPlugin {
 	static public void sendMessage(Player player, String message) {
 		if (message != null && !message.equals("")) {
 			// do var replacements
-			if (plugin.variableManager != null && message.contains("%var")) {
-				Matcher matcher = chatVarMatchPattern.matcher(message);
-				while (matcher.find()) {
-					String varText = matcher.group();
-					String[] varData = varText.substring(5, varText.length() - 1).split(":");
-					double val = plugin.variableManager.getValue(varData[0], player);
-					String sval = varData.length == 1 ? Util.getStringNumber(val, -1) : Util.getStringNumber(val, Integer.parseInt(varData[1]));
-					message = message.replace(varText, sval);
-				}
-			}
+			message = doVariableReplacements(player, message);
 			// send messages
 			String [] msgs = message.replaceAll("&([0-9a-fk-or])", "\u00A7$1").split("\n");
 			for (String msg : msgs) {
@@ -813,8 +804,22 @@ public class MagicSpells extends JavaPlugin {
 			}
 		}
 	}
-	static private Pattern chatVarMatchPattern = Pattern.compile("%var:[A-Za-z0-9_]+(:[0-9]+)?%", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
-		
+	
+	static private Pattern chatVarMatchPattern = Pattern.compile("%var:[A-Za-z0-9_]+(:[0-9]+)?%", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);		
+	static public String doVariableReplacements(Player player, String string) {
+		if (plugin.variableManager != null && string.contains("%var")) {
+			Matcher matcher = chatVarMatchPattern.matcher(string);
+			while (matcher.find()) {
+				String varText = matcher.group();
+				String[] varData = varText.substring(5, varText.length() - 1).split(":");
+				double val = plugin.variableManager.getValue(varData[0], player);
+				String sval = varData.length == 1 ? Util.getStringNumber(val, -1) : Util.getStringNumber(val, Integer.parseInt(varData[1]));
+				string = string.replace(varText, sval);
+			}
+		}
+		return string;
+	}
+	
 	public static void registerEvents(final Listener listener) {
 		Method[] methods;
         try {

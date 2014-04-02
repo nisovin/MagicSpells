@@ -5,6 +5,7 @@ import org.bukkit.entity.Player;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.Spell.SpellCastState;
+import com.nisovin.magicspells.events.MagicSpellsGenericPlayerEvent;
 import com.nisovin.magicspells.events.ManaChangeEvent;
 import com.nisovin.magicspells.events.SpellCastEvent;
 import com.nisovin.magicspells.events.SpellTargetEvent;
@@ -185,6 +186,32 @@ public class Modifier {
 				if (type == ModifierType.CAST_INSTEAD) {
 					event.setCancelled(true);
 				}
+			}
+		}
+		return true;
+	}
+	
+	public boolean apply(MagicSpellsGenericPlayerEvent event) {
+		boolean check = condition.check(event.getPlayer());
+		if (check == false && type == ModifierType.REQUIRED) {
+			event.setCancelled(true);
+			return false;
+		} else if (check == true && type == ModifierType.DENIED) {
+			event.setCancelled(true);
+			return false;
+		} else if (check == true && type == ModifierType.STOP) {
+			return false;
+		} else if (check == false && type == ModifierType.CONTINUE) {
+			return false;
+		} else if (check == true && type == ModifierType.CAST) {
+			Spell spell = MagicSpells.getSpellByInternalName(modifierVar);
+			if (spell != null) {
+				spell.cast(event.getPlayer(), 1, null);
+			}
+		} else if (check == true && type == ModifierType.CAST_INSTEAD) {
+			Spell spell = MagicSpells.getSpellByInternalName(modifierVar);
+			if (spell != null) {
+				spell.cast(event.getPlayer(), 1, null);
 			}
 		}
 		return true;

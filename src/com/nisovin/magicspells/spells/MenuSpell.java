@@ -1,7 +1,7 @@
 package com.nisovin.magicspells.spells;
 
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -19,9 +19,12 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
+import com.nisovin.magicspells.castmodifiers.ModifierSet;
+import com.nisovin.magicspells.events.MagicSpellsGenericPlayerEvent;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.Util;
@@ -37,10 +40,8 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 	boolean targetOpensMenuInstead;
 	boolean bypassNormalCast;
 	
-	List<ItemStack> items;
-	List<Spell> spells;
-	List<String> confSpells;
-	float[] powers;
+	Map<String, MenuOption> options = new LinkedHashMap<String, MenuOption>();
+	
 	int size = 9;
 	
 	Map<String, Float> castPower = new HashMap<String, Float>();
@@ -57,46 +58,41 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 		targetOpensMenuInstead = getConfigBoolean("target-opens-menu-instead", false);
 		bypassNormalCast = getConfigBoolean("bypass-normal-cast", true);
 		
-		List<String> confItems = getConfigStringList("items", null);
-		confSpells = getConfigStringList("spells", null);
-		List<String> confPowers = getConfigStringList("powers", null);
-
-		items = new ArrayList<ItemStack>();
-		spells = new ArrayList<Spell>();
-		if (confItems != null && confItems.size() > 0) {
-			powers = new float[confItems.size()];
-			size = (items.size()-1) / 9 + 9;
-		
-			for (int i = 0; i < confItems.size(); i++) {
-				items.add(null);
-				spells.add(null);
-				powers[i] = 1;
-				String[] s = Util.splitParams(confItems.get(i));
-				if (s.length > 2 && s[2].matches("^[0-9]+%?$")) {
-					int chance = Integer.parseInt(s[2].replace("%", ""));
-					if (random.nextInt(100) > chance) continue;
+		int maxSlot = 8;
+		for (String optionName : getConfigKeys("options")) {
+			int optionSlot = getConfigInt("options." + optionName + ".slot", -1);
+			String optionSpellName = getConfigString("options." + optionName + ".spell", "");
+			float optionPower = getConfigFloat("options." + optionName + ".power", 1);
+			ItemStack optionItem;
+			if (isConfigSection("options." + optionName + ".item")) {
+				optionItem = Util.getItemStackFromConfig(getConfigSection("options." + optionName + ".item"));
+			} else {
+				optionItem = Util.getItemStackFromString(getConfigString("options." + optionName + ".item", "stone"));
+			}
+			int optionQuantity = getConfigInt("options." + optionName + ".quantity", 1);
+			List<String> modifierList = getConfigStringList("options." + optionName + ".modifiers", null);
+			if (optionSlot >= 0 && !optionSpellName.isEmpty() && optionItem != null) {
+				optionItem.setAmount(optionQuantity);
+				Util.setLoreData(optionItem, optionName);
+				MenuOption option = new MenuOption();
+				option.slot = optionSlot;
+				option.name = optionName;
+				option.spellName = optionSpellName;
+				option.power = optionPower;
+				option.item = optionItem;
+				if (modifierList != null) {
+					option.modifiers = new ModifierSet(modifierList);
 				}
-				ItemStack item = Util.getItemStackFromString(s[0]);
-				if (item != null) {
-					if (s.length > 1 && s[1].matches("^[0-9]+$")) {
-						item.setAmount(Integer.parseInt(s[1]));
-					}
-					items.set(i, item);
-					if (confPowers != null && confPowers.size() > i) {
-						try {
-							String pow = confPowers.get(i);
-							if (pow != null && !pow.isEmpty()) {
-								powers[i] = Float.parseFloat(pow);
-							}
-						} catch (NumberFormatException e) {
-						}
-					}
+				options.put(optionName, option);
+				if (optionSlot > maxSlot) {
+					maxSlot = optionSlot;
 				}
 			}
 		}
+		size = ((maxSlot / 9) * 9) + 9;
 		
-		if (items.size() == 0) {
-			MagicSpells.error("The MenuSpell '" + spellName + "' has no menu items!");
+		if (options.size() == 0) {
+			MagicSpells.error("The MenuSpell '" + spellName + "' has no menu options!");
 		}
 		
 	}
@@ -105,17 +101,13 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 	public void initialize() {
 		super.initialize();
 		
-		for (int i = 0; i < confSpells.size(); i++) {
-			Spell spell = MagicSpells.getSpellByInternalName(confSpells.get(i));
+		for (MenuOption option : options.values()) {
+			Spell spell = MagicSpells.getSpellByInternalName(option.spellName);
 			if (spell != null) {
-				spells.set(i, spell);
+				option.spell = spell;
 			} else {
-				MagicSpells.error("The MenuSpell '" + internalName + "' has an invalid spell listed: " + confSpells.get(i));
+				MagicSpells.error("The MenuSpell '" + internalName + "' has an invalid spell listed on '" + option.name + "'");
 			}
-		} 
-		
-		if (items.size() != confSpells.size()) {
-			MagicSpells.error("The MenuSpell '" + internalName + "' has mismatched items and spells!");
 		}
 	}
 	
@@ -179,8 +171,26 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 		}
 		
 		Inventory inv = Bukkit.createInventory(opener, size, title);
-		for (int i = 0; i < items.size(); i++) {
-			inv.setItem(i, items.get(i));
+		for (MenuOption option : options.values()) {
+			if (option.spell != null && inv.getItem(option.slot) == null) {
+				if (option.modifiers != null) {
+					MagicSpellsGenericPlayerEvent event = new MagicSpellsGenericPlayerEvent(opener);
+					option.modifiers.apply(event);
+					if (event.isCancelled()) continue;
+				}
+				ItemStack item = option.item;
+				ItemMeta meta = item.getItemMeta();
+				meta.setDisplayName(MagicSpells.doVariableReplacements(opener, meta.getDisplayName()));
+				List<String> lore = meta.getLore();
+				if (lore != null && lore.size() > 1) {
+					for (int i = 0; i < lore.size() - 1; i++) {
+						lore.set(i, MagicSpells.doVariableReplacements(opener, lore.get(i)));
+					}
+					meta.setLore(lore);
+				}
+				item.setItemMeta(meta);
+				inv.setItem(option.slot, item);
+			}
 		}
 		opener.openInventory(inv);
 		
@@ -203,22 +213,26 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 			event.setCancelled(true);
 			final Player player = (Player)event.getWhoClicked();
 			
-			int slot = event.getRawSlot();
-			if (slot >= 0 && spells.size() > slot && event.getCurrentItem() != null) {
-				Spell spell = spells.get(slot);
-				if (spell != null) {
-					float power = powers[slot];
-					if (castPower.containsKey(player.getName())) {
-						power *= castPower.get(player.getName()).floatValue();
-					}
-					if (spell instanceof TargetedEntitySpell && castEntityTarget.containsKey(player.getName())) {
-						((TargetedEntitySpell)spell).castAtEntity(player, castEntityTarget.get(player.getName()), power);
-					} else if (spell instanceof TargetedLocationSpell && castLocTarget.containsKey(player.getName())) {
-						((TargetedLocationSpell)spell).castAtLocation(player, castLocTarget.get(player.getName()), power);
-					} else if (bypassNormalCast) {
-						spell.castSpell(player, SpellCastState.NORMAL, power, null);
-					} else {
-						spell.cast(player, power, null);
+			ItemStack item = event.getCurrentItem();
+			if (item != null) {
+				String data = Util.getLoreData(item);
+				if (data != null && !data.isEmpty() && options.containsKey(data)) {
+					MenuOption option = options.get(data);
+					Spell spell = option.spell;
+					if (spell != null) {
+						float power = option.power;
+						if (castPower.containsKey(player.getName())) {
+							power *= castPower.get(player.getName()).floatValue();
+						}
+						if (spell instanceof TargetedEntitySpell && castEntityTarget.containsKey(player.getName())) {
+							((TargetedEntitySpell)spell).castAtEntity(player, castEntityTarget.get(player.getName()), power);
+						} else if (spell instanceof TargetedLocationSpell && castLocTarget.containsKey(player.getName())) {
+							((TargetedLocationSpell)spell).castAtLocation(player, castLocTarget.get(player.getName()), power);
+						} else if (bypassNormalCast) {
+							spell.castSpell(player, SpellCastState.NORMAL, power, null);
+						} else {
+							spell.cast(player, power, null);
+						}
 					}
 				}
 			}
@@ -293,6 +307,16 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 			}
 		}
 		return false;
+	}
+	
+	class MenuOption {
+		String name;
+		int slot;
+		ItemStack item;
+		String spellName;
+		Spell spell;
+		float power;
+		ModifierSet modifiers;
 	}
 
 }

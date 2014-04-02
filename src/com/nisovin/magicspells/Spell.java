@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -561,6 +562,10 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		}
 	}
 	
+	protected boolean configKeyExists(String key) {
+		return config.contains("spells." + internalName + "." + key);
+	}
+	
 	/**
 	 * Access an integer config value for this spell.
 	 * 
@@ -615,6 +620,22 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	
 	protected List<String> getConfigStringList(String key, List<String> defaultValue) {
 		return config.getStringList("spells." + internalName + "." + key, defaultValue);
+	}
+	
+	protected Set<String> getConfigKeys(String key) {
+		return config.getKeys("spells." + internalName + "." + key);
+	}
+	
+	protected ConfigurationSection getConfigSection(String key) {
+		return config.getSection("spells." + internalName + "." + key);
+	}
+	
+	protected boolean isConfigString(String key) {
+		return config.isString("spells." + internalName + "." + key);
+	}
+	
+	protected boolean isConfigSection(String key) {
+		return config.isSection("spells." + internalName + "." + key);
 	}
 
 	public final SpellCastResult cast(Player player) {
