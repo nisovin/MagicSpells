@@ -72,6 +72,17 @@ public class Modifier {
 		} else if (check == true && type == ModifierType.DENIED) {
 			event.setCancelled(true);
 			return false;
+		} else if (check == true && type == ModifierType.CAST) {
+			Spell spell = MagicSpells.getSpellByInternalName(modifierVar);
+			if (spell != null) {
+				spell.cast(event.getCaster(), event.getPower(), event.getSpellArgs());
+			}
+		} else if (check == true && type == ModifierType.CAST_INSTEAD) {
+			Spell spell = MagicSpells.getSpellByInternalName(modifierVar);
+			if (spell != null) {
+				spell.cast(event.getCaster(), event.getPower(), event.getSpellArgs());
+			}
+			event.setCancelled(true);
 		} else if (check == true) {
 			if (type == ModifierType.STOP) {
 				return false;
@@ -88,17 +99,6 @@ public class Modifier {
 			}
 		} else if (check == false && type == ModifierType.CONTINUE) {
 			return false;
-		} else if (check == true && type == ModifierType.CAST) {
-			Spell spell = MagicSpells.getSpellByInternalName(modifierVar);
-			if (spell != null) {
-				spell.cast(event.getCaster(), event.getPower(), event.getSpellArgs());
-			}
-		} else if (check == true && type == ModifierType.CAST_INSTEAD) {
-			Spell spell = MagicSpells.getSpellByInternalName(modifierVar);
-			if (spell != null) {
-				spell.cast(event.getCaster(), event.getPower(), event.getSpellArgs());
-			}
-			event.setCancelled(true);
 		}
 		return true;
 	}
