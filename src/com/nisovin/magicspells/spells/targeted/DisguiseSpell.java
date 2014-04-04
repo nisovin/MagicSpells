@@ -58,7 +58,7 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 	private boolean toggle;
 	private String strFade;
 	
-	private Map<String, Disguise> disguised;
+	private Map<String, Disguise> disguised = new HashMap<String, Disguise>();
 	
 	public DisguiseSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -245,9 +245,7 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 		toggle = getConfigBoolean("toggle", false);
 		targetSelf = getConfigBoolean("target-self", true);
 		strFade = getConfigString("str-fade", "");
-		
-		disguised = new HashMap<String, Disguise>();
-		
+				
 		if (entityType == null) {
 			MagicSpells.error("Invalid entity-type specified for disguise spell '" + spellName + "'");
 		}
@@ -255,6 +253,7 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 	
 	@Override
 	public void initialize() {
+		if (manager == null) return;
 		super.initialize();
 		if (undisguiseOnCast) {
 			registerEvents(new CastListener());
