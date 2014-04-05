@@ -100,6 +100,7 @@ public class CastCommand implements CommandExecutor, TabCompleter {
 					Player p = Bukkit.getPlayer(args[1]);
 					if (p != null) {
 						boolean updated = plugin.mana.updateManaRankIfNecessary(p);
+						plugin.mana.showMana(p);
 						if (updated) {
 							sender.sendMessage(plugin.textColor + p.getName() + "'s mana rank updated.");
 						} else {

@@ -24,6 +24,7 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.Spell.SpellCastState;
 import com.nisovin.magicspells.events.SpellCastedEvent;
 import com.nisovin.magicspells.events.SpellTargetEvent;
 
@@ -319,24 +320,26 @@ public class VariableManager implements Listener {
 	
 	@EventHandler
 	public void onSpellCasted(SpellCastedEvent event) {
-		Map<String, Double> varMods = event.getSpell().getVariableModsCast();
-		if (varMods != null && varMods.size() > 0) {
-			for (String var : varMods.keySet()) {
-				Variable variable = variables.get(var);
-				if (variable != null) {
-					Player player = event.getCaster();
-					double val = varMods.get(var);
-					if (val == 0) {
-						variable.reset(player);
-					} else {
-						variable.modify(player, val);
+		if (event.getSpellCastState() == SpellCastState.NORMAL) {
+			Map<String, Double> varMods = event.getSpell().getVariableModsCast();
+			if (varMods != null && varMods.size() > 0) {
+				for (String var : varMods.keySet()) {
+					Variable variable = variables.get(var);
+					if (variable != null) {
+						Player player = event.getCaster();
+						double val = varMods.get(var);
+						if (val == 0) {
+							variable.reset(player);
+						} else {
+							variable.modify(player, val);
+						}
+						if (variable instanceof PlayerVariable) {
+							dirtyPlayerVars.add(event.getCaster().getName());
+						} else if (variable instanceof GlobalVariable) {
+							dirtyGlobalVars = true;
+						}
+						MagicSpells.debug(3, "Variable '" + var + "' for player '" + player.getName() + "' modified by " + val + " as a result of spell cast '" + event.getSpell().getName() + "'");
 					}
-					if (variable instanceof PlayerVariable) {
-						dirtyPlayerVars.add(event.getCaster().getName());
-					} else if (variable instanceof GlobalVariable) {
-						dirtyGlobalVars = true;
-					}
-					MagicSpells.debug(3, "Variable '" + var + "' for player '" + player.getName() + "' modified by " + val + " as a result of spell cast '" + event.getSpell().getName() + "'");
 				}
 			}
 		}

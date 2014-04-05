@@ -178,7 +178,7 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 					option.modifiers.apply(event);
 					if (event.isCancelled()) continue;
 				}
-				ItemStack item = option.item;
+				ItemStack item = option.item.clone();
 				ItemMeta meta = item.getItemMeta();
 				meta.setDisplayName(MagicSpells.doVariableReplacements(opener, meta.getDisplayName()));
 				List<String> lore = meta.getLore();

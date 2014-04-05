@@ -341,7 +341,7 @@ public class Util {
 	
 	public static String getLoreData(ItemStack item) {
 		ItemMeta meta = item.getItemMeta();
-		if (meta.hasLore()) {
+		if (meta != null && meta.hasLore()) {
 			List<String> lore = meta.getLore();
 			if (lore.size() > 0) {
 				for (int i = 0; i < lore.size(); i++) {

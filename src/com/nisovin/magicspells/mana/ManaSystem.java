@@ -159,7 +159,7 @@ public class ManaSystem extends ManaHandler {
 			}
 		}
 		MagicSpells.debug(3, "    no rank found");
-		return null;
+		return defaultRank;
 	}
 
 	@Override
