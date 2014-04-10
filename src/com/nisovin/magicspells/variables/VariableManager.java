@@ -27,6 +27,7 @@ import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell.SpellCastState;
 import com.nisovin.magicspells.events.SpellCastedEvent;
 import com.nisovin.magicspells.events.SpellTargetEvent;
+import com.nisovin.magicspells.util.Util;
 
 public class VariableManager implements Listener {
 
@@ -87,7 +88,7 @@ public class VariableManager implements Listener {
 		}
 		loadGlobalVars();
 		for (Player player : Bukkit.getOnlinePlayers()) {
-			loadPlayerVars(player.getName());
+			loadPlayerVars(player.getName(), Util.getUniqueId(player));
 		}
 		
 		// start save task
@@ -226,8 +227,11 @@ public class VariableManager implements Listener {
 		dirtyGlobalVars = false;
 	}
 	
-	private void loadPlayerVars(String player) {
-		File file = new File(folder, "PLAYER_" + player + ".txt");
+	private void loadPlayerVars(String player, String uniqueId) {
+		File file = new File(folder, "PLAYER_" + uniqueId + ".txt");
+		if (!file.exists()) {
+			file = new File(folder, "PLAYER_" + player + ".txt");
+		}
 		if (file.exists()) {
 			try {
 				Scanner scanner = new Scanner(file);
@@ -251,8 +255,8 @@ public class VariableManager implements Listener {
 		dirtyPlayerVars.remove(player);
 	}
 	
-	private void savePlayerVars(String player) {
-		File file = new File(folder, "PLAYER_" + player + ".txt");
+	private void savePlayerVars(String player, String uniqueId) {
+		File file = new File(folder, "PLAYER_" + uniqueId + ".txt");
 		if (file.exists()) file.delete();
 		
 		List<String> lines = new ArrayList<String>();
@@ -291,8 +295,11 @@ public class VariableManager implements Listener {
 	}
 	
 	private void saveAllPlayerVars() {
-		for (String player : new HashSet<String>(dirtyPlayerVars)) {
-			savePlayerVars(player);
+		for (String playerName : new HashSet<String>(dirtyPlayerVars)) {
+			String uid = Util.getUniqueId(playerName);
+			if (uid != null) {
+				savePlayerVars(playerName, uid);
+			}
 		}
 	}
 	
@@ -308,13 +315,13 @@ public class VariableManager implements Listener {
 	
 	@EventHandler
 	public void onJoin(PlayerJoinEvent event) {
-		loadPlayerVars(event.getPlayer().getName());
+		loadPlayerVars(event.getPlayer().getName(), Util.getUniqueId(event.getPlayer()));
 	}
 	
 	@EventHandler
 	public void onQuit(PlayerQuitEvent event) {
 		if (dirtyPlayerVars.contains(event.getPlayer().getName())) {
-			savePlayerVars(event.getPlayer().getName());
+			savePlayerVars(event.getPlayer().getName(), Util.getUniqueId(event.getPlayer()));
 		}
 	}
 	

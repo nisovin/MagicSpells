@@ -16,7 +16,7 @@ class MagicPlayerListener implements Listener {
 	}
 
 	@EventHandler
-	public void onPlayerJoin(PlayerJoinEvent event) {		
+	public void onPlayerJoin(PlayerJoinEvent event) {
 		// set up spell book
 		Spellbook spellbook = new Spellbook(event.getPlayer(), plugin);
 		plugin.spellbooks.put(event.getPlayer().getName(), spellbook);

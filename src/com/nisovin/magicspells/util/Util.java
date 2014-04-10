@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -708,6 +709,25 @@ public class Util {
 		if (places == 0) return (int)Math.round(number) + "";
 		int x = (int)Math.pow(10, places);
 		return ((double)Math.round(number * x) / x) + "";
+	}
+	
+	private static Map<String, String> uniqueIds = new HashMap<String, String>();
+	
+	public static String getUniqueId(Player player) {
+		String uid = player.getUniqueId().toString().replace("-", "");
+		uniqueIds.put(player.getName(), uid);
+		return uid;
+	}
+	
+	public static String getUniqueId(String playerName) {
+		if (uniqueIds.containsKey(playerName)) {
+			return uniqueIds.get(playerName);
+		}
+		Player player = Bukkit.getPlayerExact(playerName);
+		if (player != null) {
+			return getUniqueId(player);
+		}
+		return null;
 	}
 	
 }

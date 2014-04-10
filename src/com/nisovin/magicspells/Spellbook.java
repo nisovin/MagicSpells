@@ -29,6 +29,7 @@ public class Spellbook {
 	
 	private Player player;
 	private String playerName;
+	private String uniqueId;
 	
 	private TreeSet<Spell> allSpells = new TreeSet<Spell>();
 	private HashMap<CastItem, ArrayList<Spell>> itemSpells = new HashMap<CastItem,ArrayList<Spell>>();
@@ -41,6 +42,7 @@ public class Spellbook {
 		this.plugin = plugin;
 		this.player = player;
 		this.playerName = player.getName();
+		this.uniqueId = Util.getUniqueId(player);
 
 		MagicSpells.debug(1, "Loading player spell list: " + playerName);
 		load();
@@ -98,39 +100,47 @@ public class Spellbook {
 				if (!folder.exists()) {
 					folder.mkdir();
 				}
-				file = new File(plugin.getDataFolder(), "spellbooks" + File.separator + playerWorld.getName() + File.separator + playerName.toLowerCase() + ".txt");
+				file = new File(plugin.getDataFolder(), "spellbooks" + File.separator + playerWorld.getName() + File.separator + uniqueId + ".txt");
+				if (!file.exists()) {
+					file = new File(plugin.getDataFolder(), "spellbooks" + File.separator + playerWorld.getName() + File.separator + playerName.toLowerCase() + ".txt");
+				}
 			} else {
-				file = new File(plugin.getDataFolder(), "spellbooks" + File.separator + playerName.toLowerCase() + ".txt");
+				file = new File(plugin.getDataFolder(), "spellbooks" + File.separator + uniqueId + ".txt");
+				if (!file.exists()) {
+					file = new File(plugin.getDataFolder(), "spellbooks" + File.separator + playerName.toLowerCase() + ".txt");
+				}
 			}
-			Scanner scanner = new Scanner(file);
-			while (scanner.hasNext()) {
-				String line = scanner.nextLine();
-				if (!line.equals("")) {
-					if (!line.contains(":")) {
-						Spell spell = MagicSpells.getSpellByInternalName(line);
-						if (spell != null) {
-							addSpell(spell);
-						}
-					} else {
-						String[] data = line.split(":", 2);
-						Spell spell = MagicSpells.getSpellByInternalName(data[0]);
-						if (spell != null) {
-							ArrayList<CastItem> items = new ArrayList<CastItem>();
-							String[] s = data[1].split(",");
-							for (int i = 0; i < s.length; i++) {
-								try {
-									CastItem castItem = new CastItem(s[i]);
-									items.add(castItem);
-								} catch (Exception e) {
-									e.printStackTrace();
-								}
+			if (file.exists()) {
+				Scanner scanner = new Scanner(file);
+				while (scanner.hasNext()) {
+					String line = scanner.nextLine();
+					if (!line.equals("")) {
+						if (!line.contains(":")) {
+							Spell spell = MagicSpells.getSpellByInternalName(line);
+							if (spell != null) {
+								addSpell(spell);
 							}
-							addSpell(spell, items.toArray(new CastItem[items.size()]));
+						} else {
+							String[] data = line.split(":", 2);
+							Spell spell = MagicSpells.getSpellByInternalName(data[0]);
+							if (spell != null) {
+								ArrayList<CastItem> items = new ArrayList<CastItem>();
+								String[] s = data[1].split(",");
+								for (int i = 0; i < s.length; i++) {
+									try {
+										CastItem castItem = new CastItem(s[i]);
+										items.add(castItem);
+									} catch (Exception e) {
+										e.printStackTrace();
+									}
+								}
+								addSpell(spell, items.toArray(new CastItem[items.size()]));
+							}
 						}
 					}
 				}
+				scanner.close();
 			}
-			scanner.close();
 		} catch (Exception e) {
 		}
 	}
@@ -569,9 +579,9 @@ public class Spellbook {
 				if (!folder.exists()) {
 					folder.mkdirs();
 				}
-				file = new File(plugin.getDataFolder(), "spellbooks" + File.separator + player.getWorld().getName() + File.separator + playerName.toLowerCase() + ".txt");
+				file = new File(plugin.getDataFolder(), "spellbooks" + File.separator + player.getWorld().getName() + File.separator + uniqueId + ".txt");
 			} else {
-				file = new File(plugin.getDataFolder(), "spellbooks" + File.separator + playerName.toLowerCase() + ".txt");
+				file = new File(plugin.getDataFolder(), "spellbooks" + File.separator + uniqueId + ".txt");
 			}
 			BufferedWriter writer = new BufferedWriter(new FileWriter(file, false));
 			for (Spell spell : allSpells) {
