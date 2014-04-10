@@ -579,8 +579,12 @@ public class Spellbook {
 				if (!folder.exists()) {
 					folder.mkdirs();
 				}
+				File oldfile = new File(plugin.getDataFolder(), "spellbooks" + File.separator + player.getWorld().getName() + File.separator + playerName + ".txt");
+				if (oldfile.exists()) oldfile.delete();
 				file = new File(plugin.getDataFolder(), "spellbooks" + File.separator + player.getWorld().getName() + File.separator + uniqueId + ".txt");
 			} else {
+				File oldfile = new File(plugin.getDataFolder(), "spellbooks" + File.separator + playerName + ".txt");
+				if (oldfile.exists()) oldfile.delete();
 				file = new File(plugin.getDataFolder(), "spellbooks" + File.separator + uniqueId + ".txt");
 			}
 			BufferedWriter writer = new BufferedWriter(new FileWriter(file, false));

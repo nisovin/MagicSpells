@@ -256,7 +256,9 @@ public class VariableManager implements Listener {
 	}
 	
 	private void savePlayerVars(String player, String uniqueId) {
-		File file = new File(folder, "PLAYER_" + uniqueId + ".txt");
+		File file = new File(folder, "PLAYER_" + player + ".txt");
+		if (file.exists()) file.delete();
+		file = new File(folder, "PLAYER_" + uniqueId + ".txt");
 		if (file.exists()) file.delete();
 		
 		List<String> lines = new ArrayList<String>();
