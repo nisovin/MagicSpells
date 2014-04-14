@@ -69,6 +69,14 @@ public class DisguiseManager_1_7_R1_Injected extends DisguiseManager {
 		backupListener.destroy();
 	}
 
+	private GameProfile getGameProfile(UUID uuid, String name) {
+		try {
+			return GameProfile.class.getDeclaredConstructor(String.class, String.class).newInstance(uuid.toString().replaceAll("-", ""), name);
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
 	private Entity getEntity(Player player, DisguiseSpell.Disguise disguise) {
 		EntityType entityType = disguise.getEntityType();
 		boolean flag = disguise.getFlag();
@@ -80,7 +88,7 @@ public class DisguiseManager_1_7_R1_Injected extends DisguiseManager {
 		if (entityType == EntityType.PLAYER) {
 			String name = disguise.getNameplateText();
 			UUID uuid = UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(Charsets.UTF_8));
-			entity = new EntityHuman(world, new GameProfile(uuid.toString().replaceAll("-", ""), name)) {
+			entity = new EntityHuman(world, getGameProfile(uuid, name)) {
 				@Override
 				public boolean a(int arg0, String arg1) {
 					return false;
