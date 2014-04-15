@@ -230,7 +230,10 @@ public class VariableManager implements Listener {
 	private void loadPlayerVars(String player, String uniqueId) {
 		File file = new File(folder, "PLAYER_" + uniqueId + ".txt");
 		if (!file.exists()) {
-			file = new File(folder, "PLAYER_" + player + ".txt");
+			File file2 = new File(folder, "PLAYER_" + player + ".txt");
+			if (file2.exists()) {
+				file2.renameTo(file);
+			}
 		}
 		if (file.exists()) {
 			try {

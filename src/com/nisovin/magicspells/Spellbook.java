@@ -102,12 +102,18 @@ public class Spellbook {
 				}
 				file = new File(plugin.getDataFolder(), "spellbooks" + File.separator + playerWorld.getName() + File.separator + uniqueId + ".txt");
 				if (!file.exists()) {
-					file = new File(plugin.getDataFolder(), "spellbooks" + File.separator + playerWorld.getName() + File.separator + playerName.toLowerCase() + ".txt");
+					File file2 = new File(plugin.getDataFolder(), "spellbooks" + File.separator + playerWorld.getName() + File.separator + playerName.toLowerCase() + ".txt");
+					if (file2.exists()) {
+						file.renameTo(file);
+					}
 				}
 			} else {
 				file = new File(plugin.getDataFolder(), "spellbooks" + File.separator + uniqueId + ".txt");
 				if (!file.exists()) {
-					file = new File(plugin.getDataFolder(), "spellbooks" + File.separator + playerName.toLowerCase() + ".txt");
+					File file2 = new File(plugin.getDataFolder(), "spellbooks" + File.separator + playerName.toLowerCase() + ".txt");
+					if (file2.exists()) {
+						file.renameTo(file);
+					}
 				}
 			}
 			if (file.exists()) {
