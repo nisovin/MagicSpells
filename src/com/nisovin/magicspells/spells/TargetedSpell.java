@@ -64,7 +64,7 @@ public abstract class TargetedSpell extends InstantSpell {
 			message = message.replace("%a", caster.getDisplayName());
 			message = message.replace("%t", targetName);
 			if (playerTarget != null && MagicSpells.getVariableManager() != null && message.contains("%targetvar")) {
-				Matcher matcher = chatVarMatchPattern.matcher(message);
+				Matcher matcher = chatVarTargetMatchPattern.matcher(message);
 				while (matcher.find()) {
 					String varText = matcher.group();
 					String[] varData = varText.substring(5, varText.length() - 1).split(":");
@@ -73,10 +73,21 @@ public abstract class TargetedSpell extends InstantSpell {
 					message = message.replace(varText, sval);
 				}
 			}
+			if (caster != null && MagicSpells.getVariableManager() != null && message.contains("%castervar")) {
+				Matcher matcher = chatVarCasterMatchPattern.matcher(message);
+				while (matcher.find()) {
+					String varText = matcher.group();
+					String[] varData = varText.substring(5, varText.length() - 1).split(":");
+					double val = MagicSpells.getVariableManager().getValue(varData[0], caster);
+					String sval = varData.length == 1 ? Util.getStringNumber(val, -1) : Util.getStringNumber(val, Integer.parseInt(varData[1]));
+					message = message.replace(varText, sval);
+				}
+			}
 		}
 		return message;
 	}
-	static private Pattern chatVarMatchPattern = Pattern.compile("%targetvar:[A-Za-z0-9_]+(:[0-9]+)?%", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+	static private Pattern chatVarCasterMatchPattern = Pattern.compile("%castervar:[A-Za-z0-9_]+(:[0-9]+)?%", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+	static private Pattern chatVarTargetMatchPattern = Pattern.compile("%targetvar:[A-Za-z0-9_]+(:[0-9]+)?%", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
 	
 	protected String getTargetName(LivingEntity target) {
 		if (target instanceof Player) {
