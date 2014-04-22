@@ -127,6 +127,7 @@ public class ReachSpell extends BuffSpell {
 						BlockState prevState = airBlock.getState();
 						// place block
 						BlockState state = airBlock.getState();
+						state.setType(inHand.getType());
 						state.setData(inHand.getData());
 						state.update(true);
 						// call event

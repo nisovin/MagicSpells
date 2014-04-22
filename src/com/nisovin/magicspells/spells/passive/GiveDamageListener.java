@@ -102,11 +102,8 @@ public class GiveDamageListener extends PassiveListener {
 		Entity e = event.getDamager();
 		if (e instanceof Player) {
 			return (Player)e;
-		} else if (e instanceof Projectile) {
-			LivingEntity shooter = (LivingEntity)((Projectile)e).getShooter();
-			if (shooter instanceof Player) {
-				return (Player)shooter;
-			}
+		} else if (e instanceof Projectile && ((Projectile)e).getShooter() instanceof Player) {
+			return (Player)((Projectile)e).getShooter();
 		}
 		return null;
 	}

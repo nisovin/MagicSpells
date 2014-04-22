@@ -345,7 +345,7 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 	
 	@EventHandler
 	public void onTarget(EntityTargetEvent event) {
-		if (friendlyMobs && event.getTarget() instanceof Player && disguised.containsKey(((Player)event.getTarget()).getName().toLowerCase())) {
+		if (friendlyMobs && event.getTarget() != null && event.getTarget() instanceof Player && disguised.containsKey(((Player)event.getTarget()).getName().toLowerCase())) {
 			event.setCancelled(true);
 		}
 	}
@@ -371,10 +371,10 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 					if (disguised.containsKey(((Player)e).getName().toLowerCase())) {
 						manager.removeDisguise((Player)e);
 					}
-				} else if (e instanceof Projectile) {
-					LivingEntity shooter = (LivingEntity)((Projectile)e).getShooter();
-					if (shooter instanceof Player && disguised.containsKey(((Player)shooter).getName().toLowerCase())) {
-						manager.removeDisguise((Player)shooter);
+				} else if (e instanceof Projectile && ((Projectile)e).getShooter() instanceof Player) {
+					Player shooter = (Player)((Projectile)e).getShooter();
+					if (disguised.containsKey(shooter.getName().toLowerCase())) {
+						manager.removeDisguise(shooter);
 					}
 				}
 			}

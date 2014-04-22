@@ -309,7 +309,7 @@ public abstract class BuffSpell extends Spell {
 				EntityDamageByEntityEvent evt = (EntityDamageByEntityEvent)event;
 				if (evt.getDamager() instanceof Player && isActive((Player)evt.getDamager())) {
 					turnOff((Player)evt.getDamager());
-				} else if (evt.getDamager() instanceof Projectile) {
+				} else if (evt.getDamager() instanceof Projectile && ((Projectile)evt.getDamager()).getShooter() instanceof LivingEntity) {
 					LivingEntity shooter = (LivingEntity)((Projectile)evt.getDamager()).getShooter();
 					if (shooter instanceof Player && isActive((Player)shooter)) {
 						turnOff((Player)shooter);

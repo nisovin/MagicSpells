@@ -142,7 +142,7 @@ public class TakeDamageListener extends PassiveListener {
 			Entity e = ((EntityDamageByEntityEvent)event).getDamager();
 			if (e instanceof LivingEntity) {
 				return (LivingEntity)e;
-			} else if (e instanceof Projectile) {
+			} else if (e instanceof Projectile && ((Projectile)e).getShooter() instanceof LivingEntity) {
 				return (LivingEntity)((Projectile)e).getShooter();
 			}
 		}

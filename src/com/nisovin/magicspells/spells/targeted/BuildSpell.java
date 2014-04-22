@@ -82,6 +82,7 @@ public class BuildSpell extends TargetedSpell implements TargetedLocationSpell {
 		BlockState previousState = block.getState();
 		item.getData();
 		BlockState state = block.getState();
+		state.setType(item.getType());
 		state.setData(item.getData());
 		state.update(true);
 		if (checkPlugins) {
@@ -131,6 +132,7 @@ public class BuildSpell extends TargetedSpell implements TargetedLocationSpell {
 	}
 	
 	private boolean isAllowed(Material mat) {
+		if (!mat.isBlock()) return false;
 		for (int i = 0; i < allowedTypes.length; i++) {
 			if (allowedTypes[i] != null && allowedTypes[i] == mat) {
 				return true;

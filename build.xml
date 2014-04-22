@@ -30,7 +30,15 @@
 	<property name="doc.dir" location="doc"/>
 	<tstamp><format property="datestamp" pattern="yyMMddHHmm"/></tstamp>
 		
-	<target name="build" depends="clean, core-jar, teams-jar, memory-jar, shop-jar, towny-jar, factions-jar, zip"/>
+	<target name="build" depends="build-version, clean, core-jar, teams-jar, memory-jar, shop-jar, towny-jar, factions-jar, zip"/>
+	<target name="build-version">
+		<property name="version.suffix" value="dev-${datestamp}"/>
+	</target>
+	
+	<target name="release" depends="release-version, clean, core-jar, teams-jar, memory-jar, shop-jar, towny-jar, factions-jar, zip"/>
+	<target name="release-version">
+		<property name="version.suffix" value="release"/>
+	</target>
 	
 	<!-- Delete the existing build and dist folders -->
 	<target name="clean">
@@ -61,13 +69,13 @@
 				<include name="*.yml"/>
 			</fileset>
 		</copy>
-		<replace file="${core.build.dir}\plugin.yml" token="VERSION_STRING" value="${core.version}-dev-${datestamp}"/>
+		<replace file="${core.build.dir}\plugin.yml" token="VERSION_STRING" value="${core.version}-${version.suffix}"/>
 	</target>
 
 	<!-- Create the core jar file  -->
 	<target name="core-jar" depends="core-compile">
-		<jar destfile="${dist.dir}\MagicSpells-${core.version}-${datestamp}.jar" basedir="${core.build.dir}"/>
-		<copy file="${dist.dir}\MagicSpells-${core.version}-${datestamp}.jar" tofile="${dist.dir}\MagicSpells.jar"/>
+		<jar destfile="${dist.dir}\MagicSpells-${core.version}-${version.suffix}.jar" basedir="${core.build.dir}"/>
+		<copy file="${dist.dir}\MagicSpells-${core.version}-${version.suffix}.jar" tofile="${dist.dir}\MagicSpells.jar"/>
 	</target>
 	
 	<!-- Compile teams addon -->
@@ -86,13 +94,13 @@
 				<include name="*.yml"/>
 			</fileset>
 		</copy>
-		<replace file="${teams.build.dir}\plugin.yml" token="VERSION_STRING" value="${teams.version}-dev-${datestamp}"/>
+		<replace file="${teams.build.dir}\plugin.yml" token="VERSION_STRING" value="${teams.version}-${version.suffix}"/>
 	</target>
 	
 	<!-- Create the teams jar file -->
 	<target name="teams-jar" depends="teams-compile">
-		<jar destfile="${dist.dir}\MagicSpellsTeams-${teams.version}-${datestamp}.jar" basedir="${teams.build.dir}"/>
-		<copy file="${dist.dir}\MagicSpellsTeams-${teams.version}-${datestamp}.jar" tofile="${dist.dir}\MagicSpellsTeams.jar"/>
+		<jar destfile="${dist.dir}\MagicSpellsTeams-${teams.version}-${version.suffix}.jar" basedir="${teams.build.dir}"/>
+		<copy file="${dist.dir}\MagicSpellsTeams-${teams.version}-${version.suffix}.jar" tofile="${dist.dir}\MagicSpellsTeams.jar"/>
 	</target>
 	
 	<!-- Compile memory addon -->
@@ -111,13 +119,13 @@
 				<include name="*.yml"/>
 			</fileset>
 		</copy>
-		<replace file="${memory.build.dir}\plugin.yml" token="VERSION_STRING" value="${memory.version}-dev-${datestamp}"/>
+		<replace file="${memory.build.dir}\plugin.yml" token="VERSION_STRING" value="${memory.version}-${version.suffix}"/>
 	</target>
 	
 	<!-- Create the teams jar file -->
 	<target name="memory-jar" depends="memory-compile">
-		<jar destfile="${dist.dir}\MagicSpellsMemory-${memory.version}-${datestamp}.jar" basedir="${memory.build.dir}"/>
-		<copy file="${dist.dir}\MagicSpellsMemory-${memory.version}-${datestamp}.jar" tofile="${dist.dir}\MagicSpellsMemory.jar"/>
+		<jar destfile="${dist.dir}\MagicSpellsMemory-${memory.version}-${version.suffix}.jar" basedir="${memory.build.dir}"/>
+		<copy file="${dist.dir}\MagicSpellsMemory-${memory.version}-${version.suffix}.jar" tofile="${dist.dir}\MagicSpellsMemory.jar"/>
 	</target>
 	
 	<!-- Compile shop addon -->
@@ -137,13 +145,13 @@
 				<include name="*.yml"/>
 			</fileset>
 		</copy>
-		<replace file="${shop.build.dir}\plugin.yml" token="VERSION_STRING" value="${shop.version}-dev-${datestamp}"/>
+		<replace file="${shop.build.dir}\plugin.yml" token="VERSION_STRING" value="${shop.version}-${version.suffix}"/>
 	</target>
 	
 	<!-- Create the shop jar file -->
 	<target name="shop-jar" depends="shop-compile">
-		<jar destfile="${dist.dir}\MagicSpellsShop-${shop.version}-${datestamp}.jar" basedir="${shop.build.dir}"/>
-		<copy file="${dist.dir}\MagicSpellsShop-${shop.version}-${datestamp}.jar" tofile="${dist.dir}\MagicSpellsShop.jar"/>
+		<jar destfile="${dist.dir}\MagicSpellsShop-${shop.version}-${version.suffix}.jar" basedir="${shop.build.dir}"/>
+		<copy file="${dist.dir}\MagicSpellsShop-${shop.version}-${version.suffix}.jar" tofile="${dist.dir}\MagicSpellsShop.jar"/>
 	</target>
 	
 	<!-- Compile towny addon -->
@@ -163,13 +171,13 @@
 				<include name="*.yml"/>
 			</fileset>
 		</copy>
-		<replace file="${towny.build.dir}\plugin.yml" token="VERSION_STRING" value="${towny.version}-dev-${datestamp}"/>
+		<replace file="${towny.build.dir}\plugin.yml" token="VERSION_STRING" value="${towny.version}-${version.suffix}"/>
 	</target>
 	
 	<!-- Create the towny jar file -->
 	<target name="towny-jar" depends="towny-compile">
-		<jar destfile="${dist.dir}\MagicSpellsTowny-${towny.version}-${datestamp}.jar" basedir="${towny.build.dir}"/>
-		<copy file="${dist.dir}\MagicSpellsTowny-${towny.version}-${datestamp}.jar" tofile="${dist.dir}\MagicSpellsTowny.jar"/>
+		<jar destfile="${dist.dir}\MagicSpellsTowny-${towny.version}-${version.suffix}.jar" basedir="${towny.build.dir}"/>
+		<copy file="${dist.dir}\MagicSpellsTowny-${towny.version}-${version.suffix}.jar" tofile="${dist.dir}\MagicSpellsTowny.jar"/>
 	</target>
 	
 	<!-- Compile factions addon -->
@@ -190,13 +198,13 @@
 				<include name="*.yml"/>
 			</fileset>
 		</copy>
-		<replace file="${factions.build.dir}\plugin.yml" token="VERSION_STRING" value="${factions.version}-dev-${datestamp}"/>
+		<replace file="${factions.build.dir}\plugin.yml" token="VERSION_STRING" value="${factions.version}-${version.suffix}"/>
 	</target>
 	
 	<!-- Create the factions jar file -->
 	<target name="factions-jar" depends="factions-compile">
-		<jar destfile="${dist.dir}\MagicSpellsFactions-${factions.version}-${datestamp}.jar" basedir="${factions.build.dir}"/>
-		<copy file="${dist.dir}\MagicSpellsFactions-${factions.version}-${datestamp}.jar" tofile="${dist.dir}\MagicSpellsFactions.jar"/>
+		<jar destfile="${dist.dir}\MagicSpellsFactions-${factions.version}-${version.suffix}.jar" basedir="${factions.build.dir}"/>
+		<copy file="${dist.dir}\MagicSpellsFactions-${factions.version}-${version.suffix}.jar" tofile="${dist.dir}\MagicSpellsFactions.jar"/>
 	</target>
 	
 	<!-- Zip everything -->
