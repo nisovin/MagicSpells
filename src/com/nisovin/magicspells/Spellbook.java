@@ -104,7 +104,7 @@ public class Spellbook {
 				if (!file.exists()) {
 					File file2 = new File(plugin.getDataFolder(), "spellbooks" + File.separator + playerWorld.getName() + File.separator + playerName.toLowerCase() + ".txt");
 					if (file2.exists()) {
-						file.renameTo(file);
+						file2.renameTo(file);
 					}
 				}
 			} else {
@@ -112,7 +112,7 @@ public class Spellbook {
 				if (!file.exists()) {
 					File file2 = new File(plugin.getDataFolder(), "spellbooks" + File.separator + playerName.toLowerCase() + ".txt");
 					if (file2.exists()) {
-						file.renameTo(file);
+						file2.renameTo(file);
 					}
 				}
 			}
