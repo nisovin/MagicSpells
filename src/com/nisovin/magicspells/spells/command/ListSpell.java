@@ -54,7 +54,7 @@ public class ListSpell extends CommandSpell {
 			} else {
 				String s = "";
 				for (Spell spell : spellbook.getSpells()) {
-					if ((!onlyShowCastableSpells || spellbook.canCast(spell)) && !(spellsToHide != null && spellsToHide.contains(spell.getInternalName()))) {
+					if (!spell.isHelperSpell() && (!onlyShowCastableSpells || spellbook.canCast(spell)) && !(spellsToHide != null && spellsToHide.contains(spell.getInternalName()))) {
 						if (s.equals("")) {
 							s = spell.getName();
 						} else {

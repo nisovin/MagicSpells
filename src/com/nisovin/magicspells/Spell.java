@@ -59,7 +59,8 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	protected String internalName;
 	protected String name;
 	protected String profilingKey;
-	protected String[] aliases;	
+	protected String[] aliases;
+	protected boolean helperSpell;
 	protected boolean alwaysGranted;
 	protected String permName;
 	protected List<String> incantations;
@@ -153,6 +154,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 			aliases = new String[temp.size()];
 			aliases = temp.toArray(aliases);
 		}
+		this.helperSpell = config.getBoolean(section + "." + spellName + ".helper-spell", false);
 		this.alwaysGranted = config.getBoolean(section + "." + spellName + ".always-granted", false);
 		this.permName = config.getString(section + "." + spellName + ".permission-name", spellName);
 		this.incantations = config.getStringList(section + "." + spellName + ".incantations", null);
@@ -1505,6 +1507,10 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	
 	public String getPermissionName() {
 		return permName;
+	}
+	
+	public boolean isHelperSpell() {
+		return helperSpell;
 	}
 	
 	public String getCantBindError() {

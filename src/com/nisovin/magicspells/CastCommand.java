@@ -153,7 +153,7 @@ public class CastCommand implements CommandExecutor, TabCompleter {
 					Player player = (Player)sender;
 					Spellbook spellbook = MagicSpells.getSpellbook(player);
 					Spell spell = MagicSpells.getSpellByInGameName(args[0]);
-					if (spell != null && spell.canCastByCommand() && spellbook.hasSpell(spell)) {
+					if (spell != null && (!spell.isHelperSpell() || player.isOp()) && spell.canCastByCommand() && spellbook.hasSpell(spell)) {
 						if (spell.isValidItemForCastCommand(player.getItemInHand())) {
 							String[] spellArgs = null;
 							if (args.length > 1) {

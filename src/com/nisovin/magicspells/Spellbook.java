@@ -71,7 +71,7 @@ public class Spellbook {
 		if (plugin.ignoreGrantPerms || (player.isOp() && plugin.opsHaveAllSpells)) {
 			MagicSpells.debug(2, "  Op, granting all spells...");
 			for (Spell spell : plugin.spellsOrdered) {
-				if (!allSpells.contains(spell)) {
+				if (!spell.isHelperSpell() && !allSpells.contains(spell)) {
 					addSpell(spell);
 				}
 			}
@@ -156,7 +156,7 @@ public class Spellbook {
 		boolean added = false;
 		for (Spell spell : plugin.spellsOrdered) {
 			MagicSpells.debug(3, "    Checking spell " + spell.getInternalName() + "...");
-			if (!hasSpell(spell, false)) {
+			if (!spell.isHelperSpell() && !hasSpell(spell, false)) {
 				if (plugin.ignoreGrantPerms || spell.isAlwaysGranted() || player.hasPermission("magicspells.grant." + spell.getPermissionName())) {
 					addSpell(spell);
 					added = true;
@@ -169,6 +169,7 @@ public class Spellbook {
 	}
 	
 	public boolean canLearn(Spell spell) {
+		if (spell.isHelperSpell()) return false;
 		if (cantLearn.contains(spell.getInternalName().toLowerCase())) return false;
 		if (spell.prerequisites != null) {
 			for (String spellName : spell.prerequisites) {
@@ -196,6 +197,7 @@ public class Spellbook {
 	}
 	
 	public boolean canTeach(Spell spell) {
+		if (spell.isHelperSpell()) return false;
 		return player.hasPermission("magicspells.teach." + spell.getPermissionName());
 	}
 	
@@ -223,7 +225,7 @@ public class Spellbook {
 			partial = data[0].toLowerCase();
 			List<String> options = new ArrayList<String>();
 			for (Spell spell : allSpells) {
-				if (spell.canCastByCommand()) {
+				if (spell.canCastByCommand() && !spell.isHelperSpell()) {
 					if (spell.getName().toLowerCase().startsWith(partial)) {
 						options.add(spell.getName());
 					} else {
