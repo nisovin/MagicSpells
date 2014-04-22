@@ -25,7 +25,7 @@ import org.bukkit.scoreboard.Objective;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell.SpellCastState;
-import com.nisovin.magicspells.events.SpellCastedEvent;
+import com.nisovin.magicspells.events.SpellCastEvent;
 import com.nisovin.magicspells.events.SpellTargetEvent;
 import com.nisovin.magicspells.util.Util;
 
@@ -195,7 +195,7 @@ public class VariableManager implements Listener {
 		List<String> lines = new ArrayList<String>();
 		for (String variableName : variables.keySet()) {
 			Variable variable = variables.get(variableName);
-			if (variable instanceof GlobalVariable) {
+			if (variable instanceof GlobalVariable && variable.permanent) {
 				double val = variable.getValue("");
 				if (val != variable.defaultValue) {
 					lines.add(variableName + "=" + val);
@@ -267,7 +267,7 @@ public class VariableManager implements Listener {
 		List<String> lines = new ArrayList<String>();
 		for (String variableName : variables.keySet()) {
 			Variable variable = variables.get(variableName);
-			if (variable instanceof PlayerVariable) {
+			if (variable instanceof PlayerVariable && variable.permanent) {
 				double val = variable.getValue(player);
 				if (val != variable.defaultValue) {
 					lines.add(variableName + "=" + val);
@@ -330,8 +330,8 @@ public class VariableManager implements Listener {
 		}
 	}
 	
-	@EventHandler
-	public void onSpellCasted(SpellCastedEvent event) {
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onSpellCast(SpellCastEvent event) {
 		if (event.getSpellCastState() == SpellCastState.NORMAL) {
 			Map<String, Double> varMods = event.getSpell().getVariableModsCast();
 			if (varMods != null && varMods.size() > 0) {
