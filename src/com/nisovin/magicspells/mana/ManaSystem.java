@@ -51,8 +51,8 @@ public class ManaSystem extends ManaHandler {
 		manaBarToolSlot = config.getInt("mana.tool-slot", 8);
 		
 		regenInterval = config.getInt("mana.regen-interval", 20);
-		defaultStartingMana = config.getInt("mana.default-starting-mana", 100);
 		defaultMaxMana = config.getInt("mana.default-max-mana", 100);
+		defaultStartingMana = config.getInt("mana.default-starting-mana", defaultMaxMana);
 		defaultRegenAmount = config.getInt("mana.default-regen-amount", 5);
 		
 		showManaOnUse = config.getBoolean("mana.show-mana-on-use", false);
@@ -84,8 +84,8 @@ public class ManaSystem extends ManaHandler {
 			for (String key : rankKeys) {
 				ManaRank r = new ManaRank();
 				r.name = key;
-				r.startingMana = config.getInt("mana.ranks." + key + ".starting-mana", defaultStartingMana);
 				r.maxMana = config.getInt("mana.ranks." + key + ".max-mana", defaultMaxMana);
+				r.startingMana = config.getInt("mana.ranks." + key + ".starting-mana", defaultStartingMana);
 				r.regenAmount = config.getInt("mana.ranks." + key + ".regen-amount", defaultRegenAmount);
 				r.prefix = config.getString("mana.ranks." + key + ".prefix", manaBarPrefix);
 				r.colorFull = ChatColor.getByChar(config.getString("mana.ranks." + key + ".color-full", manaBarColorFull.getChar() + ""));
