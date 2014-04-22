@@ -36,6 +36,7 @@ public class TelekinesisSpell extends TargetedSpell implements TargetedLocationS
 		transparent.remove((byte)Material.IRON_PLATE.getId());
 		transparent.remove((byte)Material.GOLD_PLATE.getId());
 		transparent.remove((byte)Material.STONE_BUTTON.getId());
+		transparent.remove((byte)Material.WOOD_BUTTON.getId());
 	}
 	
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
@@ -71,12 +72,12 @@ public class TelekinesisSpell extends TargetedSpell implements TargetedLocationS
 	}
 	
 	private boolean activate(Player caster, Block target) {
-		if (target.getType() == Material.LEVER || target.getType() == Material.STONE_BUTTON) {
+		if (target.getType() == Material.LEVER || target.getType() == Material.STONE_BUTTON || target.getType() == Material.WOOD_BUTTON) {
 			if (checkPlugins(caster, target)) {
 				MagicSpells.getVolatileCodeHandler().toggleLeverOrButton(target);
 				return true;
 			}
-		} else if (target.getType() == Material.WOOD_PLATE || target.getType() == Material.STONE_PLATE) {
+		} else if (target.getType() == Material.WOOD_PLATE || target.getType() == Material.STONE_PLATE || target.getType() == Material.IRON_PLATE || target.getType() == Material.GOLD_PLATE) {
 			if (checkPlugins(caster, target)) {
 				MagicSpells.getVolatileCodeHandler().pressPressurePlate(target);
 				return true;
