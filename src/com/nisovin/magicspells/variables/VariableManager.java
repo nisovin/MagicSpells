@@ -172,7 +172,7 @@ public class VariableManager implements Listener {
 					String line = scanner.nextLine().trim();
 					if (!line.isEmpty()) {
 						String[] s = line.split("=");
-						Variable variable = variables.get(s);
+						Variable variable = variables.get(s[0]);
 						if (variable != null && variable instanceof GlobalVariable) {
 							variable.set("", Double.parseDouble(s[1]));
 						}
