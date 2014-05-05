@@ -114,17 +114,12 @@ public class VariableManager implements Listener {
 		Variable var = variables.get(variable);
 		if (var != null) {
 			var.modify(player, amount);
+			updateBossBar(var, player);
 			if (var.permanent) {
 				if (var instanceof PlayerVariable) {
 					dirtyPlayerVars.add(player);
 				} else if (var instanceof GlobalVariable) {
 					dirtyGlobalVars = true;
-				}
-			}
-			if (var.bossBar != null) {
-				Player p = Bukkit.getPlayerExact(player);
-				if (p != null) {
-					MagicSpells.getBossBarManager().setPlayerBar(p, var.bossBar, var.getValue(player) / var.maxValue);
 				}
 			}
 		}
@@ -138,17 +133,12 @@ public class VariableManager implements Listener {
 		Variable var = variables.get(variable);
 		if (var != null) {
 			var.set(player, amount);
+			updateBossBar(var, player);
 			if (var.permanent) {
 				if (var instanceof PlayerVariable) {
 					dirtyPlayerVars.add(player);
 				} else if (var instanceof GlobalVariable) {
 					dirtyGlobalVars = true;
-				}
-			}
-			if (var.bossBar != null) {
-				Player p = Bukkit.getPlayerExact(player);
-				if (p != null) {
-					MagicSpells.getBossBarManager().setPlayerBar(p, var.bossBar, var.getValue(player) / var.maxValue);
 				}
 			}
 		}
@@ -167,6 +157,7 @@ public class VariableManager implements Listener {
 		Variable var = variables.get(variable);
 		if (var != null) {
 			var.reset(player);
+			updateBossBar(var, player != null ? player.getName() : "");
 			if (var.permanent) {
 				if (var instanceof PlayerVariable) {
 					dirtyPlayerVars.add(player.getName());
@@ -174,8 +165,21 @@ public class VariableManager implements Listener {
 					dirtyGlobalVars = true;
 				}
 			}
-			if (var.bossBar != null) {
-				MagicSpells.getBossBarManager().setPlayerBar(player, var.bossBar, var.getValue(player) / var.maxValue);
+		}
+	}
+	
+	private void updateBossBar(Variable var, String player) {
+		if (var.bossBar != null) {
+			if (var instanceof GlobalVariable) {
+				double pct = var.getValue("") / var.maxValue;
+				for (Player p : Bukkit.getOnlinePlayers()) {
+					MagicSpells.getBossBarManager().setPlayerBar(p, var.bossBar, pct);
+				}
+			} else if (var instanceof PlayerVariable) {
+				Player p = Bukkit.getPlayerExact(player);
+				if (p != null) {
+					MagicSpells.getBossBarManager().setPlayerBar(p, var.bossBar, var.getValue(p) / var.maxValue);
+				}
 			}
 		}
 	}
