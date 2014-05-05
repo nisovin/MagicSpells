@@ -190,4 +190,16 @@ public class VolatileCodeDisabled implements VolatileCodeHandle {
 	@Override
 	public void addAILookAtPlayer(LivingEntity entity, int range) {
 	}
+	
+	@Override
+	public void setBossBar(Player player, String title, double percent) {		
+	}
+	
+	@Override
+	public void updateBossBar(Player player, String title, double percent) {		
+	}
+	
+	@Override
+	public void removeBossBar(Player player) {		
+	}
 }

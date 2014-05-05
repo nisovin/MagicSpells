@@ -68,4 +68,10 @@ public interface VolatileCodeHandle {
 	
 	public void addAILookAtPlayer(LivingEntity entity, int range);
 	
+	public void setBossBar(Player player, String title, double percent);
+	
+	public void updateBossBar(Player player, String title, double percent);
+	
+	public void removeBossBar(Player player);
+	
 }

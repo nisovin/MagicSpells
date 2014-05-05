@@ -8,6 +8,7 @@ import java.util.UUID;
 import net.minecraft.server.v1_7_R3.*;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.craftbukkit.v1_7_R3.CraftServer;
@@ -35,6 +36,7 @@ import com.nisovin.magicspells.util.MagicConfig;
 
 public class VolatileCodeEnabled_1_7_R3 implements VolatileCodeHandle {
 
+	EntityInsentient bossBarEntity;
 	
 	private static NBTTagCompound getTag(ItemStack item) {
 		if (item instanceof CraftItemStack) {
@@ -95,6 +97,11 @@ public class VolatileCodeEnabled_1_7_R3 implements VolatileCodeHandle {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		
+		bossBarEntity = new EntityEnderDragon(((CraftWorld)Bukkit.getWorlds().get(0)).getHandle());
+		bossBarEntity.setCustomNameVisible(false);
+		bossBarEntity.getDataWatcher().watch(0, (Byte)(byte)0x20);
+		
 	}
 	
 	@Override
@@ -483,6 +490,48 @@ public class VolatileCodeEnabled_1_7_R3 implements VolatileCodeHandle {
         } catch (Exception e) {
             e.printStackTrace();
         }
+	}
+	
+	@Override
+	public void setBossBar(Player player, String title, double percent) {
+		bossBarEntity.setCustomName(ChatColor.translateAlternateColorCodes('&', title));
+		bossBarEntity.getDataWatcher().watch(6, (float)(percent * 200));
+		
+		Location l = player.getLocation();
+		bossBarEntity.setLocation(l.getX(), l.getY() - 300, l.getZ(), 0, 0);
+		
+		PacketPlayOutEntityDestroy packetDestroy = new PacketPlayOutEntityDestroy(bossBarEntity.getId());
+		PacketPlayOutSpawnEntityLiving packetSpawn = new PacketPlayOutSpawnEntityLiving(bossBarEntity);
+		PacketPlayOutEntityTeleport packetTeleport = new PacketPlayOutEntityTeleport(bossBarEntity);
+		PacketPlayOutEntityVelocity packetVelocity = new PacketPlayOutEntityVelocity(bossBarEntity.getId(), 1, 0, 1);
+		
+		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetDestroy);
+		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetSpawn);
+		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetTeleport);
+		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetVelocity);
+	}
+	
+	@Override
+	public void updateBossBar(Player player, String title, double percent) {
+		bossBarEntity.setCustomName(ChatColor.translateAlternateColorCodes('&', title));
+		bossBarEntity.getDataWatcher().watch(6, (float)(percent * 200));
+		
+		Location l = player.getLocation();
+		bossBarEntity.setLocation(l.getX(), l.getY() - 300, l.getZ(), 0, 0);
+		
+		PacketPlayOutEntityMetadata packetData = new PacketPlayOutEntityMetadata(bossBarEntity.getId(), bossBarEntity.getDataWatcher(), true);
+		PacketPlayOutEntityTeleport packetTeleport = new PacketPlayOutEntityTeleport(bossBarEntity);
+		PacketPlayOutEntityVelocity packetVelocity = new PacketPlayOutEntityVelocity(bossBarEntity.getId(), 1, 0, 1);
+		
+		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetData);
+		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetTeleport);
+		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetVelocity);
+	}
+	
+	@Override
+	public void removeBossBar(Player player) {		
+		PacketPlayOutEntityDestroy packetDestroy = new PacketPlayOutEntityDestroy(bossBarEntity.getId());
+		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetDestroy);
 	}
 
 }

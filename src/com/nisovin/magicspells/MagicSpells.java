@@ -49,6 +49,7 @@ import com.nisovin.magicspells.materials.ItemNameResolver;
 import com.nisovin.magicspells.materials.MagicItemNameResolver;
 import com.nisovin.magicspells.spells.PassiveSpell;
 import com.nisovin.magicspells.spells.passive.PassiveManager;
+import com.nisovin.magicspells.util.BossBarManager;
 import com.nisovin.magicspells.util.ExperienceBarManager;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.MoneyHandler;
@@ -132,6 +133,7 @@ public class MagicSpells extends JavaPlugin {
 	NoMagicZoneManager noMagicZones;
 	BuffManager buffManager;
 	ExperienceBarManager expBarManager;
+	BossBarManager bossBarManager;
 	ItemNameResolver itemNameResolver;
 	MoneyHandler moneyHandler;
 	MagicXpHandler magicXpHandler;
@@ -273,6 +275,7 @@ public class MagicSpells extends JavaPlugin {
 		noMagicZones = new NoMagicZoneManager();
 		buffManager = new BuffManager(config.getInt("general.buff-check-interval", 0));
 		expBarManager = new ExperienceBarManager();
+		bossBarManager = new BossBarManager();
 		itemNameResolver = new MagicItemNameResolver();
 		if (getServer().getPluginManager().isPluginEnabled("Vault")) {
 			moneyHandler = new MoneyHandler();
@@ -730,6 +733,10 @@ public class MagicSpells extends JavaPlugin {
 		return plugin.expBarManager;
 	}
 	
+	public static BossBarManager getBossBarManager() {
+		return plugin.bossBarManager;
+	}
+	
 	public static ItemNameResolver getItemNameResolver() {
 		return plugin.itemNameResolver;
 	}
@@ -1106,6 +1113,10 @@ public class MagicSpells extends JavaPlugin {
 		if (variableManager != null) {
 			variableManager.disable();
 			variableManager = null;
+		}
+		if (bossBarManager != null) {
+			bossBarManager.turnOff();
+			bossBarManager = null;
 		}
 		expBarManager = null;
 		itemNameResolver = null;

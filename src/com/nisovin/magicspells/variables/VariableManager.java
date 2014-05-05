@@ -70,7 +70,8 @@ public class VariableManager implements Listener {
 						}
 					}
 				}
-				variable.init(def, min, max, perm, objective);
+				String bossBar = section.getString(var + ".boss-bar", null);
+				variable.init(def, min, max, perm, objective, bossBar);
 				variables.put(var, variable);
 				MagicSpells.debug(2, "Loaded variable " + var);
 			}
@@ -89,6 +90,7 @@ public class VariableManager implements Listener {
 		loadGlobalVars();
 		for (Player player : Bukkit.getOnlinePlayers()) {
 			loadPlayerVars(player.getName(), Util.getUniqueId(player));
+			loadBossBar(player);
 		}
 		
 		// start save task
@@ -119,6 +121,12 @@ public class VariableManager implements Listener {
 					dirtyGlobalVars = true;
 				}
 			}
+			if (var.bossBar != null) {
+				Player p = Bukkit.getPlayerExact(player);
+				if (p != null) {
+					MagicSpells.getBossBarManager().setPlayerBar(p, var.bossBar, var.getValue(player) / var.maxValue);
+				}
+			}
 		}
 	}
 	
@@ -135,6 +143,12 @@ public class VariableManager implements Listener {
 					dirtyPlayerVars.add(player);
 				} else if (var instanceof GlobalVariable) {
 					dirtyGlobalVars = true;
+				}
+			}
+			if (var.bossBar != null) {
+				Player p = Bukkit.getPlayerExact(player);
+				if (p != null) {
+					MagicSpells.getBossBarManager().setPlayerBar(p, var.bossBar, var.getValue(player) / var.maxValue);
 				}
 			}
 		}
@@ -159,6 +173,9 @@ public class VariableManager implements Listener {
 				} else if (var instanceof GlobalVariable) {
 					dirtyGlobalVars = true;
 				}
+			}
+			if (var.bossBar != null) {
+				MagicSpells.getBossBarManager().setPlayerBar(player, var.bossBar, var.getValue(player) / var.maxValue);
 			}
 		}
 	}
@@ -308,6 +325,15 @@ public class VariableManager implements Listener {
 		}
 	}
 	
+	private void loadBossBar(Player player) {
+		for (Variable var : variables.values()) {
+			if (var.bossBar != null) {
+				MagicSpells.getBossBarManager().setPlayerBar(player, var.bossBar, var.getValue(player) / var.maxValue);
+				break;
+			}
+		}
+	}
+	
 	public void disable() {
 		if (dirtyGlobalVars) {
 			saveGlobalVars();
@@ -321,6 +347,7 @@ public class VariableManager implements Listener {
 	@EventHandler
 	public void onJoin(PlayerJoinEvent event) {
 		loadPlayerVars(event.getPlayer().getName(), Util.getUniqueId(event.getPlayer()));
+		loadBossBar(event.getPlayer());
 	}
 	
 	@EventHandler

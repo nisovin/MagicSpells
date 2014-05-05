@@ -484,5 +484,19 @@ public class VolatileCodeEnabled_1_7_R1 implements VolatileCodeHandle {
             e.printStackTrace();
         }
 	}
+	
+	@Override
+	public void setBossBar(Player player, String title, double percent) {
+		
+	}
+	
+	@Override
+	public void updateBossBar(Player player, String title, double percent) {
+		
+	}
+	
+	@Override
+	public void removeBossBar(Player player) {		
+	}
 
 }
