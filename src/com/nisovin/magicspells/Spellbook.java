@@ -193,6 +193,7 @@ public class Spellbook {
 	}
 	
 	public boolean canCast(Spell spell) {
+		if (spell.isHelperSpell()) return false;
 		return plugin.ignoreCastPerms || player.hasPermission("magicspells.cast." + spell.getPermissionName());
 	}
 	
