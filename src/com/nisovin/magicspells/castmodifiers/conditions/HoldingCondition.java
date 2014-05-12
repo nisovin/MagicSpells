@@ -30,7 +30,7 @@ public class HoldingCondition extends Condition {
 				if (vardata[i].contains("|")) {
 					String[] subvardata = vardata[i].split("\\|");
 					vardata[i] = subvardata[0];
-					names[i] = ChatColor.translateAlternateColorCodes('&', subvardata[1]);
+					names[i] = ChatColor.translateAlternateColorCodes('&', subvardata[1]).replace("__", " ");
 					if (names[i].isEmpty()) names[i] = null;
 					checkName[i] = true;
 				} else {
