@@ -19,7 +19,6 @@ public class ForcepushSpell extends InstantSpell {
 	private int force;
 	private int yForce;
 	private int maxYForce;
-	private boolean callTargetEvents;
 	
 	public ForcepushSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -28,7 +27,6 @@ public class ForcepushSpell extends InstantSpell {
 		force = getConfigInt("pushback-force", 30);
 		yForce = getConfigInt("additional-vertical-force", 15);
 		maxYForce = getConfigInt("max-vertical-force", 20);
-		callTargetEvents = getConfigBoolean("call-target-events", true);
 	}
 
 	@Override
@@ -45,12 +43,10 @@ public class ForcepushSpell extends InstantSpell {
 		Vector e, v;
 		for (Entity entity : entities) {
 			if (entity instanceof LivingEntity && validTargetList.canTarget(player, (LivingEntity)entity)) {
-				if (callTargetEvents) {
-					SpellTargetEvent event = new SpellTargetEvent(this, player, (LivingEntity)entity);
-					Bukkit.getPluginManager().callEvent(event);
-					if (event.isCancelled()) {
-						continue;
-					}
+				SpellTargetEvent event = new SpellTargetEvent(this, player, (LivingEntity)entity);
+				Bukkit.getPluginManager().callEvent(event);
+				if (event.isCancelled()) {
+					continue;
 				}
 				e = entity.getLocation().toVector();
 				v = e.subtract(p).normalize().multiply(force/10.0*power);
