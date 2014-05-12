@@ -21,6 +21,7 @@ import com.nisovin.magicspells.util.MagicConfig;
 public class ForcebombSpell extends TargetedSpell implements TargetedLocationSpell {
 
 	private int radiusSquared;
+	private float yOffset;
 	private int force;
 	private int yForce;
 	private int maxYForce;
@@ -31,6 +32,7 @@ public class ForcebombSpell extends TargetedSpell implements TargetedLocationSpe
 		
 		radiusSquared = getConfigInt("radius", 3);
 		radiusSquared *= radiusSquared;
+		yOffset = getConfigFloat("y-offset", 0);
 		force = getConfigInt("pushback-force", 30);
 		yForce = getConfigInt("additional-vertical-force", 15);
 		maxYForce = getConfigInt("max-vertical-force", 20);
@@ -51,7 +53,7 @@ public class ForcebombSpell extends TargetedSpell implements TargetedLocationSpe
 				}
 			}
 			if (block != null && block.getType() != Material.AIR) {
-				knockback(player, block.getLocation(), power);
+				knockback(player, block.getLocation().add(0.5, 0, 0.5), power);
 			} else {
 				return noTarget(player);
 			}
@@ -72,6 +74,7 @@ public class ForcebombSpell extends TargetedSpell implements TargetedLocationSpe
 	}
 	
 	public void knockback(Player player, Location location, float power) {
+		location = location.clone().add(0, yOffset, 0);
 	    Vector t = location.toVector();
 		Collection<Entity> entities = location.getWorld().getEntitiesByClasses(LivingEntity.class);
 		Vector e, v;
