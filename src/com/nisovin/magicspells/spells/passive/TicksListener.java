@@ -16,6 +16,8 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spellbook;
+import com.nisovin.magicspells.events.SpellForgetEvent;
+import com.nisovin.magicspells.events.SpellLearnEvent;
 import com.nisovin.magicspells.spells.PassiveSpell;
 
 public class TicksListener extends PassiveListener {
@@ -83,6 +85,28 @@ public class TicksListener extends PassiveListener {
 			ticker.add(event.getPlayer());
 		}
 	}
+	
+	@EventHandler
+	public void onLearn(SpellLearnEvent event) {
+		if (event.getSpell() instanceof PassiveSpell) {
+			for (Ticker ticker : tickers.values()) {
+				if (ticker.monitoringSpell((PassiveSpell)event.getSpell())) {
+					ticker.add(event.getLearner(), (PassiveSpell)event.getSpell());
+				}
+			}
+		}
+	}
+	
+	@EventHandler
+	public void onForget(SpellForgetEvent event) {
+		if (event.getSpell() instanceof PassiveSpell) {
+			for (Ticker ticker : tickers.values()) {
+				if (ticker.monitoringSpell((PassiveSpell)event.getSpell())) {
+					ticker.remove(event.getForgetter(), (PassiveSpell)event.getSpell());
+				}
+			}
+		}
+	}
 
 	class Ticker implements Runnable {
 
@@ -108,10 +132,22 @@ public class TicksListener extends PassiveListener {
 			}
 		}
 		
+		public void add(Player player, PassiveSpell spell) {
+			spells.get(spell).add(player);
+		}
+		
 		public void remove(Player player) {
 			for (Collection<Player> players : spells.values()) {
 				players.remove(player);
 			}
+		}
+		
+		public void remove(Player player, PassiveSpell spell) {
+			spells.get(spell).remove(player);
+		}
+		
+		public boolean monitoringSpell(PassiveSpell spell) {
+			return spells.containsKey(spell);
 		}
 		
 		@Override
