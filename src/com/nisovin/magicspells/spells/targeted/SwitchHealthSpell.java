@@ -9,8 +9,14 @@ import com.nisovin.magicspells.util.MagicConfig;
 
 public class SwitchHealthSpell extends TargetedSpell implements TargetedEntitySpell {
 
+	boolean requireGreaterHealthPercent;
+	boolean requireLesserHealthPercent;
+	
 	public SwitchHealthSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
+		
+		requireGreaterHealthPercent = getConfigBoolean("require-greater-health-percent", false);
+		requireLesserHealthPercent = getConfigBoolean("require-lesser-health-percent", false);
 	}
 
 	@Override
@@ -34,6 +40,8 @@ public class SwitchHealthSpell extends TargetedSpell implements TargetedEntitySp
 		if (caster.isDead() || target.isDead()) return false;
 		double casterPct = caster.getHealth() / caster.getMaxHealth();
 		double targetPct = target.getHealth() / target.getMaxHealth();
+		if (requireGreaterHealthPercent && casterPct < targetPct) return false;
+		if (requireLesserHealthPercent && casterPct > targetPct) return false;
 		caster.setHealth(targetPct * caster.getMaxHealth());
 		target.setHealth(casterPct * target.getMaxHealth());
 		playSpellEffects(caster, target);
