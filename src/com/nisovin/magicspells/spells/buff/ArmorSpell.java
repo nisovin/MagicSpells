@@ -133,6 +133,11 @@ public class ArmorSpell extends BuffSpell {
 		return true;
 	}
 	
+	@Override
+	public boolean recastBuff(Player player, float power, String[] args) {
+		return castBuff(player, power, args);
+	}
+	
 	private void setArmor(PlayerInventory inv) {
 		if (helmet != null) {
 			inv.setHelmet(helmet.clone());
