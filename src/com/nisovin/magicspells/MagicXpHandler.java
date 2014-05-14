@@ -25,6 +25,7 @@ import com.nisovin.magicspells.events.SpellLearnEvent;
 import com.nisovin.magicspells.events.SpellLearnEvent.LearnSource;
 import com.nisovin.magicspells.util.IntMap;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.Util;
 
 public class MagicXpHandler implements Listener {
 
@@ -40,6 +41,7 @@ public class MagicXpHandler implements Listener {
 
 	boolean autoLearn;
 	String strXpHeader;
+	String strNoXp;
 	
 	public MagicXpHandler(MagicSpells plugin, MagicConfig config) {
 		this.plugin = plugin;
@@ -55,6 +57,7 @@ public class MagicXpHandler implements Listener {
 		}
 		autoLearn = config.getBoolean("general.magic-xp-auto-learn", false);
 		strXpHeader = config.getString("general.str-xp-header", null);
+		strNoXp = config.getString("general.str-no-xp", null);
 		
 		for (Spell spell : MagicSpells.spells()) {
 			Map<String, Integer> xpRequired = spell.getXpRequired();
@@ -84,16 +87,22 @@ public class MagicXpHandler implements Listener {
 	}
 	
 	public void showXpInfo(Player player) {
+		MagicSpells.sendMessage(player, strXpHeader);
 		IntMap<String> playerXp = xp.get(player.getName());
 		if (playerXp != null) {
-			MagicSpells.sendMessage(player, strXpHeader);
-			for (String school : playerXp.keySet()) {
-				String schoolName = schools.get(school);
-				if (schoolName != null) {
-					String amt = NumberFormat.getInstance().format(playerXp.get(school));
-					MagicSpells.sendMessage(player, schoolName + ": " + amt);
+			if (playerXp.size() > 0) {
+				for (String school : playerXp.keySet()) {
+					String schoolName = schools.get(school);
+					if (schoolName != null) {
+						String amt = NumberFormat.getInstance().format(playerXp.get(school));
+						MagicSpells.sendMessage(player, schoolName + ": " + amt);
+					}
 				}
+			} else {
+				MagicSpells.sendMessage(player, strNoXp);
 			}
+		} else {
+			MagicSpells.sendMessage(player, strNoXp);
 		}
 	}
 	
@@ -208,7 +217,14 @@ public class MagicXpHandler implements Listener {
 			folder = new File(folder, world);
 			if (!folder.exists()) folder.mkdirs();
 		}
-		File file = new File(folder, player.getName().toLowerCase());
+		String uuid = Util.getUniqueId(player);
+		File file = new File(folder, uuid + ".txt");
+		if (!file.exists()) {
+			File file2 = new File(folder, player.getName().toLowerCase());
+			if (file2.exists()) {
+				file2.renameTo(file);
+			}
+		}
 		if (file.exists()) {
 			YamlConfiguration conf = new YamlConfiguration();
 			try {
@@ -230,9 +246,6 @@ public class MagicXpHandler implements Listener {
 			Player player = Bukkit.getPlayerExact(playerName);
 			if (player != null) {
 				save(player);
-			} else {
-				String world = currentWorld.get(playerName);
-				save(playerName, world);
 			}
 		}
 		dirty.clear();
@@ -241,10 +254,7 @@ public class MagicXpHandler implements Listener {
 	public void save(Player player) {
 		String world = currentWorld.get(player.getName());
 		if (world == null) world = player.getWorld().getName();
-		save(player.getName(), world);
-	}
-	
-	public void save(String player, String world) {
+
 		File folder = new File(plugin.getDataFolder(), "xp");
 		if (!folder.exists()) folder.mkdirs();
 		if (plugin.separatePlayerSpellsPerWorld) {
@@ -252,7 +262,8 @@ public class MagicXpHandler implements Listener {
 			folder = new File(folder, world);
 			if (!folder.exists()) folder.mkdirs();
 		}
-		File file = new File(folder, player.toLowerCase());
+		File file = new File(folder, Util.getUniqueId(player));
+		if (file.exists()) file.delete();
 		
 		YamlConfiguration conf = new YamlConfiguration();
 		IntMap<String> playerXp = xp.get(player);
