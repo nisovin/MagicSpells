@@ -70,10 +70,10 @@ public class GillsSpell extends BuffSpell {
 		if (fishes.remove(player.getName())) {
 			if (glassHeadEffect) {
 				if (helmets.containsKey(player)) {
-					player.getInventory().setHelmet(helmets.get(player));
+					if (player.isOnline()) player.getInventory().setHelmet(helmets.get(player));
 					helmets.remove(player);
 				} else if (player.getInventory().getHelmet() != null && player.getInventory().getHelmet().getType() == Material.GLASS) {
-					player.getInventory().setHelmet(null);				
+					if (player.isOnline()) player.getInventory().setHelmet(null);				
 				}
 			}
 		}

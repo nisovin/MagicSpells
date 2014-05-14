@@ -26,7 +26,7 @@ public class BuffActiveCondition extends Condition {
 
 	@Override
 	public boolean check(Player player) {
-		return buff.isActive(player);
+		return buff.isActiveAndNotExpired(player);
 	}
 	
 	@Override

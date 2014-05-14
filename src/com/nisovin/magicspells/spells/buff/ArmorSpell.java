@@ -240,8 +240,10 @@ public class ArmorSpell extends BuffSpell {
 	@Override
 	public void turnOffBuff(Player player) {
 		if (armored.remove(player.getName())) {
-			PlayerInventory inv = player.getInventory();
-			removeArmor(inv);
+			if (player.isOnline()) {
+				PlayerInventory inv = player.getInventory();
+				removeArmor(inv);
+			}
 		}
 	}
 

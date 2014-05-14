@@ -154,7 +154,7 @@ public abstract class BuffSpell extends Spell {
 	 * Begins counting the spell duration for a player
 	 * @param player the player to begin counting duration
 	 */
-	protected void startSpellDuration(Player player, float power) {
+	protected void startSpellDuration(final Player player, float power) {
 		if (duration > 0 && durationEndTime != null) {
 			float dur = duration;
 			if (powerAffectsDuration) dur *= power;
@@ -163,6 +163,7 @@ public abstract class BuffSpell extends Spell {
 			Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new Runnable() {
 				public void run() {
 					Player p = Bukkit.getPlayerExact(name);
+					if (p == null) p = player;
 					if (p != null && isExpired(p)) {
 						turnOff(p);
 					}
@@ -199,6 +200,11 @@ public abstract class BuffSpell extends Spell {
 				return true;
 			}			
 		}
+	}
+	
+	public boolean isActiveAndNotExpired(Player player) {
+		if (duration > 0 && isExpired(player)) return false;
+		return isActive(player);
 	}
 	
 	/**
