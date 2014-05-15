@@ -202,4 +202,8 @@ public class VolatileCodeDisabled implements VolatileCodeHandle {
 	@Override
 	public void removeBossBar(Player player) {		
 	}
+	
+	@Override
+	public void saveSkinData(Player player, String name) {		
+	}
 }

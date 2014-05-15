@@ -7,6 +7,7 @@ import java.util.UUID;
 import net.minecraft.server.v1_7_R3.*;
 import net.minecraft.util.com.google.common.base.Charsets;
 import net.minecraft.util.com.mojang.authlib.GameProfile;
+import net.minecraft.util.com.mojang.authlib.properties.Property;
 
 import org.bukkit.Bukkit;
 import org.bukkit.EntityEffect;
@@ -34,6 +35,7 @@ import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.spells.targeted.DisguiseSpell;
+import com.nisovin.magicspells.spells.targeted.DisguiseSpell.PlayerDisguiseData;
 import com.nisovin.magicspells.util.DisguiseManager;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.ReflectionHelper;
@@ -68,9 +70,27 @@ public class DisguiseManager_1_7_R3_ProtocolLib extends DisguiseManager {
 		protocolManager.removePacketListener(packetListener);
 	}
 
-	private GameProfile getGameProfile(UUID uuid, String name) {
+	private GameProfile getGameProfile(String name, PlayerDisguiseData data) {
 		try {
-			return GameProfile.class.getDeclaredConstructor(UUID.class, String.class).newInstance(uuid, name);
+			UUID uuid = null;
+			try {
+				if (data != null && data.uuid != null && !data.uuid.isEmpty()) {
+					uuid = UUID.fromString(data.uuid);
+				}
+			} catch (Exception e) {
+			}
+			if (uuid == null) {
+				uuid = UUID.randomUUID();
+			}
+			
+			GameProfile profile = new GameProfile(uuid, name);
+			
+			if (data != null && data.skin != null && data.sig != null) {
+				Property prop = new Property("textures", data.skin, data.sig);
+				profile.getProperties().put("textures", prop);
+			}
+			
+			return profile;
 		} catch (Exception e) {
 			return null;
 		}
@@ -85,9 +105,9 @@ public class DisguiseManager_1_7_R3_ProtocolLib extends DisguiseManager {
 		float yOffset = 0;
 		World world = ((CraftWorld)location.getWorld()).getHandle();
 		String name = disguise.getNameplateText();
-		UUID uuid = UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(Charsets.UTF_8));
+		if (name == null || name.isEmpty()) name = player.getName();
 		if (entityType == EntityType.PLAYER) {
-			entity = new EntityHuman(world, getGameProfile(uuid, name)) {
+			entity = new EntityHuman(world, getGameProfile(name, disguise.getPlayerDisguiseData())) {
 				@Override
 				public boolean a(int arg0, String arg1) {
 					return false;

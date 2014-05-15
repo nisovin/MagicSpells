@@ -74,4 +74,6 @@ public interface VolatileCodeHandle {
 	
 	public void removeBossBar(Player player);
 	
+	public void saveSkinData(Player player, String name);
+	
 }

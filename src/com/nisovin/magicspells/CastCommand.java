@@ -143,6 +143,12 @@ public class CastCommand implements CommandExecutor, TabCompleter {
 							sender.sendMessage(plugin.textColor + "ERROR: The file could not be downloaded.");
 						}
 					}
+				} else if (sender.isOp() && args[0].equals("saveskin") && args.length == 3) {
+					Player player = Bukkit.getPlayerExact(args[1]);
+					if (player != null) {
+						MagicSpells.getVolatileCodeHandler().saveSkinData(player, args[2]);
+						sender.sendMessage("Skin data for player " + player.getName() + " saved as " + args[2]);
+					}
 				} else if (sender.isOp() && args[0].equals("profilereport")) {
 					sender.sendMessage(plugin.textColor + "Creating profiling report");
 					MagicSpells.profilingReport();

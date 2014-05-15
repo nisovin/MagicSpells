@@ -1,10 +1,16 @@
 package com.nisovin.magicspells.spells.targeted;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
+
+import net.minecraft.server.v1_7_R3.PlayerDistanceComparator;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -45,6 +51,9 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 	private int var3 = 0;
 	private boolean showPlayerName = false;
 	private String nameplateText = "";
+	private String uuid = "";
+	private String skin = "";
+	private String skinSig = "";
 	private boolean alwaysShowNameplate = true;
 	private boolean preventPickups = false;
 	private boolean friendlyMobs = true;
@@ -232,6 +241,29 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 		}
 		showPlayerName = getConfigBoolean("show-player-name", false);
 		nameplateText = ChatColor.translateAlternateColorCodes('&', getConfigString("nameplate-text", ""));
+		if (entityType == EntityType.PLAYER) {
+			uuid = getConfigString("uuid", "");
+			String skinName = getConfigString("skin", "skin");
+			File folder = new File(MagicSpells.getInstance().getDataFolder(), "disguiseskins");
+			if (folder.exists()) {
+				try {
+					File file = new File(folder, skinName + ".skin.txt");
+					if (file.exists()) {
+						BufferedReader reader = new BufferedReader(new FileReader(file));
+						skin = reader.readLine();
+						reader.close();
+					}
+					file = new File(folder, skinName + ".sig.txt");
+					if (file.exists()) {
+						BufferedReader reader = new BufferedReader(new FileReader(file));
+						skinSig = reader.readLine();
+						reader.close();
+					}
+				} catch (Exception e) {
+					MagicSpells.handleException(e);
+				}
+			}
+		}
 		alwaysShowNameplate = getConfigBoolean("always-show-nameplate", true);
 		preventPickups = getConfigBoolean("prevent-pickups", true);
 		friendlyMobs = getConfigBoolean("friendly-mobs", true);
@@ -289,7 +321,8 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 	private void disguise(Player player) {
 		String nameplate = nameplateText;
 		if (showPlayerName) nameplate = player.getDisplayName();
-		Disguise disguise = new Disguise(player, entityType, nameplate, alwaysShowNameplate, ridingBoat, flag, var1, var2, var3, duration, this);
+		PlayerDisguiseData playerDisguiseData = (entityType == EntityType.PLAYER ? new PlayerDisguiseData(uuid, skin, skinSig) : null);
+		Disguise disguise = new Disguise(player, entityType, nameplate, playerDisguiseData, alwaysShowNameplate, ridingBoat, flag, var1, var2, var3, duration, this);
 		manager.addDisguise(player, disguise);
 		disguised.put(player.getName().toLowerCase(), disguise);
 		playSpellEffects(EffectPosition.TARGET, player);
@@ -406,6 +439,7 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 		private Player player;
 		private EntityType entityType;
 		private String nameplateText;
+		private PlayerDisguiseData playerDisguiseData;
 		private boolean alwaysShowNameplate;
 		private boolean ridingBoat;
 		private boolean flag;
@@ -416,10 +450,11 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 		
 		private int taskId;
 		
-		public Disguise(Player player, EntityType entityType, String nameplateText, boolean alwaysShowNameplate, boolean ridingBoat, boolean flag, int var1, int var2, int var3, int duration, DisguiseSpell spell) {
+		public Disguise(Player player, EntityType entityType, String nameplateText, PlayerDisguiseData playerDisguiseData, boolean alwaysShowNameplate, boolean ridingBoat, boolean flag, int var1, int var2, int var3, int duration, DisguiseSpell spell) {
 			this.player = player;
 			this.entityType = entityType;
 			this.nameplateText = nameplateText;
+			this.playerDisguiseData = playerDisguiseData;
 			this.alwaysShowNameplate = alwaysShowNameplate;
 			this.ridingBoat = ridingBoat;
 			this.flag = flag;
@@ -442,6 +477,10 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 		
 		public String getNameplateText() {
 			return nameplateText;
+		}
+		
+		public PlayerDisguiseData getPlayerDisguiseData() {
+			return playerDisguiseData;
 		}
 		
 		public boolean alwaysShowNameplate() {
@@ -487,6 +526,17 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 			return spell;
 		}
 		
+	}
+	
+	public class PlayerDisguiseData {
+		public String uuid;
+		public String skin;
+		public String sig;
+		public PlayerDisguiseData(String uuid, String skin, String sig) {
+			this.uuid = uuid;
+			this.skin = skin;
+			this.sig = sig;
+		}
 	}
 	
 }

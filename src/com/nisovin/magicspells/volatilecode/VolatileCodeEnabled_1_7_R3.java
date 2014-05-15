@@ -1,11 +1,16 @@
 package com.nisovin.magicspells.volatilecode;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
 import net.minecraft.server.v1_7_R3.*;
+import net.minecraft.util.com.mojang.authlib.GameProfile;
+import net.minecraft.util.com.mojang.authlib.properties.Property;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -532,6 +537,37 @@ public class VolatileCodeEnabled_1_7_R3 implements VolatileCodeHandle {
 	public void removeBossBar(Player player) {		
 		PacketPlayOutEntityDestroy packetDestroy = new PacketPlayOutEntityDestroy(bossBarEntity.getId());
 		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetDestroy);
+	}
+	
+	@Override
+	public void saveSkinData(Player player, String name) {
+		GameProfile profile = ((CraftPlayer)player).getHandle().getProfile();
+		Collection<Property> props = profile.getProperties().get("textures");
+		for (Property prop : props) {
+			String skin = prop.getValue();
+			String sig = prop.getSignature();
+			
+			File folder = new File(MagicSpells.getInstance().getDataFolder(), "disguiseskins");
+			if (!folder.exists()) {
+				folder.mkdir();
+			}
+			File skinFile = new File(folder, name + ".skin.txt");
+			File sigFile = new File(folder, name + ".sig.txt");
+			try {
+				FileWriter writer = new FileWriter(skinFile);
+				writer.write(skin);
+				writer.flush();
+				writer.close();
+				writer = new FileWriter(sigFile);
+				writer.write(sig);
+				writer.flush();
+				writer.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+			break;
+		}
 	}
 
 }
