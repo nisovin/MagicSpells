@@ -71,7 +71,8 @@ public class VariableManager implements Listener {
 					}
 				}
 				String bossBar = section.getString(var + ".boss-bar", null);
-				variable.init(def, min, max, perm, objective, bossBar);
+				boolean expBar = section.getBoolean(var + ".exp-bar", false);
+				variable.init(def, min, max, perm, objective, bossBar, expBar);
 				variables.put(var, variable);
 				MagicSpells.debug(2, "Loaded variable " + var);
 			}
@@ -115,6 +116,7 @@ public class VariableManager implements Listener {
 		if (var != null) {
 			var.modify(player, amount);
 			updateBossBar(var, player);
+			updateExpBar(var, player);
 			if (var.permanent) {
 				if (var instanceof PlayerVariable) {
 					dirtyPlayerVars.add(player);
@@ -134,6 +136,7 @@ public class VariableManager implements Listener {
 		if (var != null) {
 			var.set(player, amount);
 			updateBossBar(var, player);
+			updateExpBar(var, player);
 			if (var.permanent) {
 				if (var instanceof PlayerVariable) {
 					dirtyPlayerVars.add(player);
@@ -158,6 +161,7 @@ public class VariableManager implements Listener {
 		if (var != null) {
 			var.reset(player);
 			updateBossBar(var, player != null ? player.getName() : "");
+			updateExpBar(var, player != null ? player.getName() : "");
 			if (var.permanent) {
 				if (var instanceof PlayerVariable) {
 					dirtyPlayerVars.add(player.getName());
@@ -179,6 +183,22 @@ public class VariableManager implements Listener {
 				Player p = Bukkit.getPlayerExact(player);
 				if (p != null) {
 					MagicSpells.getBossBarManager().setPlayerBar(p, var.bossBar, var.getValue(p) / var.maxValue);
+				}
+			}
+		}
+	}
+	
+	private void updateExpBar(Variable var, String player) {
+		if (var.expBar) {
+			if (var instanceof GlobalVariable) {
+				double pct = var.getValue("") / var.maxValue;
+				for (Player p : Bukkit.getOnlinePlayers()) {
+					MagicSpells.getVolatileCodeHandler().setExperienceBar(p, (int)var.getValue(""), (float)pct);
+				}
+			} else if (var instanceof PlayerVariable) {
+				Player p = Bukkit.getPlayerExact(player);
+				if (p != null) {
+					MagicSpells.getVolatileCodeHandler().setExperienceBar(p, (int)var.getValue(p), (float)(var.getValue(p) / var.maxValue));
 				}
 			}
 		}
