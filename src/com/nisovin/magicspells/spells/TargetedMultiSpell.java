@@ -26,6 +26,7 @@ public final class TargetedMultiSpell extends TargetedSpell implements TargetedE
 	private boolean showIndividualMessages;
 	private boolean requireEntityTarget;
 	private boolean castRandomSpellInstead;
+	private boolean stopOnFail;
 	
 	private List<String> spellList;
 	private ArrayList<Action> actions;
@@ -39,6 +40,7 @@ public final class TargetedMultiSpell extends TargetedSpell implements TargetedE
 		showIndividualMessages = getConfigBoolean("show-individual-messages", false);
 		requireEntityTarget = getConfigBoolean("require-entity-target", false);
 		castRandomSpellInstead = getConfigBoolean("cast-random-spell-instead", false);
+		stopOnFail = getConfigBoolean("stop-on-fail", true);
 
 		actions = new ArrayList<Action>();
 		spellList = getConfigStringList("spells", null);
@@ -160,7 +162,11 @@ public final class TargetedMultiSpell extends TargetedSpell implements TargetedE
 							somethingWasDone = true;
 						} else {
 							// spell failed - exit loop
-							break;
+							if (stopOnFail) {
+								break;
+							} else {
+								continue;
+							}
 						}
 					} else {
 						DelayedSpell ds = new DelayedSpell(spell, player, entTarget, locTarget, power, delayedSpells);
