@@ -27,6 +27,7 @@ public class VolleySpell extends TargetedSpell implements TargetedLocationSpell,
 	private int arrows;
 	private int speed;
 	private int spread;
+	private int fire;
 	private int shootInterval;
 	private int removeDelay;
 	private boolean noTarget;
@@ -41,6 +42,7 @@ public class VolleySpell extends TargetedSpell implements TargetedLocationSpell,
 		arrows = getConfigInt("arrows", 10);
 		speed = getConfigInt("speed", 20);
 		spread = getConfigInt("spread", 150);
+		fire = getConfigInt("fire", 0);
 		shootInterval = getConfigInt("shoot-interval", 0);
 		removeDelay = getConfigInt("remove-delay", 0);
 		noTarget = getConfigBoolean("no-target", false);
@@ -91,6 +93,9 @@ public class VolleySpell extends TargetedSpell implements TargetedLocationSpell,
 				a.setVelocity(a.getVelocity());
 				if (player != null) {
 					a.setShooter(player);
+				}
+				if (fire > 0) {
+					a.setFireTicks(fire);
 				}
 				a.setMetadata("MagicSpellsSource", new FixedMetadataValue(MagicSpells.plugin, "VolleySpell" + internalName));
 				if (removeDelay > 0) arrowList.add(a);
@@ -187,6 +192,9 @@ public class VolleySpell extends TargetedSpell implements TargetedLocationSpell,
 				a.setVelocity(a.getVelocity());
 				if (player != null) {
 					a.setShooter(player);
+				}
+				if (fire > 0) {
+					a.setFireTicks(fire);
 				}
 				a.setMetadata("MagicSpellsSource", new FixedMetadataValue(MagicSpells.plugin, "VolleySpell" + internalName));
 				if (removeDelay > 0) {
