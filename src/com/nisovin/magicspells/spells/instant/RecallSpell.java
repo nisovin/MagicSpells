@@ -41,6 +41,7 @@ public class RecallSpell extends InstantSpell {
 	
 	@Override
 	public void initialize() {
+		super.initialize();
 		Spell spell = MagicSpells.getSpellByInternalName(markSpellName);
 		if (spell != null && spell instanceof MarkSpell) {
 			marks = ((MarkSpell)spell).getMarks();

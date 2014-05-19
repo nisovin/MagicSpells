@@ -28,11 +28,6 @@ public class WaterwalkSpell extends BuffSpell {
 		
 		waterwalking = new HashSet<String>();
 	}
-	
-	@Override
-	public void initialize() {
-		
-	}
 
 	@Override
 	public boolean castBuff(Player player, float power, String[] args) {

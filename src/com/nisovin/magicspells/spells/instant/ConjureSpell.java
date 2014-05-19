@@ -165,8 +165,10 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 				if (!added && addToInventory) {
 					if (requiredSlot >= 0) {
 						inv.setItem(requiredSlot, item);
+						added = true;
 					} else if (preferredSlot >= 0 && inv.getItem(preferredSlot) == null) {
 						inv.setItem(preferredSlot, item);
+						added = true;
 						updateInv = true;
 					} else {
 						added = Util.addToInventory(inv, item);

@@ -52,6 +52,7 @@ public class WallSpell extends InstantSpell {
 	
 	@Override
 	public void initialize() {
+		super.initialize();
 		if ((preventBreaking || preventDrops) && wallDuration > 0) {
 			registerEvents(new BreakListener());
 		}

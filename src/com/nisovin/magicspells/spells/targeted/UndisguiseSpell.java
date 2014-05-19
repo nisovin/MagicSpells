@@ -19,6 +19,7 @@ public class UndisguiseSpell extends TargetedSpell implements TargetedEntitySpel
 	
 	@Override
 	public void initialize() {
+		super.initialize();
 		manager = DisguiseSpell.getDisguiseManager();
 	}
 
