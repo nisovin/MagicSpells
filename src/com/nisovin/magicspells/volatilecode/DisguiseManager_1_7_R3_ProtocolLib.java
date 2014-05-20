@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.UUID;
 
 import net.minecraft.server.v1_7_R3.*;
-import net.minecraft.util.com.google.common.base.Charsets;
 import net.minecraft.util.com.mojang.authlib.GameProfile;
 import net.minecraft.util.com.mojang.authlib.properties.Property;
 
@@ -423,7 +422,7 @@ public class DisguiseManager_1_7_R3_ProtocolLib extends DisguiseManager {
 		public PacketListener() {
 			super(MagicSpells.plugin, ConnectionSide.SERVER_SIDE, ListenerPriority.NORMAL, 
 					Packets.Server.NAMED_ENTITY_SPAWN, Packets.Server.ENTITY_EQUIPMENT, Packets.Server.REL_ENTITY_MOVE, Packets.Server.REL_ENTITY_MOVE_LOOK,
-					Packets.Server.ENTITY_METADATA, Packets.Server.ENTITY_TELEPORT, Packets.Server.ENTITY_HEAD_ROTATION);
+					Packets.Server.ENTITY_LOOK, Packets.Server.ENTITY_METADATA, Packets.Server.ENTITY_TELEPORT, Packets.Server.ENTITY_HEAD_ROTATION);
 		}
 		
 		@Override
@@ -596,36 +595,7 @@ public class DisguiseManager_1_7_R3_ProtocolLib extends DisguiseManager {
 			PacketPlayOutNamedEntitySpawn packet20 = new PacketPlayOutNamedEntitySpawn((EntityHuman)entity);
 			refPacketNamedEntity.setInt(packet20, "a", disguised.getEntityId());
 			packets.add(packet20);
-			
-			ItemStack inHand = disguised.getItemInHand();
-			if (inHand != null && inHand.getType() != Material.AIR) {
-				PacketPlayOutEntityEquipment packet5 = new PacketPlayOutEntityEquipment(disguised.getEntityId(), 0, CraftItemStack.asNMSCopy(inHand));
-				packets.add(packet5);
-			}
-			
-			ItemStack helmet = disguised.getInventory().getHelmet();
-			if (helmet != null && helmet.getType() != Material.AIR) {
-				PacketPlayOutEntityEquipment packet5 = new PacketPlayOutEntityEquipment(disguised.getEntityId(), 4, CraftItemStack.asNMSCopy(helmet));
-				packets.add(packet5);
-			}
-			
-			ItemStack chestplate = disguised.getInventory().getChestplate();
-			if (chestplate != null && chestplate.getType() != Material.AIR) {
-				PacketPlayOutEntityEquipment packet5 = new PacketPlayOutEntityEquipment(disguised.getEntityId(), 3, CraftItemStack.asNMSCopy(chestplate));
-				packets.add(packet5);
-			}
-			
-			ItemStack leggings = disguised.getInventory().getLeggings();
-			if (leggings != null && leggings.getType() != Material.AIR) {
-				PacketPlayOutEntityEquipment packet5 = new PacketPlayOutEntityEquipment(disguised.getEntityId(), 2, CraftItemStack.asNMSCopy(leggings));
-				packets.add(packet5);
-			}
-			
-			ItemStack boots = disguised.getInventory().getBoots();
-			if (boots != null && boots.getType() != Material.AIR) {
-				PacketPlayOutEntityEquipment packet5 = new PacketPlayOutEntityEquipment(disguised.getEntityId(), 1, CraftItemStack.asNMSCopy(boots));
-				packets.add(packet5);
-			}
+			addEquipmentPackets(disguised, packets);
 		} else if (entity instanceof EntityLiving) {
 			PacketPlayOutSpawnEntityLiving packet24 = new PacketPlayOutSpawnEntityLiving((EntityLiving)entity);
 			refPacketSpawnEntityLiving.setInt(packet24, "a", disguised.getEntityId());
@@ -645,11 +615,7 @@ public class DisguiseManager_1_7_R3_ProtocolLib extends DisguiseManager {
 			}
 			
 			if (disguise.getEntityType() == EntityType.ZOMBIE || disguise.getEntityType() == EntityType.SKELETON) {
-				ItemStack inHand = disguised.getItemInHand();
-				if (inHand != null && inHand.getType() != Material.AIR) {
-					PacketPlayOutEntityEquipment packet5 = new PacketPlayOutEntityEquipment(disguised.getEntityId(), 0, CraftItemStack.asNMSCopy(inHand));
-					packets.add(packet5);
-				}
+				addEquipmentPackets(disguised, packets);
 			}
 		} else if (entity instanceof EntityFallingBlock) {
 			PacketPlayOutSpawnEntity packet23 = new PacketPlayOutSpawnEntity(entity, 70, disguise.getVar1() | ((byte)disguise.getVar2()) << 16);
@@ -697,6 +663,38 @@ public class DisguiseManager_1_7_R3_ProtocolLib extends DisguiseManager {
 		}
 		
 		return packets;
+	}
+	
+	private void addEquipmentPackets(Player disguised, List<Packet> packets) {
+		ItemStack inHand = disguised.getItemInHand();
+		if (inHand != null && inHand.getType() != Material.AIR) {
+			PacketPlayOutEntityEquipment packet5 = new PacketPlayOutEntityEquipment(disguised.getEntityId(), 0, CraftItemStack.asNMSCopy(inHand));
+			packets.add(packet5);
+		}
+		
+		ItemStack helmet = disguised.getInventory().getHelmet();
+		if (helmet != null && helmet.getType() != Material.AIR) {
+			PacketPlayOutEntityEquipment packet5 = new PacketPlayOutEntityEquipment(disguised.getEntityId(), 4, CraftItemStack.asNMSCopy(helmet));
+			packets.add(packet5);
+		}
+		
+		ItemStack chestplate = disguised.getInventory().getChestplate();
+		if (chestplate != null && chestplate.getType() != Material.AIR) {
+			PacketPlayOutEntityEquipment packet5 = new PacketPlayOutEntityEquipment(disguised.getEntityId(), 3, CraftItemStack.asNMSCopy(chestplate));
+			packets.add(packet5);
+		}
+		
+		ItemStack leggings = disguised.getInventory().getLeggings();
+		if (leggings != null && leggings.getType() != Material.AIR) {
+			PacketPlayOutEntityEquipment packet5 = new PacketPlayOutEntityEquipment(disguised.getEntityId(), 2, CraftItemStack.asNMSCopy(leggings));
+			packets.add(packet5);
+		}
+		
+		ItemStack boots = disguised.getInventory().getBoots();
+		if (boots != null && boots.getType() != Material.AIR) {
+			PacketPlayOutEntityEquipment packet5 = new PacketPlayOutEntityEquipment(disguised.getEntityId(), 1, CraftItemStack.asNMSCopy(boots));
+			packets.add(packet5);
+		}
 	}
 	
 	@Override
