@@ -1,6 +1,8 @@
 package com.nisovin.magicspells.materials;
 
 import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.material.MaterialData;
 
 public class MagicBlockRandomMaterial extends MagicBlockMaterial {
@@ -19,6 +21,15 @@ public class MagicBlockRandomMaterial extends MagicBlockMaterial {
 	@Override
 	public MaterialData getMaterialData() {
 		return datas[ItemNameResolver.rand.nextInt(datas.length)];
+	}
+	
+	@Override
+	public void setBlock(Block block, boolean applyPhysics) {
+		MaterialData data = datas[ItemNameResolver.rand.nextInt(datas.length)];
+		BlockState state = block.getState();
+		state.setType(data.getItemType());
+		state.setData(data);
+		state.update(true, applyPhysics);
 	}
 	
 	@Override
