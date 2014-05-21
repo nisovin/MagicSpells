@@ -118,12 +118,13 @@ public class PulserSpell extends TargetedSpell implements TargetedLocationSpell 
 				return noTarget(player);
 			}
 			if (target != null) {
-				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, target.getLocation());
+				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, target.getLocation(), power);
 				Bukkit.getPluginManager().callEvent(event);
 				if (event.isCancelled()) {
 					return noTarget(player);
 				} else {
 					target = event.getTargetLocation().getBlock();
+					power = event.getPower();
 				}
 			}
 			createPulser(player, target, power);

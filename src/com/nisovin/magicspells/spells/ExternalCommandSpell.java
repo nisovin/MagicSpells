@@ -18,6 +18,7 @@ import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.MessageBlocker;
+import com.nisovin.magicspells.util.TargetInfo;
 import com.nisovin.magicspells.util.ValidTargetList;
 
 public class ExternalCommandSpell extends TargetedSpell implements TargetedEntitySpell {
@@ -89,7 +90,7 @@ public class ExternalCommandSpell extends TargetedSpell implements TargetedEntit
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
 			// get target if necessary
-			Player target = null;
+			TargetInfo<Player> target = null;
 			if (requirePlayerTarget) {
 				target = getTargetedPlayer(player, power);
 				if (target == null) {
@@ -97,7 +98,7 @@ public class ExternalCommandSpell extends TargetedSpell implements TargetedEntit
 					return PostCastAction.ALREADY_HANDLED;
 				}
 			}
-			process(player, target, args);
+			process(player, target.getTarget(), args);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}

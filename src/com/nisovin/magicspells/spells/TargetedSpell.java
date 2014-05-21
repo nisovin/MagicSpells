@@ -3,6 +3,7 @@ package com.nisovin.magicspells.spells;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
@@ -10,7 +11,9 @@ import org.bukkit.entity.Player;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
+import com.nisovin.magicspells.events.SpellTargetEvent;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 import com.nisovin.magicspells.util.Util;
 
 public abstract class TargetedSpell extends InstantSpell {
@@ -123,9 +126,15 @@ public abstract class TargetedSpell extends InstantSpell {
 	}
 	
 	@Override
-	protected LivingEntity getTargetedEntity(Player player, float power, boolean forceTargetPlayers, ValidTargetChecker checker) {
+	protected TargetInfo<LivingEntity> getTargetedEntity(Player player, float power, boolean forceTargetPlayers, ValidTargetChecker checker) {
 		if (targetSelf) {
-			return player;
+			SpellTargetEvent event = new SpellTargetEvent(this, player, player, power);
+			Bukkit.getPluginManager().callEvent(event);
+			if (!event.isCancelled()) {
+				return new TargetInfo<LivingEntity>(event.getTarget(), event.getPower());
+			} else {
+				return null;
+			}
 		} else {
 			return super.getTargetedEntity(player, power, forceTargetPlayers, checker);
 		}

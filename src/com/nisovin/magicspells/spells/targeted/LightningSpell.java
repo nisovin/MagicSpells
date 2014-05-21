@@ -13,6 +13,7 @@ import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 
 public class LightningSpell extends TargetedSpell implements TargetedLocationSpell {
 	
@@ -36,7 +37,11 @@ public class LightningSpell extends TargetedSpell implements TargetedLocationSpe
 			Block target = null;
 			LivingEntity entityTarget = null;
 			if (requireEntityTarget) {
-				entityTarget = getTargetedEntity(player, power);
+				TargetInfo<LivingEntity> targetInfo = getTargetedEntity(player, power);
+				if (targetInfo != null) {
+					entityTarget = targetInfo.getTarget();
+					power = targetInfo.getPower();
+				}
 				if (entityTarget != null && entityTarget instanceof Player && checkPlugins) {
 					EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, entityTarget, DamageCause.ENTITY_ATTACK, 1 + additionalDamage);
 					Bukkit.getServer().getPluginManager().callEvent(event);
@@ -59,12 +64,13 @@ public class LightningSpell extends TargetedSpell implements TargetedLocationSpe
 					target = null;
 				}
 				if (target != null) {
-					SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, target.getLocation());
+					SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, target.getLocation(), power);
 					Bukkit.getPluginManager().callEvent(event);
 					if (event.isCancelled()) {
 						target = null;
 					} else {
 						target = event.getTargetLocation().getBlock();
+						power = event.getPower();
 					}
 				}
 			}

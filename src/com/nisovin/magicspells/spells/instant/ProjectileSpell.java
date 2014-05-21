@@ -192,25 +192,28 @@ public class ProjectileSpell extends InstantSpell {
 		if (!info.done && (maxDistanceSquared == 0 || projectile.getLocation().distanceSquared(info.start) <= maxDistanceSquared)) { 
 			
 			if (aoeRadius == 0) {
+				float power = info.power;
+				
 				// check player
 				if (!targetPlayers && target instanceof Player) return false;
 				
 				// call target event
-				SpellTargetEvent evt = new SpellTargetEvent(this, info.player, target);
+				SpellTargetEvent evt = new SpellTargetEvent(this, info.player, target, power);
 				Bukkit.getPluginManager().callEvent(evt);
 				if (evt.isCancelled()) {
 					return false;
 				} else if (allowTargetChange) {
 					target = evt.getTarget();
+					power = evt.getPower();
 				}
 				
 				// run spells
 				for (Spell spell : spells) {
 					if (spell instanceof TargetedEntitySpell) {
-						((TargetedEntitySpell)spell).castAtEntity(info.player, target, info.power);
+						((TargetedEntitySpell)spell).castAtEntity(info.player, target, power);
 						playSpellEffects(EffectPosition.TARGET, target);
 					} else if (spell instanceof TargetedLocationSpell) {
-						((TargetedLocationSpell)spell).castAtLocation(info.player, target.getLocation(), info.power);
+						((TargetedLocationSpell)spell).castAtLocation(info.player, target.getLocation(), power);
 						playSpellEffects(EffectPosition.TARGET, target.getLocation());
 					}
 				}
@@ -266,23 +269,25 @@ public class ProjectileSpell extends InstantSpell {
 		for (Entity entity : entities) {
 			if (entity instanceof LivingEntity && (targetPlayers || !(entity instanceof Player)) && !entity.equals(info.player)) {
 				LivingEntity target = (LivingEntity)entity;
+				float power = info.power;
 				
 				// call target event
-				SpellTargetEvent evt = new SpellTargetEvent(this, info.player, target);
+				SpellTargetEvent evt = new SpellTargetEvent(this, info.player, target, power);
 				Bukkit.getPluginManager().callEvent(evt);
 				if (evt.isCancelled()) {
 					continue;
 				} else if (allowTargetChange) {
 					target = evt.getTarget();
 				}
+				power = evt.getPower();
 				
 				// run spells
 				for (Spell spell : spells) {
 					if (spell instanceof TargetedEntitySpell) {
-						((TargetedEntitySpell)spell).castAtEntity(info.player, target, info.power);
+						((TargetedEntitySpell)spell).castAtEntity(info.player, target, power);
 						playSpellEffects(EffectPosition.TARGET, target);
 					} else if (spell instanceof TargetedLocationSpell) {
-						((TargetedLocationSpell)spell).castAtLocation(info.player, target.getLocation(), info.power);
+						((TargetedLocationSpell)spell).castAtLocation(info.player, target.getLocation(), power);
 						playSpellEffects(EffectPosition.TARGET, target.getLocation());
 					}
 				}

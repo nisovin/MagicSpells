@@ -11,6 +11,7 @@ import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.BlockUtils;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 
 public class ShadowstepSpell extends TargetedSpell implements TargetedEntitySpell {
 
@@ -25,17 +26,17 @@ public class ShadowstepSpell extends TargetedSpell implements TargetedEntitySpel
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, power);
+			TargetInfo<LivingEntity> target = getTargetedEntity(player, power);
 			if (target == null) {
 				// fail
 				return noTarget(player);
 			}
 			
-			boolean done = shadowstep(player, target);
+			boolean done = shadowstep(player, target.getTarget());
 			if (!done) {
 				return noTarget(player, strNoLandingSpot);
 			} else {
-				sendMessages(player, target);
+				sendMessages(player, target.getTarget());
 				return PostCastAction.NO_MESSAGES;
 			}
 			

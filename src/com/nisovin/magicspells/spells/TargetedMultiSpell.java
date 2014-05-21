@@ -18,6 +18,7 @@ import com.nisovin.magicspells.events.SpellCastEvent;
 import com.nisovin.magicspells.events.SpellTargetEvent;
 import com.nisovin.magicspells.events.SpellTargetLocationEvent;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 
 public final class TargetedMultiSpell extends TargetedSpell implements TargetedEntitySpell, TargetedLocationSpell {
 
@@ -92,7 +93,11 @@ public final class TargetedMultiSpell extends TargetedSpell implements TargetedE
 			Location locTarget = null;
 			LivingEntity entTarget = null;
 			if (requireEntityTarget) {
-				entTarget = getTargetedEntity(player, power);
+				TargetInfo<LivingEntity> info = getTargetedEntity(player, power);
+				if (info != null) {
+					entTarget = info.getTarget();
+					power = info.getPower();
+				}
 			} else {
 				Block b = null;
 				try {
@@ -203,19 +208,21 @@ public final class TargetedMultiSpell extends TargetedSpell implements TargetedE
 			ModifierSet targetModifers = spell.getTargetModifiers();
 			if (targetModifers != null) {
 				if (entTarget != null) {
-					SpellTargetEvent event = new SpellTargetEvent(spell, caster, entTarget);
+					SpellTargetEvent event = new SpellTargetEvent(spell, caster, entTarget, power);
 					targetModifiers.apply(event);
 					if (event.isCancelled()) {
 						return false;
 					}
 					entTarget = event.getTarget();
+					power = event.getPower();
 				} else if (locTarget != null) {
-					SpellTargetLocationEvent event = new SpellTargetLocationEvent(spell, caster, locTarget);
+					SpellTargetLocationEvent event = new SpellTargetLocationEvent(spell, caster, locTarget, power);
 					targetModifiers.apply(event);
 					if (event.isCancelled()) {
 						return false;
 					}
 					locTarget = event.getTargetLocation();
+					power = event.getPower();
 				}
 			}
 		}

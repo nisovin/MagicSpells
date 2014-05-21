@@ -10,6 +10,7 @@ import org.bukkit.util.Vector;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 
 public class ForcetossSpell extends TargetedSpell implements TargetedEntitySpell {
 
@@ -31,10 +32,12 @@ public class ForcetossSpell extends TargetedSpell implements TargetedEntitySpell
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
 			// get target
-			LivingEntity target = getTargetedEntity(player, power);
-			if (target == null) {
+			TargetInfo<LivingEntity> targetInfo = getTargetedEntity(player, power);
+			if (targetInfo == null) {
 				return noTarget(player);
 			}
+			LivingEntity target = targetInfo.getTarget();
+			power = targetInfo.getPower();
 			
 			// do damage
 			if (damage > 0) {

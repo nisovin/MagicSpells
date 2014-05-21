@@ -10,6 +10,7 @@ import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.BlockUtils;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 
 public class GripSpell extends TargetedSpell implements TargetedEntitySpell, TargetedEntityFromLocationSpell {
 
@@ -29,13 +30,13 @@ public class GripSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, power);
+			TargetInfo<LivingEntity> target = getTargetedEntity(player, power);
 			if (target != null) {
-				boolean ok = grip(player, target);
+				boolean ok = grip(player, target.getTarget());
 				if (!ok) {
 					return noTarget(player, strCantGrip);
 				}
-				sendMessages(player, target);
+				sendMessages(player, target.getTarget());
 				return PostCastAction.NO_MESSAGES;
 			} else {
 				return noTarget(player);

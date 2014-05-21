@@ -12,11 +12,13 @@ public class SpellTargetLocationEvent extends SpellEvent implements Cancellable 
     private static final HandlerList handlers = new HandlerList();
 
 	private Location target;
+	private float power;
 	private boolean cancelled = false;
 	
-	public SpellTargetLocationEvent(Spell spell, Player caster, Location target) {
+	public SpellTargetLocationEvent(Spell spell, Player caster, Location target, float power) {
 		super(spell, caster);
 		this.target = target;
+		this.power = power;
 	}
 	
 	/**
@@ -33,6 +35,30 @@ public class SpellTargetLocationEvent extends SpellEvent implements Cancellable 
 	 */
 	public void setTargetLocation(Location target) {
 		this.target = target;
+	}
+	
+	/**
+	 * Gets the current power level of the spell. Spells start at a power level of 1.0.
+	 * @return the power level
+	 */
+	public float getPower() {
+		return power;
+	}
+	
+	/**
+	 * Sets the power level for the spell being cast.
+	 * @param power the power level
+	 */
+	public void setPower(float power) {
+		this.power = power;
+	}
+	
+	/**
+	 * Increases the power lever for the spell being cast by the given multiplier.
+	 * @param power the power level multiplier
+	 */
+	public void increasePower(float power) {
+		this.power *= power;
 	}
 
 	@Override

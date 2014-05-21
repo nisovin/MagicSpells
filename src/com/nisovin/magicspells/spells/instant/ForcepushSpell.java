@@ -37,18 +37,25 @@ public class ForcepushSpell extends InstantSpell {
 		return PostCastAction.HANDLE_NORMALLY;
 	}
 	
-	public void knockback(Player player, int range, float power) {
+	public void knockback(Player player, int range, float basePower) {
 	    Vector p = player.getLocation().toVector();
 		List<Entity> entities = player.getNearbyEntities(range, range, range);
 		Vector e, v;
 		for (Entity entity : entities) {
 			if (entity instanceof LivingEntity && validTargetList.canTarget(player, (LivingEntity)entity)) {
-				SpellTargetEvent event = new SpellTargetEvent(this, player, (LivingEntity)entity);
+				LivingEntity target = (LivingEntity)entity;
+				float power = basePower;
+				SpellTargetEvent event = new SpellTargetEvent(this, player, target, power);
 				Bukkit.getPluginManager().callEvent(event);
 				if (event.isCancelled()) {
 					continue;
+				} else {
+					if (target != event.getTarget() && target.getWorld().equals(event.getTarget().getWorld())) {
+						target = event.getTarget();
+					}
+					power = event.getPower();
 				}
-				e = entity.getLocation().toVector();
+				e = target.getLocation().toVector();
 				v = e.subtract(p).normalize().multiply(force/10.0*power);
 				if (force != 0) {
 					v.setY(v.getY() + (yForce/10.0*power));
@@ -58,8 +65,8 @@ public class ForcepushSpell extends InstantSpell {
 				if (v.getY() > (maxYForce/10.0)) {
 					v.setY(maxYForce/10.0);
 				}
-				entity.setVelocity(v);
-				playSpellEffects(EffectPosition.TARGET, entity);
+				target.setVelocity(v);
+				playSpellEffects(EffectPosition.TARGET, target);
 			}
 	    }
 		playSpellEffects(EffectPosition.CASTER, player);

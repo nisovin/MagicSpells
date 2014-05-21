@@ -21,6 +21,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.spells.BuffSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 
 public class SeeHealthSpell extends BuffSpell {
 
@@ -192,9 +193,9 @@ public class SeeHealthSpell extends BuffSpell {
 			for (String playerName : bars.keySet()) {
 				Player player = Bukkit.getPlayerExact(playerName);
 				if (player != null && player.isValid()) {
-					LivingEntity target = getTargetedEntity(player, 1F);
+					TargetInfo<LivingEntity> target = getTargetedEntity(player, 1F);
 					if (target != null) {
-						showHealthBar(player, target);
+						showHealthBar(player, target.getTarget());
 					} else {
 						//resetHealthBar(player);
 					}

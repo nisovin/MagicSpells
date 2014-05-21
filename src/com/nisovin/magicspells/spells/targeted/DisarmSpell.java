@@ -20,6 +20,7 @@ import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 import com.nisovin.magicspells.util.Util;
 
 public class DisarmSpell extends TargetedSpell implements TargetedEntitySpell {
@@ -61,17 +62,17 @@ public class DisarmSpell extends TargetedSpell implements TargetedEntitySpell {
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
 			// get target
-			LivingEntity target = getTargetedEntity(player, power);
+			TargetInfo<LivingEntity> target = getTargetedEntity(player, power);
 			if (target == null) {
 				// fail
 				return noTarget(player);
 			}
 			
-			boolean disarmed = disarm(target);
+			boolean disarmed = disarm(target.getTarget());
 			if (disarmed) {
-				playSpellEffects(player, target);
+				playSpellEffects(player, target.getTarget());
 				// send messages
-				sendMessages(player, target);
+				sendMessages(player, target.getTarget());
 				return PostCastAction.NO_MESSAGES;
 			} else {
 				// fail

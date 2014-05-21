@@ -18,6 +18,7 @@ import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.ExperienceUtils;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.SpellAnimation;
+import com.nisovin.magicspells.util.TargetInfo;
 
 public class DrainlifeSpell extends TargetedSpell implements TargetedEntitySpell {
 	
@@ -48,16 +49,16 @@ public class DrainlifeSpell extends TargetedSpell implements TargetedEntitySpell
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, power);
+			TargetInfo<LivingEntity> target = getTargetedEntity(player, power);
 			if (target == null) {
 				// fail: no target
 				return noTarget(player);
 			} else {
-				boolean drained = drain(player, target, power);
+				boolean drained = drain(player, target.getTarget(), target.getPower());
 				if (!drained) {
 					return noTarget(player);
 				} else {
-					sendMessages(player, target);
+					sendMessages(player, target.getTarget());
 					return PostCastAction.NO_MESSAGES;
 				}
 			}

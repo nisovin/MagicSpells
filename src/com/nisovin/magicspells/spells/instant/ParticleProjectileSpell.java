@@ -312,13 +312,18 @@ public class ParticleProjectileSpell extends InstantSpell {
 									inRange.remove(i);
 									break;
 								}
-								SpellTargetEvent event = new SpellTargetEvent(thisSpell, caster, e);
+								LivingEntity target = e;
+								float thisPower = power;
+								SpellTargetEvent event = new SpellTargetEvent(thisSpell, caster, target, thisPower);
 								Bukkit.getPluginManager().callEvent(event);
 								if (event.isCancelled()) {
 									inRange.remove(i);
 									break;
+								} else {
+									target = event.getTarget();
+									thisPower = event.getPower();
 								}
-								((TargetedEntitySpell)spell).castAtEntity(caster, e, power);
+								((TargetedEntitySpell)spell).castAtEntity(caster, target, thisPower);
 								playSpellEffects(EffectPosition.TARGET, e);
 							} else if (spell instanceof TargetedLocationSpell) {
 								((TargetedLocationSpell)spell).castAtLocation(caster, currentLocation, power);

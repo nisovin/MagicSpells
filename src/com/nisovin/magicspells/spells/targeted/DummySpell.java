@@ -9,6 +9,7 @@ import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 
 public class DummySpell extends TargetedSpell implements TargetedEntitySpell, TargetedLocationSpell {
 
@@ -19,12 +20,12 @@ public class DummySpell extends TargetedSpell implements TargetedEntitySpell, Ta
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, power);
+			TargetInfo<LivingEntity> target = getTargetedEntity(player, power);
 			if (target == null) {
 				return noTarget(player);
 			} else {
-				playSpellEffects(player, target);
-				sendMessages(player, target);
+				playSpellEffects(player, target.getTarget());
+				sendMessages(player, target.getTarget());
 				return PostCastAction.NO_MESSAGES;
 			}
 		}

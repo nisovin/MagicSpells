@@ -24,6 +24,7 @@ import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.SpellAnimation;
+import com.nisovin.magicspells.util.TargetInfo;
 import com.nisovin.magicspells.util.Util;
 
 public class GeyserSpell extends TargetedSpell implements TargetedEntitySpell {
@@ -58,20 +59,20 @@ public class GeyserSpell extends TargetedSpell implements TargetedEntitySpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, power);
+			TargetInfo<LivingEntity> target = getTargetedEntity(player, power);
 			if (target == null) {
 				// fail -- no target
 				return noTarget(player);
 			}
 			
 			// do geyser action + animation
-			boolean ok = geyser(player, target, power);
+			boolean ok = geyser(player, target.getTarget(), target.getPower());
 			if (!ok) {
 				return noTarget(player);
 			}
-			playSpellEffects(player, target);
+			playSpellEffects(player, target.getTarget());
 			
-			sendMessages(player, target);
+			sendMessages(player, target.getTarget());
 			return PostCastAction.NO_MESSAGES;
 		}
 		return PostCastAction.HANDLE_NORMALLY;

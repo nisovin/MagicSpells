@@ -56,7 +56,7 @@ public class MaterializeSpell extends TargetedSpell implements TargetedLocationS
 			if (lastTwo != null && lastTwo.size() == 2 && lastTwo.get(1).getType() != Material.AIR && lastTwo.get(0).getType() == Material.AIR) {
 				Block block = lastTwo.get(0);
 				Block against = lastTwo.get(1);
-				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, block.getLocation());
+				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, block.getLocation(), power);
 				Bukkit.getPluginManager().callEvent(event);
 				if (event.isCancelled()) {
 					return noTarget(player, strFailed);

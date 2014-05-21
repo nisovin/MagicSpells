@@ -27,6 +27,7 @@ import com.nisovin.magicspells.castmodifiers.ModifierSet;
 import com.nisovin.magicspells.events.MagicSpellsGenericPlayerEvent;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 import com.nisovin.magicspells.util.Util;
 
 public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, TargetedLocationSpell {
@@ -120,7 +121,10 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 			Player opener = player;
 			
 			if (requireEntityTarget) {
-				entityTarget = getTargetedEntity(player, power);
+				TargetInfo<LivingEntity> targetInfo = getTargetedEntity(player, power);
+				if (targetInfo != null) {
+					entityTarget = targetInfo.getTarget();
+				}
 				if (entityTarget == null) {
 					return noTarget(player);
 				}

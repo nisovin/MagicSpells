@@ -56,12 +56,13 @@ public class ExplodeSpell extends TargetedSpell implements TargetedLocationSpell
 				target = null;
 			}
 			if (target != null && target.getType() != Material.AIR) {
-				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, target.getLocation());
+				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, target.getLocation(), power);
 				Bukkit.getPluginManager().callEvent(event);
 				if (event.isCancelled()) {
 					target = null;
 				} else {
 					target = event.getTargetLocation().getBlock();
+					power = event.getPower();
 				}
 			}
 			if (target == null || target.getType() == Material.AIR) {

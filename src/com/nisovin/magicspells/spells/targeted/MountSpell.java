@@ -10,6 +10,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 
 public class MountSpell extends TargetedSpell implements TargetedEntitySpell {
 
@@ -38,7 +39,11 @@ public class MountSpell extends TargetedSpell implements TargetedEntitySpell {
 					}
 				} else {
 					// join stack
-					LivingEntity target = getTargetedPlayer(player, power);
+					LivingEntity target = null;
+					TargetInfo<Player> targetInfo = getTargetedPlayer(player, power);
+					if (targetInfo != null) {
+						target = targetInfo.getTarget();
+					}
 					if (target != null) {
 						while (target.getPassenger() != null && target.getPassenger() instanceof LivingEntity) {
 							target = (LivingEntity)target.getPassenger();
@@ -53,7 +58,11 @@ public class MountSpell extends TargetedSpell implements TargetedEntitySpell {
 				}
 			} else {
 				// reverse - casting player forces target to mount self
-				LivingEntity target = getTargetedPlayer(player, power);
+				LivingEntity target = null;
+				TargetInfo<Player> targetInfo = getTargetedPlayer(player, power);
+				if (targetInfo != null) {
+					target = targetInfo.getTarget();
+				}
 				if (target != null) {
 					// clear out any previous passengers
 					if (player.getPassenger() != null) {

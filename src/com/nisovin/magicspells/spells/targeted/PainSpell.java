@@ -12,6 +12,7 @@ import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 
 public class PainSpell extends TargetedSpell implements TargetedEntitySpell {
 
@@ -42,16 +43,16 @@ public class PainSpell extends TargetedSpell implements TargetedEntitySpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, power);
+			TargetInfo<LivingEntity> target = getTargetedEntity(player, power);
 			if (target == null) {
 				// fail -- no target
 				return noTarget(player);
 			} else {
-				boolean done = causePain(player, target, power);
+				boolean done = causePain(player, target.getTarget(), target.getPower());
 				if (!done) {
 					return noTarget(player);
 				} else {
-					sendMessages(player, target);
+					sendMessages(player, target.getTarget());
 					return PostCastAction.NO_MESSAGES;
 				}
 			}

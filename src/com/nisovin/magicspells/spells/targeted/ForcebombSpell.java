@@ -44,12 +44,13 @@ public class ForcebombSpell extends TargetedSpell implements TargetedLocationSpe
 		if (state == SpellCastState.NORMAL) {
 			Block block = getTargetedBlock(player, power);
 			if (block != null && block.getType() != Material.AIR) {
-				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, block.getLocation());
+				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, block.getLocation(), power);
 				Bukkit.getPluginManager().callEvent(event);
 				if (event.isCancelled()) {
 					block = null;
 				} else {
 					block = event.getTargetLocation().getBlock();
+					power = event.getPower();
 				}
 			}
 			if (block != null && block.getType() != Material.AIR) {
@@ -73,18 +74,21 @@ public class ForcebombSpell extends TargetedSpell implements TargetedLocationSpe
 		return true;
 	}
 	
-	public void knockback(Player player, Location location, float power) {
+	public void knockback(Player player, Location location, float basePower) {
 		location = location.clone().add(0, yOffset, 0);
 	    Vector t = location.toVector();
 		Collection<Entity> entities = location.getWorld().getEntitiesByClasses(LivingEntity.class);
 		Vector e, v;
 		for (Entity entity : entities) {
 			if (entity instanceof LivingEntity && (player == null || validTargetList.canTarget(player, (LivingEntity)entity)) && entity.getLocation().distanceSquared(location) <= radiusSquared) {
+				float power = basePower;
 				if (callTargetEvents && player != null) {
-					SpellTargetEvent event = new SpellTargetEvent(this, player, (LivingEntity)entity);
+					SpellTargetEvent event = new SpellTargetEvent(this, player, (LivingEntity)entity, power);
 					Bukkit.getPluginManager().callEvent(event);
 					if (event.isCancelled()) {
 						continue;
+					} else {
+						power = event.getPower();
 					}
 				}
 				e = entity.getLocation().toVector();

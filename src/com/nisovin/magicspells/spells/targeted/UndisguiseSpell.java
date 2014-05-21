@@ -8,6 +8,7 @@ import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.DisguiseManager;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 
 public class UndisguiseSpell extends TargetedSpell implements TargetedEntitySpell {
 
@@ -27,10 +28,10 @@ public class UndisguiseSpell extends TargetedSpell implements TargetedEntitySpel
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (manager == null) return PostCastAction.ALREADY_HANDLED;
 		if (state == SpellCastState.NORMAL) {
-			Player target = getTargetPlayer(player, power);
+			TargetInfo<Player> target = getTargetPlayer(player, power);
 			if (target != null) {
-				undisguise(player, target);
-				sendMessages(player, target);
+				undisguise(player, target.getTarget());
+				sendMessages(player, target.getTarget());
 				return PostCastAction.NO_MESSAGES;
 			} else {
 				return noTarget(player);

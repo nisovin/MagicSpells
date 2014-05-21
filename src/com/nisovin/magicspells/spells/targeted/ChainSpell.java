@@ -18,6 +18,7 @@ import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 
 public class ChainSpell extends TargetedSpell implements TargetedEntitySpell, TargetedEntityFromLocationSpell {
 
@@ -57,12 +58,12 @@ public class ChainSpell extends TargetedSpell implements TargetedEntitySpell, Ta
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, power, checker);
+			TargetInfo<LivingEntity> target = getTargetedEntity(player, power, checker);
 			if (target == null) {
 				return noTarget(player);
 			}
-			chain(player, player.getLocation(), target, power);
-			sendMessages(player, target);
+			chain(player, player.getLocation(), target.getTarget(), target.getPower());
+			sendMessages(player, target.getTarget());
 			return PostCastAction.NO_MESSAGES;
 		}
 		return PostCastAction.HANDLE_NORMALLY;
@@ -70,7 +71,9 @@ public class ChainSpell extends TargetedSpell implements TargetedEntitySpell, Ta
 	
 	private void chain(Player player, Location start, LivingEntity target, float power) {
 		List<LivingEntity> targets = new ArrayList<LivingEntity>();
+		List<Float> targetPowers = new ArrayList<Float>();
 		targets.add(target);
+		targetPowers.add(power);
 		
 		// get targets
 		LivingEntity current = target;
@@ -94,15 +97,19 @@ public class ChainSpell extends TargetedSpell implements TargetedEntitySpell, Ta
 				if (checker != null && !checker.isValidTarget((LivingEntity)e)) {
 					continue;
 				}
+				float thisPower = power;
 				if (player != null) {
-					SpellTargetEvent event = new SpellTargetEvent(this, player, (LivingEntity)e);
+					SpellTargetEvent event = new SpellTargetEvent(this, player, (LivingEntity)e, thisPower);
 					Bukkit.getPluginManager().callEvent(event);
 					if (event.isCancelled()) {
 						continue;
+					} else {
+						thisPower = event.getPower();
 					}
 				}
 				
 				targets.add((LivingEntity)e);
+				targetPowers.add(thisPower);
 				current = (LivingEntity)e;
 				break;
 			}
@@ -122,7 +129,7 @@ public class ChainSpell extends TargetedSpell implements TargetedEntitySpell, Ta
 				} else {
 					from = targets.get(i-1).getLocation();
 				}
-				castSpellAt(player, from, targets.get(i), power);
+				castSpellAt(player, from, targets.get(i), targetPowers.get(i));
 				if (i > 0) {
 					playSpellEffectsTrail(targets.get(i-1).getLocation(), targets.get(i).getLocation());
 				} else if (i == 0 && player != null) {

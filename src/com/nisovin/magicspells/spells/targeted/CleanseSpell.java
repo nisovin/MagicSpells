@@ -17,6 +17,7 @@ import com.nisovin.magicspells.spells.TargetedEntitySpell;
 
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 import com.nisovin.magicspells.util.Util;
 
 public class CleanseSpell extends TargetedSpell implements TargetedEntitySpell {
@@ -82,14 +83,14 @@ public class CleanseSpell extends TargetedSpell implements TargetedEntitySpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, power, checker);
+			TargetInfo<LivingEntity> target = getTargetedEntity(player, power, checker);
 			if (target == null) {
 				return noTarget(player);
 			}
 			
-			cleanse(player, target);
+			cleanse(player, target.getTarget());
 			
-			sendMessages(player, target);
+			sendMessages(player, target.getTarget());
 			return PostCastAction.NO_MESSAGES;
 		}
 		return PostCastAction.HANDLE_NORMALLY;

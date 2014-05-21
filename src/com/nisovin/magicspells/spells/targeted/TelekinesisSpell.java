@@ -52,7 +52,7 @@ public class TelekinesisSpell extends TargetedSpell implements TargetedLocationS
 				return noTarget(player);
 			} else {
 				// run target event
-				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, target.getLocation());
+				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, target.getLocation(), power);
 				Bukkit.getPluginManager().callEvent(event);
 				if (event.isCancelled()) {
 					return noTarget(player);

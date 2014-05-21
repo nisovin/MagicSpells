@@ -51,7 +51,7 @@ public class TransmuteSpell extends TargetedSpell implements TargetedLocationSpe
 			if (block == null) {
 				return noTarget(player);
 			} else {
-				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, block.getLocation());
+				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, block.getLocation(), power);
 				Bukkit.getPluginManager().callEvent(event);
 				if (event.isCancelled()) {
 					return noTarget(player);

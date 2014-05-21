@@ -70,14 +70,15 @@ public class FreezeSpell extends InstantSpell {
 		
 		if (validTargetList.canTarget(entity)) {
 			if (callTargetEvents) {
-				SpellTargetEvent e = new SpellTargetEvent(this, (Player)((Snowball)event.getDamager()).getShooter(), entity);
+				float power = 1;
+				SpellTargetEvent e = new SpellTargetEvent(this, (Player)((Snowball)event.getDamager()).getShooter(), entity, power);
 				Bukkit.getPluginManager().callEvent(e);
 				if (e.isCancelled()) {
 					event.setCancelled(true);
 				} else {
-					event.setDamage(damage);
+					event.setDamage(damage * e.getPower());
 				}
-			} else {				
+			} else {
 				event.setDamage(damage);
 			}
 		} else {

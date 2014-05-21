@@ -8,6 +8,7 @@ import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 import com.nisovin.magicspells.util.Util;
 
 public class CaptureSpell extends TargetedSpell implements TargetedEntitySpell {
@@ -25,15 +26,15 @@ public class CaptureSpell extends TargetedSpell implements TargetedEntitySpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, power, getValidTargetChecker());
+			TargetInfo<LivingEntity> target = getTargetedEntity(player, power, getValidTargetChecker());
 			if (target == null) {
 				return noTarget(player);
 			}
-			boolean ok = capture(player, target, power);
+			boolean ok = capture(player, target.getTarget(), target.getPower());
 			if (!ok) {
 				return noTarget(player);
 			}
-			sendMessages(player, target);
+			sendMessages(player, target.getTarget());
 			return PostCastAction.NO_MESSAGES;
 		}
 		return PostCastAction.HANDLE_NORMALLY;

@@ -223,7 +223,7 @@ public class PortalSpell extends InstantSpell {
 				if (payer == null) return false;
 			}
 			
-			SpellTargetEvent event = new SpellTargetEvent(spell, caster, player);
+			SpellTargetEvent event = new SpellTargetEvent(spell, caster, player, 1);
 			Bukkit.getPluginManager().callEvent(event);
 			if (event.isCancelled()) {
 				return false;

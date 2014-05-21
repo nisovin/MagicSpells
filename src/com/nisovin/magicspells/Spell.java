@@ -49,6 +49,7 @@ import com.nisovin.magicspells.util.IntMap;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.MoneyHandler;
 import com.nisovin.magicspells.util.SpellReagents;
+import com.nisovin.magicspells.util.TargetInfo;
 import com.nisovin.magicspells.util.Util;
 import com.nisovin.magicspells.util.ValidTargetList;
 
@@ -1184,28 +1185,28 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	 * @param checkLos whether to obey line-of-sight restrictions
 	 * @return the targeted Player, or null if none was found
 	 */
-	protected Player getTargetedPlayer(Player player, float power) {
-		LivingEntity entity = getTargetedEntity(player, power, true, null);
-		if (entity != null && entity instanceof Player) {
-			return (Player)entity;
+	protected TargetInfo<Player> getTargetedPlayer(Player player, float power) {
+		TargetInfo<LivingEntity> target = getTargetedEntity(player, power, true, null);
+		if (target != null && target.getTarget() instanceof Player) {
+			return new TargetInfo<Player>((Player)target.getTarget(), target.getPower());
 		} else {
 			return null;
 		}
 	}
 	
-	protected Player getTargetPlayer(Player player, float power) {
+	protected TargetInfo<Player> getTargetPlayer(Player player, float power) {
 		return getTargetedPlayer(player, power);
 	}
 	
-	protected LivingEntity getTargetedEntity(Player player, float power) {
+	protected TargetInfo<LivingEntity> getTargetedEntity(Player player, float power) {
 		return getTargetedEntity(player, power, false, null);
 	}
 	
-	protected LivingEntity getTargetedEntity(Player player, float power, ValidTargetChecker checker) {
+	protected TargetInfo<LivingEntity> getTargetedEntity(Player player, float power, ValidTargetChecker checker) {
 		return getTargetedEntity(player, power, false, checker);
 	}
 	
-	protected LivingEntity getTargetedEntity(Player player, float power, boolean forceTargetPlayers, ValidTargetChecker checker) {
+	protected TargetInfo<LivingEntity> getTargetedEntity(Player player, float power, boolean forceTargetPlayers, ValidTargetChecker checker) {
 		// get nearby entities
 		int range = getRange(power);
 		List<Entity> ne = player.getNearbyEntities(range, range, range);
@@ -1290,13 +1291,14 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 						
 						// call event listeners
 						if (target != null) {
-							SpellTargetEvent event = new SpellTargetEvent(this, player, target);
+							SpellTargetEvent event = new SpellTargetEvent(this, player, target, power);
 							Bukkit.getServer().getPluginManager().callEvent(event);
 							if (event.isCancelled()) {
 								target = null;
 								continue;
 							} else {
 								target = event.getTarget();
+								power = event.getPower();
 							}
 						}
 						
@@ -1318,7 +1320,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 							}
 						}
 						
-						return target;
+						return new TargetInfo<LivingEntity>(target, power);
 					}
 				}
 			}

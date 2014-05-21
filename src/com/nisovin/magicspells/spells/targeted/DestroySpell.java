@@ -119,12 +119,13 @@ public class DestroySpell extends TargetedSpell implements TargetedLocationSpell
 		if (state == SpellCastState.NORMAL) {
 			Block b = getTargetedBlock(player, power);
 			if (b != null && b.getType() != Material.AIR) {
-				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, b.getLocation());
+				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, b.getLocation(), power);
 				Bukkit.getPluginManager().callEvent(event);
 				if (event.isCancelled()) {
 					b = null;
 				} else {
 					b = event.getTargetLocation().getBlock();
+					power = event.getPower();
 				}
 			}
 			if (b != null && b.getType() != Material.AIR) {

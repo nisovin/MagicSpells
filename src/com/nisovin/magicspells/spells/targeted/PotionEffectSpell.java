@@ -9,6 +9,7 @@ import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 import com.nisovin.magicspells.util.Util;
 
 public class PotionEffectSpell extends TargetedSpell implements TargetedEntitySpell {
@@ -49,9 +50,13 @@ public class PotionEffectSpell extends TargetedSpell implements TargetedEntitySp
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target;
+			LivingEntity target = null;
 			if (targeted) {
-				target = getTargetedEntity(player, power);
+				TargetInfo<LivingEntity> targetInfo = getTargetedEntity(player, power);
+				if (targetInfo != null) {
+					target = targetInfo.getTarget();
+					power = targetInfo.getPower();
+				}
 			} else {
 				target = player;
 			}

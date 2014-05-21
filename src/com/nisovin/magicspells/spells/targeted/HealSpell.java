@@ -10,6 +10,7 @@ import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 
 public class HealSpell extends TargetedSpell implements TargetedEntitySpell {
 	
@@ -37,10 +38,13 @@ public class HealSpell extends TargetedSpell implements TargetedEntitySpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, power, checker);
-			if (target == null) {
+			TargetInfo<LivingEntity> targetInfo = getTargetedEntity(player, power, checker);
+			if (targetInfo == null) {
 				return noTarget(player);
-			} else if (cancelIfFull && target.getHealth() == target.getMaxHealth()) {
+			}
+			LivingEntity target = targetInfo.getTarget();
+			power = targetInfo.getPower();
+			if (cancelIfFull && target.getHealth() == target.getMaxHealth()) {
 				return noTarget(player, formatMessage(strMaxHealth, "%t", getTargetName(target)));
 			} else {
 				boolean healed = heal(player, target, power);

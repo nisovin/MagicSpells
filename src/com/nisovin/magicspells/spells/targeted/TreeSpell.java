@@ -41,7 +41,7 @@ public class TreeSpell extends TargetedSpell implements TargetedLocationSpell {
 			Block target = getTargetedBlock(player, power);
 
 			if (target != null && target.getType() != Material.AIR) {
-				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, target.getLocation());
+				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, target.getLocation(), power);
 				Bukkit.getPluginManager().callEvent(event);
 				if (event.isCancelled()) {
 					target = null;

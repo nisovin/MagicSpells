@@ -10,6 +10,7 @@ import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 
 public class OrbitSpell extends TargetedSpell implements TargetedEntitySpell {
 
@@ -62,13 +63,13 @@ public class OrbitSpell extends TargetedSpell implements TargetedEntitySpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, power);
+			TargetInfo<LivingEntity> target = getTargetedEntity(player, power);
 			if (target == null) {
 				return noTarget(player);
 			}			
-			new ParticleTracker(player, target, power);
-			playSpellEffects(player, target);
-			sendMessages(player, target);
+			new ParticleTracker(player, target.getTarget(), target.getPower());
+			playSpellEffects(player, target.getTarget());
+			sendMessages(player, target.getTarget());
 			return PostCastAction.NO_MESSAGES;
 		}
 		return PostCastAction.HANDLE_NORMALLY;

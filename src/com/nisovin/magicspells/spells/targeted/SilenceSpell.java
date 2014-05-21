@@ -22,6 +22,7 @@ import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 import com.nisovin.magicspells.util.ValidTargetList;
 
 public class SilenceSpell extends TargetedSpell implements TargetedEntitySpell {
@@ -87,16 +88,16 @@ public class SilenceSpell extends TargetedSpell implements TargetedEntitySpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			Player target = getTargetedPlayer(player, power);
+			TargetInfo<Player> target = getTargetedPlayer(player, power);
 			if (target == null) {
 				return noTarget(player);
 			}
 						
 			// silence player
-			silence(target, power);
-			playSpellEffects(player, target);
+			silence(target.getTarget(), target.getPower());
+			playSpellEffects(player, target.getTarget());
 			
-			sendMessages(player, target);
+			sendMessages(player, target.getTarget());
 			return PostCastAction.NO_MESSAGES;
 		}
 		return PostCastAction.HANDLE_NORMALLY;

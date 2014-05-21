@@ -169,11 +169,11 @@ public class PassiveSpell extends Spell {
 						spell.castSpell(caster, SpellCastState.NORMAL, power, null);
 						playSpellEffects(EffectPosition.CASTER, caster);
 					} else if (spell instanceof TargetedEntitySpell && target != null) {
-						SpellTargetEvent targetEvent = new SpellTargetEvent(this, caster, target);
+						SpellTargetEvent targetEvent = new SpellTargetEvent(this, caster, target, power);
 						Bukkit.getPluginManager().callEvent(targetEvent);
 						if (!targetEvent.isCancelled()) {
 							target = targetEvent.getTarget();
-							((TargetedEntitySpell)spell).castAtEntity(caster, target, power);
+							((TargetedEntitySpell)spell).castAtEntity(caster, target, targetEvent.getPower());
 							playSpellEffects(caster, target);
 						}
 					} else if (spell instanceof TargetedLocationSpell && (location != null || target != null)) {
@@ -184,11 +184,11 @@ public class PassiveSpell extends Spell {
 							loc = target.getLocation();
 						}
 						if (loc != null) {
-							SpellTargetLocationEvent targetEvent = new SpellTargetLocationEvent(this, caster, loc);
+							SpellTargetLocationEvent targetEvent = new SpellTargetLocationEvent(this, caster, loc, power);
 							Bukkit.getPluginManager().callEvent(targetEvent);
 							if (!targetEvent.isCancelled()) {
 								loc = targetEvent.getTargetLocation();
-								((TargetedLocationSpell)spell).castAtLocation(caster, loc, power);
+								((TargetedLocationSpell)spell).castAtLocation(caster, loc, targetEvent.getPower());
 								playSpellEffects(caster, loc);
 							}
 						}

@@ -20,6 +20,7 @@ import com.nisovin.magicspells.events.SpellCastEvent;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 
 public class LevitateSpell extends TargetedSpell implements TargetedEntitySpell {
 
@@ -63,13 +64,13 @@ public class LevitateSpell extends TargetedSpell implements TargetedEntitySpell 
 			levitating.remove(player).stop();
 			return PostCastAction.ALREADY_HANDLED;
 		} else if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, power);
+			TargetInfo<LivingEntity> target = getTargetedEntity(player, power);
 			if (target == null) {
 				return noTarget(player);
 			}
 			
-			levitate(player, target, power);
-			sendMessages(player, target);
+			levitate(player, target.getTarget(), target.getPower());
+			sendMessages(player, target.getTarget());
 			return PostCastAction.NO_MESSAGES;
 		}
 		return PostCastAction.HANDLE_NORMALLY;

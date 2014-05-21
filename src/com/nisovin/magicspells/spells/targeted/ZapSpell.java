@@ -80,7 +80,7 @@ public class ZapSpell extends TargetedSpell implements TargetedLocationSpell {
 				target = null;
 			}
 			if (target != null) {
-				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, target.getLocation());
+				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, target.getLocation(), power);
 				Bukkit.getPluginManager().callEvent(event);
 				if (event.isCancelled()) {
 					target = null;

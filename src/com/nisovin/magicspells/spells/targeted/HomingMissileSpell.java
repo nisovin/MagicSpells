@@ -14,6 +14,7 @@ import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.BoundingBox;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 
 public class HomingMissileSpell extends TargetedSpell implements TargetedEntitySpell, TargetedEntityFromLocationSpell {
 
@@ -79,12 +80,12 @@ public class HomingMissileSpell extends TargetedSpell implements TargetedEntityS
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
 			ValidTargetChecker checker = spell != null ? spell.getValidTargetChecker() : null;
-			LivingEntity target = getTargetedEntity(player, power, checker);
+			TargetInfo<LivingEntity> target = getTargetedEntity(player, power, checker);
 			if (target == null) {
 				return noTarget(player);
 			}
-			new MissileTracker(player, target, power);
-			sendMessages(player, target);
+			new MissileTracker(player, target.getTarget(), target.getPower());
+			sendMessages(player, target.getTarget());
 			return PostCastAction.NO_MESSAGES;
 		}
 		return PostCastAction.HANDLE_NORMALLY;

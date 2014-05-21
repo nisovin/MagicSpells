@@ -170,10 +170,10 @@ public class ArrowSpell extends Spell {
 				ArrowSpellData data = (ArrowSpellData)meta.value();
 				if (!data.spell.onCooldown(shooter)) {
 					if (data.spell.spellOnHitEntity != null) {
-						SpellTargetEvent evt = new SpellTargetEvent(data.spell, shooter, (LivingEntity)event.getEntity());
+						SpellTargetEvent evt = new SpellTargetEvent(data.spell, shooter, (LivingEntity)event.getEntity(), data.power);
 						Bukkit.getPluginManager().callEvent(evt);
 						if (!evt.isCancelled()) {
-							data.spell.spellOnHitEntity.castAtEntity(shooter, (LivingEntity)event.getEntity(), data.power);
+							data.spell.spellOnHitEntity.castAtEntity(shooter, (LivingEntity)event.getEntity(), evt.getPower());
 							data.spell.setCooldown(shooter, data.spell.cooldown);
 						}
 						data.casted = true;

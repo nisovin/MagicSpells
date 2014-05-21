@@ -42,12 +42,13 @@ public class FarmSpell extends TargetedSpell implements TargetedLocationSpell {
 				block = player.getLocation().subtract(0, 1, 0).getBlock();
 			}
 			if (block != null) {
-				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, block.getLocation());
+				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, block.getLocation(), power);
 				Bukkit.getPluginManager().callEvent(event);
 				if (event.isCancelled()) {
 					block = null;
 				} else {
 					block = event.getTargetLocation().getBlock();
+					power = event.getPower();
 				}
 			}
 			if (block != null) {

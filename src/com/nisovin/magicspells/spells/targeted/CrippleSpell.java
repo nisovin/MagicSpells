@@ -9,6 +9,7 @@ import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 
 public class CrippleSpell extends TargetedSpell implements TargetedEntitySpell {
 
@@ -25,14 +26,14 @@ public class CrippleSpell extends TargetedSpell implements TargetedEntitySpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {		
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, power);
+			TargetInfo<LivingEntity> target = getTargetedEntity(player, power);
 			if (target == null) {
 				// fail
 				return noTarget(player);
 			}
-			playSpellEffects(player, target);
-			target.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, Math.round(duration*power), strength), true);
-			sendMessages(player, target);
+			playSpellEffects(player, target.getTarget());
+			target.getTarget().addPotionEffect(new PotionEffect(PotionEffectType.SLOW, Math.round(duration*target.getPower()), strength), true);
+			sendMessages(player, target.getTarget());
 			return PostCastAction.NO_MESSAGES;
 		}
 		

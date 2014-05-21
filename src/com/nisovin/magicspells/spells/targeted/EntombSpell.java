@@ -17,6 +17,7 @@ import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 
 public class EntombSpell extends TargetedSpell implements TargetedEntitySpell {
 
@@ -45,8 +46,10 @@ public class EntombSpell extends TargetedSpell implements TargetedEntitySpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			LivingEntity target = getTargetedEntity(player, power);
-			if (target != null) {
+			TargetInfo<LivingEntity> targetInfo = getTargetedEntity(player, power);
+			if (targetInfo != null) {
+				LivingEntity target = targetInfo.getTarget();
+				power = targetInfo.getPower();
 				int x = target.getLocation().getBlockX();
 				int y = target.getLocation().getBlockY();
 				int z = target.getLocation().getBlockZ();

@@ -38,6 +38,7 @@ import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.DisguiseManager;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 
 public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell {
 
@@ -305,10 +306,10 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 				sendMessage(player, strFade);
 				return PostCastAction.ALREADY_HANDLED;
 			}
-			Player target = getTargetPlayer(player, power);
+			TargetInfo<Player> target = getTargetPlayer(player, power);
 			if (target != null) {
-				disguise(target);
-				sendMessages(player, target);
+				disguise(target.getTarget());
+				sendMessages(player, target.getTarget());
 				playSpellEffects(EffectPosition.CASTER, player);
 				return PostCastAction.NO_MESSAGES;
 			} else {

@@ -30,6 +30,7 @@ import com.nisovin.magicspells.spells.TargetedEntityFromLocationSpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.BlockUtils;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.TargetInfo;
 import com.nisovin.magicspells.util.Util;
 
 public class FireballSpell extends TargetedSpell implements TargetedEntityFromLocationSpell {
@@ -81,7 +82,12 @@ public class FireballSpell extends TargetedSpell implements TargetedEntityFromLo
 			// get a target if required
 			boolean selfTarget = false;
 			if (requireEntityTarget) {
-				LivingEntity entity = getTargetedEntity(player, power);
+				TargetInfo<LivingEntity> targetInfo = getTargetedEntity(player, power);
+				if (targetInfo == null) {
+					return noTarget(player);
+				}
+				LivingEntity entity = targetInfo.getTarget();
+				power = targetInfo.getPower();
 				if (entity == null) {
 					return noTarget(player);
 				} else if (entity instanceof Player && checkPlugins) {
