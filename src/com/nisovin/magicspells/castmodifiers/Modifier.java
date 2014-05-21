@@ -148,6 +148,10 @@ public class Modifier {
 			return false;
 		} else if (check == false && type == ModifierType.CONTINUE) {
 			return false;
+		} else if (check == true && type == ModifierType.POWER) {
+			event.increasePower(modifierVarFloat);
+		} else if (check == true && type == ModifierType.ADD_POWER) {
+			event.setPower(event.getPower() + modifierVarFloat);
 		} else if (check == true && type == ModifierType.CAST) {
 			Spell spell = MagicSpells.getSpellByInternalName(modifierVar);
 			if (spell != null) {
