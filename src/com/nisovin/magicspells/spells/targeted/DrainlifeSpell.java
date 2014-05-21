@@ -13,6 +13,7 @@ import org.bukkit.util.Vector;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.mana.ManaChangeReason;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
+import com.nisovin.magicspells.spells.SpellDamageSpell;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.ExperienceUtils;
@@ -20,12 +21,13 @@ import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.SpellAnimation;
 import com.nisovin.magicspells.util.TargetInfo;
 
-public class DrainlifeSpell extends TargetedSpell implements TargetedEntitySpell {
+public class DrainlifeSpell extends TargetedSpell implements TargetedEntitySpell, SpellDamageSpell {
 	
 	private String takeType;
 	private double takeAmt;
 	private String giveType;
 	private double giveAmt;
+	private String spellDamageType;
 	private boolean showSpellEffect;
 	private int animationSpeed;
 	private boolean instant;
@@ -39,6 +41,7 @@ public class DrainlifeSpell extends TargetedSpell implements TargetedEntitySpell
 		takeAmt = getConfigFloat("take-amt", 2);
 		giveType = getConfigString("give-type", "health");
 		giveAmt = getConfigFloat("give-amt", 2);
+		spellDamageType = getConfigString("spell-damage-type", "");
 		showSpellEffect = getConfigBoolean("show-spell-effect", true);
 		animationSpeed = getConfigInt("animation-speed", 2);
 		instant = getConfigBoolean("instant", true);
@@ -64,6 +67,11 @@ public class DrainlifeSpell extends TargetedSpell implements TargetedEntitySpell
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+	
+	@Override
+	public String getSpellDamageType() {
+		return spellDamageType;
 	}
 	
 	private boolean drain(Player player, LivingEntity target, float power) {

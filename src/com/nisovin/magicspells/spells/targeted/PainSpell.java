@@ -9,14 +9,16 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
+import com.nisovin.magicspells.spells.SpellDamageSpell;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.TargetInfo;
 
-public class PainSpell extends TargetedSpell implements TargetedEntitySpell {
+public class PainSpell extends TargetedSpell implements TargetedEntitySpell, SpellDamageSpell {
 
 	private double damage;
+	private String spellDamageType;
 	private boolean ignoreArmor;
 	private boolean checkPlugins;
 	private DamageCause damageType;
@@ -25,6 +27,7 @@ public class PainSpell extends TargetedSpell implements TargetedEntitySpell {
 		super(config, spellName);
 		
 		damage = getConfigFloat("damage", 4);
+		spellDamageType = getConfigString("spell-damage-type", "");
 		ignoreArmor = getConfigBoolean("ignore-armor", false);
 		checkPlugins = getConfigBoolean("check-plugins", true);
 		
@@ -58,6 +61,11 @@ public class PainSpell extends TargetedSpell implements TargetedEntitySpell {
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+	
+	@Override
+	public String getSpellDamageType() {
+		return spellDamageType;
 	}
 	
 	private boolean causePain(Player player, LivingEntity target, float power) {
