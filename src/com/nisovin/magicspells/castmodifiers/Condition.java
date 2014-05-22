@@ -56,6 +56,8 @@ public abstract class Condition {
 		conditions.put("wearing", WearingCondition.class);
 		conditions.put("holding", HoldingCondition.class);
 		conditions.put("hasitem", HasItemCondition.class);
+		conditions.put("onteam", OnTeamCondition.class);
+		conditions.put("onsameteam", OnSameTeamCondition.class);
 		conditions.put("healthabove", HealthAboveCondition.class);
 		conditions.put("healthbelow", HealthBelowCondition.class);
 		conditions.put("manaabove", ManaAboveCondition.class);
