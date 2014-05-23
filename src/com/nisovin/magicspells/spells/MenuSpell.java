@@ -40,6 +40,7 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 	boolean requireLocationTarget;
 	boolean targetOpensMenuInstead;
 	boolean bypassNormalCast;
+	boolean uniqueNames;
 	
 	Map<String, MenuOption> options = new LinkedHashMap<String, MenuOption>();
 	
@@ -58,6 +59,7 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 		requireLocationTarget = getConfigBoolean("require-location-target", false);
 		targetOpensMenuInstead = getConfigBoolean("target-opens-menu-instead", false);
 		bypassNormalCast = getConfigBoolean("bypass-normal-cast", true);
+		uniqueNames = getConfigBoolean("unique-names", false);
 		
 		int maxSlot = 8;
 		for (String optionName : getConfigKeys("options")) {
@@ -84,7 +86,8 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 				if (modifierList != null) {
 					option.modifiers = new ModifierSet(modifierList);
 				}
-				options.put(optionName, option);
+				String optionKey = uniqueNames ? getOptionKey(option.item) : optionName;
+				options.put(optionKey, option);
 				if (optionSlot > maxSlot) {
 					maxSlot = optionSlot;
 				}
@@ -148,6 +151,10 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 			open(player, opener, entityTarget, locTarget, power);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+	
+	String getOptionKey(ItemStack item) {
+		return item.getType().name() + "_" + item.getDurability() + "_" + item.getItemMeta().getDisplayName();
 	}
 	
 	void open(final Player caster, Player opener, LivingEntity entityTarget, Location locTarget, final float power) {
@@ -219,9 +226,9 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 			
 			ItemStack item = event.getCurrentItem();
 			if (item != null) {
-				String data = Util.getLoreData(item);
-				if (data != null && !data.isEmpty() && options.containsKey(data)) {
-					MenuOption option = options.get(data);
+				String key = uniqueNames ? getOptionKey(item) : Util.getLoreData(item);
+				if (key != null && !key.isEmpty() && options.containsKey(key)) {
+					MenuOption option = options.get(key);
 					Spell spell = option.spell;
 					if (spell != null) {
 						float power = option.power;
