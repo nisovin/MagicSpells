@@ -94,12 +94,13 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 				}
 			}
 			if (loc != null) {
-				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, loc);
+				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, loc, power);
 				Bukkit.getPluginManager().callEvent(event);
 				if (event.isCancelled()) {
 					loc = null;
 				} else {
 					loc = event.getTargetLocation();
+					power = event.getPower();
 				}
 			}
 			if (loc == null) {
@@ -118,7 +119,9 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 		return PostCastAction.HANDLE_NORMALLY;
 	}
 	
-	private boolean doAoe(Player player, Location location, float power) {
+	// TODO: target-modifiers not working?
+	// TODO: self targeting not working??
+	private boolean doAoe(Player player, Location location, float basePower) {
 		int count = 0;
 		
 		BoundingBox box = new BoundingBox(location, radius, verticalRadius);
@@ -127,14 +130,16 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 		for (Entity e : entities) {
 			if (e instanceof LivingEntity && box.contains(e)) {
 				LivingEntity target = (LivingEntity)e;
+				float power = basePower;
 				if (!target.isDead() && ((player == null && validTargetList.canTarget(target)) || validTargetList.canTarget(player, target))) {
 					if (player != null) {
-						SpellTargetEvent event = new SpellTargetEvent(this, player, target);
+						SpellTargetEvent event = new SpellTargetEvent(this, player, target, power);
 						Bukkit.getPluginManager().callEvent(event);
 						if (event.isCancelled()) {
 							continue;
 						} else {
 							target = event.getTarget();
+							power = event.getPower();
 						}
 					}
 					for (Spell spell : spells) {

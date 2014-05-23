@@ -82,7 +82,9 @@ public class PainSpell extends TargetedSpell implements TargetedEntitySpell, Spe
 			target.setLastDamageCause(event);
 		}
 		if (ignoreArmor) {
-			double health = target.getHealth() - dam;
+			double health = target.getHealth();
+			if (health > target.getMaxHealth()) health = target.getMaxHealth();
+			health = health - dam;
 			if (health < 0) health = 0;
 			if (health == 0 && player != null) {
 				MagicSpells.getVolatileCodeHandler().setKiller(target, player);

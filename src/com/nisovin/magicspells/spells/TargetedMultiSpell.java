@@ -205,8 +205,8 @@ public final class TargetedMultiSpell extends TargetedSpell implements TargetedE
 				}
 				power = event.getPower();
 			}
-			ModifierSet targetModifers = spell.getTargetModifiers();
-			if (targetModifers != null) {
+			ModifierSet targetModifiers = spell.getTargetModifiers();
+			if (targetModifiers != null) {
 				if (entTarget != null) {
 					SpellTargetEvent event = new SpellTargetEvent(spell, caster, entTarget, power);
 					targetModifiers.apply(event);
