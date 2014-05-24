@@ -83,9 +83,7 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 				option.spellName = optionSpellName;
 				option.power = optionPower;
 				option.item = optionItem;
-				if (modifierList != null) {
-					option.modifiers = new ModifierSet(modifierList);
-				}
+				option.modifierList = modifierList;
 				String optionKey = uniqueNames ? getOptionKey(option.item) : optionName;
 				options.put(optionKey, option);
 				if (optionSlot > maxSlot) {
@@ -109,6 +107,9 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 			Spell spell = MagicSpells.getSpellByInternalName(option.spellName);
 			if (spell != null) {
 				option.spell = spell;
+				if (option.modifierList != null) {
+					option.modifiers = new ModifierSet(option.modifierList);
+				}
 			} else {
 				MagicSpells.error("The MenuSpell '" + internalName + "' has an invalid spell listed on '" + option.name + "'");
 			}
@@ -327,6 +328,7 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 		String spellName;
 		Spell spell;
 		float power;
+		List<String> modifierList;
 		ModifierSet modifiers;
 	}
 
