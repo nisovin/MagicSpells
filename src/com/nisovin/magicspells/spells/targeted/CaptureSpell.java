@@ -1,9 +1,15 @@
 package com.nisovin.magicspells.spells.targeted;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.bukkit.ChatColor;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
+import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
@@ -15,12 +21,25 @@ public class CaptureSpell extends TargetedSpell implements TargetedEntitySpell {
 
 	boolean powerAffectsQuantity;
 	boolean addToInventory;
+	String itemName;
+	List<String> itemLore;
 	
 	public CaptureSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
 		powerAffectsQuantity = getConfigBoolean("power-affects-quantity", true);
 		addToInventory = getConfigBoolean("add-to-inventory", false);
+		itemName = getConfigString("item-name", null);
+		itemLore = getConfigStringList("item-lore", null);
+		
+		if (itemName != null) {
+			itemName = ChatColor.translateAlternateColorCodes('&', itemName);
+		}
+		if (itemLore != null) {
+			for (int i = 0; i < itemLore.size(); i++) {
+				itemLore.set(i, ChatColor.translateAlternateColorCodes('&', itemLore.get(i)));
+			}
+		}
 	}
 
 	@Override
@@ -58,6 +77,22 @@ public class CaptureSpell extends TargetedSpell implements TargetedEntitySpell {
 				if (q > 1) {
 					item.setAmount(q);
 				}
+			}
+			String entityName = MagicSpells.getEntityNames().get(target.getType());
+			if (itemName != null || itemLore != null) {
+				if (entityName == null) entityName = "unknown";
+				ItemMeta meta = item.getItemMeta();
+				if (itemName != null) {
+					meta.setDisplayName(itemName.replace("%name%", entityName));
+				}
+				if (itemLore != null) {
+					List<String> lore = new ArrayList<String>();
+					for (String l : itemLore) {
+						lore.add(l.replace("%name%", entityName));
+					}
+					meta.setLore(lore);
+				}
+				item.setItemMeta(meta);
 			}
 			target.remove();
 			boolean added = false;
