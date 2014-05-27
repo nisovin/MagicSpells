@@ -56,4 +56,9 @@ public class MagicUnknownMaterial extends MagicMaterial {
 	public boolean equals(ItemStack itemStack) {
 		return itemStack.getTypeId() == type && itemStack.getDurability() == data;
 	}
+	
+	@Override
+	public int hashCode() {
+		return (type + ":" + data).hashCode();
+	}
 }

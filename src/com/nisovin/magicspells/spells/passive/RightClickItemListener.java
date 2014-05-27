@@ -35,7 +35,7 @@ public class RightClickItemListener extends PassiveListener {
 				String[] stuff = s.split("\\|");
 				mat = MagicSpells.getItemNameResolver().resolveItem(stuff[0]);
 				if (mat != null) {
-					mat = new MagicItemWithNameMaterial(mat, stuff[1]);						
+					mat = new MagicItemWithNameMaterial(mat, stuff[1]);
 				}
 			} else {
 				mat = MagicSpells.getItemNameResolver().resolveItem(s);

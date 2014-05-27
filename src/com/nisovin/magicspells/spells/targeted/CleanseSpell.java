@@ -118,14 +118,22 @@ public class CleanseSpell extends TargetedSpell implements TargetedEntitySpell {
 
 	@Override
 	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
-		cleanse(caster, target);
-		return true;
+		if (validTargetList.canTarget(caster, target)) {
+			cleanse(caster, target);
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	@Override
 	public boolean castAtEntity(LivingEntity target, float power) {
-		cleanse(null, target);
-		return true;
+		if (validTargetList.canTarget(target)) {
+			cleanse(null, target);
+			return true;
+		} else {
+			return false;
+		}
 	}
 	
 	@Override
