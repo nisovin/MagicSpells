@@ -103,13 +103,8 @@ public class ManaSystem extends ManaHandler {
 		if (bar == null) {
 			// create the mana bar
 			ManaRank rank = getRank(player);
-			if (rank != null) {
-				bar = new ManaBar(player, rank);
-				MagicSpells.debug(1, "Creating mana bar for player " + player.getName() + " with rank " + rank.name);
-			} else {
-				bar = new ManaBar(player, defaultRank);
-				MagicSpells.debug(1, "Creating mana bar for player " + player.getName() + " with default rank");
-			}
+			bar = new ManaBar(player, rank);
+			MagicSpells.debug(1, "Creating mana bar for player " + player.getName() + " with rank " + rank.name);
 			manaBars.put(player.getName().toLowerCase(), bar);
 		}
 		return bar;
@@ -122,12 +117,9 @@ public class ManaSystem extends ManaHandler {
 		if (bar != null) {
 			if (update) {
 				ManaRank rank = getRank(player);
-				if (rank != null) {
-					MagicSpells.debug(1, "Creating mana bar for player " + player.getName() + " with rank " + rank.name);
+				if (rank != bar.getManaRank()) {
+					MagicSpells.debug(1, "Updating mana bar for player " + player.getName() + " with rank " + rank.name);
 					bar.setRank(rank);
-				} else {
-					MagicSpells.debug(1, "Creating mana bar for player " + player.getName() + " with default rank");
-					bar.setRank(defaultRank);
 				}
 			}
 			showMana(player);
