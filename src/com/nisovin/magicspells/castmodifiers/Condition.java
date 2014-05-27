@@ -48,6 +48,8 @@ public abstract class Condition {
 		conditions.put("inblock", InBlockCondition.class);
 		conditions.put("outside", OutsideCondition.class);
 		conditions.put("roof", RoofCondition.class);
+		conditions.put("elevationabove", ElevationAboveCondition.class);
+		conditions.put("elevationbelow", ElevationBelowCondition.class);
 		conditions.put("biome", BiomeCondition.class);
 		conditions.put("sneaking", SneakingCondition.class);
 		conditions.put("sprinting", SprintingCondition.class);
