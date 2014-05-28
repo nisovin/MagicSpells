@@ -21,7 +21,7 @@ public class QuitListener extends PassiveListener {
 		spells.add(spell);
 	}
 	
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.LOWEST)
 	public void onQuit(PlayerQuitEvent event) {
 		Player player = event.getPlayer();
 		Spellbook spellbook = MagicSpells.getSpellbook(player);

@@ -15,7 +15,7 @@ class MagicPlayerListener implements Listener {
 		this.plugin = plugin;
 	}
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.LOWEST)
 	public void onPlayerJoin(PlayerJoinEvent event) {
 		// set up spell book
 		Spellbook spellbook = new Spellbook(event.getPlayer(), plugin);
@@ -27,7 +27,7 @@ class MagicPlayerListener implements Listener {
 		}
 	}
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) {
 		Spellbook spellbook = plugin.spellbooks.remove(event.getPlayer().getName());
 		if (spellbook != null) {
