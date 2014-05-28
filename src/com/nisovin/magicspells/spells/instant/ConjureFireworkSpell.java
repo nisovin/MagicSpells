@@ -104,7 +104,7 @@ public class ConjureFireworkSpell extends InstantSpell implements TargetedLocati
 			boolean added = false;
 			ItemStack item = firework.clone();
 			if (addToInventory) {
-				added = Util.addToInventory(player.getInventory(), item);
+				added = Util.addToInventory(player.getInventory(), item, true, false);
 			}
 			if (!added) {
 				player.getWorld().dropItem(player.getLocation(), item).setItemStack(item);

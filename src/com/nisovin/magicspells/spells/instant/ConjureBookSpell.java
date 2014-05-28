@@ -58,7 +58,7 @@ public class ConjureBookSpell extends InstantSpell implements TargetedLocationSp
 					player.setItemInHand(item);
 					added = true;
 				} else {
-					added = Util.addToInventory(player.getInventory(), item);
+					added = Util.addToInventory(player.getInventory(), item, false, false);
 				}
 			}
 			if (!added) {

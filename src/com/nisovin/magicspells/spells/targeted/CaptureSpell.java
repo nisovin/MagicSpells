@@ -97,7 +97,7 @@ public class CaptureSpell extends TargetedSpell implements TargetedEntitySpell {
 			target.remove();
 			boolean added = false;
 			if (addToInventory && caster != null) {
-				added = Util.addToInventory(caster.getInventory(), item);
+				added = Util.addToInventory(caster.getInventory(), item, true, false);
 			}
 			if (!added) {
 				target.getWorld().dropItem(target.getLocation().add(0, 1, 0), item).setItemStack(item);

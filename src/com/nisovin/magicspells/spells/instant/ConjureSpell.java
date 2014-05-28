@@ -35,6 +35,8 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 	private boolean powerAffectsChance;
 	private boolean calculateDropsIndividually;
 	private boolean autoEquip;
+	private boolean stackExisting;
+	private boolean ignoreMaxStackSize;
 	private int requiredSlot;
 	private int preferredSlot;
 	List<String> itemList;
@@ -54,6 +56,8 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 		powerAffectsChance = getConfigBoolean("power-affects-chance", true);
 		calculateDropsIndividually = getConfigBoolean("calculate-drops-individually", true);
 		autoEquip = getConfigBoolean("auto-equip", false);
+		stackExisting = getConfigBoolean("stack-existing", true);
+		ignoreMaxStackSize = getConfigBoolean("ignore-max-stack-size", false);
 		requiredSlot = getConfigInt("required-slot", -1);
 		preferredSlot = getConfigInt("preferred-slot", -1);
 		itemList = getConfigStringList("items", null);
@@ -160,7 +164,7 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 			}
 			if (!added) {
 				if (addToEnderChest) {
-					added = Util.addToInventory(player.getEnderChest(), item);
+					added = Util.addToInventory(player.getEnderChest(), item, stackExisting, ignoreMaxStackSize);
 				}
 				if (!added && addToInventory) {
 					if (requiredSlot >= 0) {
@@ -171,7 +175,7 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 						added = true;
 						updateInv = true;
 					} else {
-						added = Util.addToInventory(inv, item);
+						added = Util.addToInventory(inv, item, stackExisting, ignoreMaxStackSize);
 						if (added) updateInv = true;
 					}
 				}
