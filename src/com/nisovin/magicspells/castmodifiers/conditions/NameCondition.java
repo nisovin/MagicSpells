@@ -14,13 +14,13 @@ public class NameCondition extends Condition {
 	@Override
 	public boolean setVar(String var) {
 		if (var == null || var.isEmpty()) return false;
-		name = var;
+		name = ChatColor.translateAlternateColorCodes('&', var);
 		return true;
 	}
 
 	@Override
 	public boolean check(Player player) {
-		if (player.getName().equalsIgnoreCase(name) || ChatColor.stripColor(player.getDisplayName()).equalsIgnoreCase(name)) {
+		if (player.getName().equalsIgnoreCase(name) || player.getDisplayName().equalsIgnoreCase(name)) {
 			return true;
 		}
 		return false;
@@ -33,7 +33,7 @@ public class NameCondition extends Condition {
 		} else {
 			String n = target.getCustomName();
 			if (n != null && !n.isEmpty()) {
-				return name.equalsIgnoreCase(ChatColor.stripColor(n));
+				return name.equalsIgnoreCase(n);
 			}
 			return false;
 		}
