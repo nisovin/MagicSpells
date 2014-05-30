@@ -230,6 +230,10 @@ public class ExternalCommandSpell extends TargetedSpell implements TargetedEntit
 			}
 		}
 	}
+	
+	public boolean requiresPlayerTarget() {
+		return requirePlayerTarget;
+	}
 
 	@Override
 	public boolean canCastByCommand() {

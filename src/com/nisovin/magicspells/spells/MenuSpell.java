@@ -175,10 +175,10 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 	
 	void openMenu(Player caster, Player opener, LivingEntity entityTarget, Location locTarget, float power) {
 		castPower.put(opener.getName(), power);
-		if (entityTarget != null) {
+		if (requireEntityTarget && entityTarget != null) {
 			castEntityTarget.put(opener.getName(), entityTarget);
 		}
-		if (locTarget != null) {
+		if (requireLocationTarget && locTarget != null) {
 			castLocTarget.put(opener.getName(), locTarget);
 		}
 		
@@ -270,8 +270,7 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 
 	@Override
 	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
-		if (!requireEntityTarget) return false;
-		if (!validTargetList.canTarget(caster, target)) return false;
+		if (requireEntityTarget && !validTargetList.canTarget(caster, target)) return false;
 		Player opener = caster;
 		if (targetOpensMenuInstead) {
 			if (target instanceof Player) {
@@ -287,8 +286,8 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 
 	@Override
 	public boolean castAtEntity(LivingEntity target, float power) {
-		if (!requireEntityTarget || !targetOpensMenuInstead) return false;
-		if (!validTargetList.canTarget(target)) return false;
+		if (!targetOpensMenuInstead) return false;
+		if (requireEntityTarget && !validTargetList.canTarget(target)) return false;
 		if (target instanceof Player) {
 			open(null, (Player)target, null, null, power);
 			return true;
@@ -299,7 +298,6 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 
 	@Override
 	public boolean castAtLocation(Player caster, Location target, float power) {
-		if (!requireLocationTarget) return false;
 		open(caster, caster, null, target, power);
 		return true;
 	}
