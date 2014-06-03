@@ -26,6 +26,8 @@ public final class TargetedMultiSpell extends TargetedSpell implements TargetedE
 	private boolean checkIndividualModifiers;
 	private boolean showIndividualMessages;
 	private boolean requireEntityTarget;
+	private boolean pointBlank;
+	private int yOffset;
 	private boolean castRandomSpellInstead;
 	private boolean stopOnFail;
 	
@@ -40,6 +42,8 @@ public final class TargetedMultiSpell extends TargetedSpell implements TargetedE
 		checkIndividualModifiers = getConfigBoolean("check-individual-modifiers", false);
 		showIndividualMessages = getConfigBoolean("show-individual-messages", false);
 		requireEntityTarget = getConfigBoolean("require-entity-target", false);
+		pointBlank = getConfigBoolean("point-blank", false);
+		yOffset = getConfigInt("y-offset", 0);
 		castRandomSpellInstead = getConfigBoolean("cast-random-spell-instead", false);
 		stopOnFail = getConfigBoolean("stop-on-fail", true);
 
@@ -98,6 +102,8 @@ public final class TargetedMultiSpell extends TargetedSpell implements TargetedE
 					entTarget = info.getTarget();
 					power = info.getPower();
 				}
+			} else if (pointBlank) {
+				locTarget = player.getLocation();
 			} else {
 				Block b = null;
 				try {
@@ -111,6 +117,9 @@ public final class TargetedMultiSpell extends TargetedSpell implements TargetedE
 			}
 			if (locTarget == null && entTarget == null) {
 				return noTarget(player);
+			}
+			if (locTarget != null) {
+				locTarget.setY(locTarget.getY() + yOffset);
 			}
 			
 			boolean somethingWasDone = runSpells(player, entTarget, locTarget, power);
