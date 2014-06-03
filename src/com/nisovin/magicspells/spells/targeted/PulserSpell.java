@@ -30,6 +30,7 @@ import com.nisovin.magicspells.util.MagicConfig;
 
 public class PulserSpell extends TargetedSpell implements TargetedLocationSpell {
 
+	private int yOffset;
 	private int totalPulses;
 	private int interval;
 	private int capPerPlayer;
@@ -50,6 +51,7 @@ public class PulserSpell extends TargetedSpell implements TargetedLocationSpell 
 	public PulserSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 
+		yOffset = getConfigInt("y-offset", 0);
 		totalPulses = getConfigInt("total-pulses", 5);
 		interval = getConfigInt("interval", 30);
 		capPerPlayer = getConfigInt("cap-per-player", 10);
@@ -107,11 +109,19 @@ public class PulserSpell extends TargetedSpell implements TargetedLocationSpell 
 					}
 				}
 			}
-			Block target = getTargetedBlock(player, power);
-			if (target == null || target.getType() == Material.AIR) {
+			List<Block> lastTwo = getLastTwoTargetedBlocks(player, power);
+			Block target = null;
+			if (lastTwo != null && lastTwo.size() == 2) {
+				target = lastTwo.get(0);
+			}
+			if (target == null) {
 				return noTarget(player);
 			}
-			target = target.getRelative(BlockFace.UP);
+			if (yOffset > 0) {
+				target = target.getRelative(BlockFace.UP, yOffset);
+			} else if (yOffset < 0) {
+				target = target.getRelative(BlockFace.DOWN, yOffset);
+			}
 			if (target.getType() != Material.AIR
 					&& target.getType() != Material.SNOW
 					&& target.getType() != Material.LONG_GRASS) {
@@ -146,6 +156,11 @@ public class PulserSpell extends TargetedSpell implements TargetedLocationSpell 
 	@Override
 	public boolean castAtLocation(Player caster, Location target, float power) {
 		Block block = target.getBlock();
+		if (yOffset > 0) {
+			block = block.getRelative(BlockFace.UP, yOffset);
+		} else if (yOffset < 0) {
+			block = block.getRelative(BlockFace.DOWN, yOffset);
+		}
 		if (block.getType() == Material.AIR 
 				|| block.getType() == Material.SNOW
 				|| block.getType() == Material.LONG_GRASS) {
