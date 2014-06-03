@@ -35,13 +35,14 @@ public class RightClickBlockCoordListener extends PassiveListener {
 		}
 	}
 	
-	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR)
 	public void onRightClick(PlayerInteractEvent event) {
 		if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
 		Location location = event.getClickedBlock().getLocation();
 		MagicLocation loc = new MagicLocation(location.getWorld().getName(), location.getBlockX(), location.getBlockY(), location.getBlockZ());
 		PassiveSpell spell = locs.get(loc);
 		if (spell != null) {
+			if (spell.ignoreCancelled() && event.isCancelled()) return;
 			Spellbook spellbook = MagicSpells.getSpellbook(event.getPlayer());
 			if (spellbook.hasSpell(spell, false)) {
 				boolean casted = spell.activate(event.getPlayer(), location.add(0.5, 0.5, 0.5));
