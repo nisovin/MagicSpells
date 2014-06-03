@@ -182,11 +182,7 @@ public class MagicItemNameResolver implements ItemNameResolver {
 				materials.add(mat);
 			}
 		}
-		MaterialData[] datas = new MaterialData[materials.size()];
-		for (int i = 0; i < datas.length; i++) {
-			datas[i] = materials.get(i).getMaterialData();
-		}
-		return new MagicBlockRandomMaterial(datas);
+		return new MagicBlockRandomMaterial(materials.toArray(new MagicMaterial[materials.size()]));
 	}
 	
 	private MaterialData resolveBlockData(Material type, String sdata) {

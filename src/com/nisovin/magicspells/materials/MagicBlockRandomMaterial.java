@@ -6,27 +6,28 @@ import org.bukkit.block.BlockState;
 import org.bukkit.material.MaterialData;
 
 public class MagicBlockRandomMaterial extends MagicBlockMaterial {
-	MaterialData[] datas;
+	MagicMaterial[] materials;
 	
-	public MagicBlockRandomMaterial(MaterialData[] datas) {
+	public MagicBlockRandomMaterial(MagicMaterial[] materials) {
 		super(null);
-		this.datas = datas;
+		this.materials = materials;
 	}
 	
 	@Override
 	public Material getMaterial() {
-		return datas[ItemNameResolver.rand.nextInt(datas.length)].getItemType();
+		return materials[ItemNameResolver.rand.nextInt(materials.length)].getMaterial();
 	}
 	
 	@Override
 	public MaterialData getMaterialData() {
-		return datas[ItemNameResolver.rand.nextInt(datas.length)];
+		return materials[ItemNameResolver.rand.nextInt(materials.length)].getMaterialData();
 	}
 	
 	@Override
 	public void setBlock(Block block, boolean applyPhysics) {
-		MaterialData data = datas[ItemNameResolver.rand.nextInt(datas.length)];
+		MagicMaterial material = materials[ItemNameResolver.rand.nextInt(materials.length)];
 		BlockState state = block.getState();
+		MaterialData data = material.getMaterialData();
 		state.setType(data.getItemType());
 		state.setData(data);
 		state.update(true, applyPhysics);
@@ -34,8 +35,8 @@ public class MagicBlockRandomMaterial extends MagicBlockMaterial {
 	
 	@Override
 	public boolean equals(MaterialData data) {
-		for (MaterialData d : datas) {
-			if (d.equals(data)) return true;
+		for (MagicMaterial m : materials) {
+			if (m.equals(data)) return true;
 		}
 		return false;
 	}
