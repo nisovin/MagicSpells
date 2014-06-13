@@ -1,5 +1,6 @@
 package com.nisovin.magicspells.spells.buff;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,7 @@ public class ResistSpell extends BuffSpell {
 		multiplier = getConfigFloat("multiplier", 0.5F);
 		
 		if (list != null) {
+			normalDamageTypes = new ArrayList<DamageCause>();
 			for (String s : list) {
 				for (DamageCause cause : DamageCause.values()) {
 					if (cause.name().equalsIgnoreCase(s)) {
@@ -38,6 +40,7 @@ public class ResistSpell extends BuffSpell {
 					}
 				}
 			}
+			if (normalDamageTypes.size() == 0) normalDamageTypes = null;
 		}
 	}
 
