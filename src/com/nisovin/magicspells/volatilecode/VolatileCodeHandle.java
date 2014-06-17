@@ -76,4 +76,6 @@ public interface VolatileCodeHandle {
 	
 	public void saveSkinData(Player player, String name);
 	
+	public void setArrowsStuck(LivingEntity entity, int count);
+	
 }

@@ -570,4 +570,9 @@ public class VolatileCodeEnabled_1_7_R3 implements VolatileCodeHandle {
 		}
 	}
 
+	@Override
+	public void setArrowsStuck(LivingEntity entity, int count) {
+		((CraftLivingEntity)entity).getHandle().p(count);
+	}
+
 }
