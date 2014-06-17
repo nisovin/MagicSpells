@@ -405,14 +405,16 @@ public class VariableManager implements Listener {
 		Map<String, Double> varMods = event.getSpell().getVariableModsTarget();
 		if (varMods != null && varMods.size() > 0) {
 			Player player = event.getCaster();
-			for (String var : varMods.keySet()) {
-				double val = varMods.get(var);
-				if (val == 0) {
-					reset(var, player);
-				} else {
-					modify(var, player, val);
+			if (player != null) {
+				for (String var : varMods.keySet()) {
+					double val = varMods.get(var);
+					if (val == 0) {
+						reset(var, player);
+					} else {
+						modify(var, player, val);
+					}
+					MagicSpells.debug(3, "Variable '" + var + "' for player '" + player.getName() + "' modified by " + val + " as a result of spell target from '" + event.getSpell().getName() + "'");
 				}
-				MagicSpells.debug(3, "Variable '" + var + "' for player '" + player.getName() + "' modified by " + val + " as a result of spell target from '" + event.getSpell().getName() + "'");
 			}
 		}
 	}
