@@ -188,7 +188,9 @@ public class DisguiseManager_1_7_R3_ProtocolLib extends DisguiseManager {
 			
 		} else if (entityType == EntityType.VILLAGER) {
 			entity = new EntityVillager(world);
-			
+			if (flag) {
+				((EntityVillager)entity).setAge(-24000);
+			}
 			((EntityVillager)entity).setProfession(var);
 		} else if (entityType == EntityType.PIG_ZOMBIE) {
 			entity = new EntityPigZombie(world);
