@@ -64,7 +64,7 @@ public class PasteSpell extends TargetedSpell implements TargetedLocationSpell {
 			tickInterval = 1;
 			blocksPerTick = (int)Math.ceil(blocksPerSecond / 20);
 		} else {
-			tickInterval = Math.round(blocksPerSecond * 20);
+			tickInterval = Math.round(20 / blocksPerSecond);
 			blocksPerTick = 1;
 		}
 	}

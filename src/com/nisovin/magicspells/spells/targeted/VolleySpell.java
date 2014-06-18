@@ -116,10 +116,19 @@ public class VolleySpell extends TargetedSpell implements TargetedLocationSpell,
 			new ArrowShooter(player, spawn, v, power);
 		}
 		
-		if (target != null) {
-			playSpellEffects(player, target);
+		if (player != null) {
+			if (target != null) {
+				playSpellEffects(player, target);
+			} else {
+				playSpellEffects(EffectPosition.CASTER, player);
+			}
 		} else {
-			playSpellEffects(EffectPosition.CASTER, player);
+			if (from != null) {
+				playSpellEffects(EffectPosition.CASTER, from);
+			}
+			if (target != null) {
+				playSpellEffects(EffectPosition.TARGET, target);
+			}
 		}
 	}
 	

@@ -175,10 +175,12 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 			}
 		}
 
-		if (player != null) {
-			playSpellEffects(EffectPosition.CASTER, player);
+		if (count > 0 || !failIfNoTargets) {
+			if (player != null) {
+				playSpellEffects(EffectPosition.CASTER, player);
+			}
+			playSpellEffects(EffectPosition.SPECIAL, location);
 		}
-		playSpellEffects(EffectPosition.SPECIAL, location);
 		
 		return count > 0;
 	}

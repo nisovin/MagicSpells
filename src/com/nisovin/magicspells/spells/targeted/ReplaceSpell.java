@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.materials.MagicMaterial;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
@@ -86,18 +87,13 @@ public class ReplaceSpell extends TargetedSpell implements TargetedLocationSpell
 			if (target == null) {
 				return noTarget(player);
 			}
-			castAtLocation(target.getLocation(), power);
+			castAtLocation(player, target.getLocation(), power);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}
 
 	@Override
 	public boolean castAtLocation(Player caster, Location target, float power) {
-		return castAtLocation(target, power);
-	}
-
-	@Override
-	public boolean castAtLocation(Location target, float power) {
 		boolean replaced = false;
 		Block block;
 		int d = powerAffectsRadius ? Math.round(radiusDown * power) : radiusDown;
@@ -110,9 +106,9 @@ public class ReplaceSpell extends TargetedSpell implements TargetedLocationSpell
 					for (int i = 0; i < replace.size(); i++) {
 						if (replace.get(i).equals(block)) {
 							if (replaceRandom) {
-								replaceWith.get(random.nextInt(replaceWith.size())).setBlock(block, false);
+								replaceWith.get(random.nextInt(replaceWith.size())).setBlock(block, true);
 							} else {
-								replaceWith.get(i).setBlock(block, false);
+								replaceWith.get(i).setBlock(block, true);
 							}
 							replaced = true;
 							break;
@@ -121,7 +117,17 @@ public class ReplaceSpell extends TargetedSpell implements TargetedLocationSpell
 				}			
 			}
 		}
+		if (caster != null) {
+			playSpellEffects(caster, target);
+		} else {
+			playSpellEffects(EffectPosition.TARGET, target);
+		}
 		return replaced;
+	}
+
+	@Override
+	public boolean castAtLocation(Location target, float power) {
+		return castAtLocation(null, target, power);
 	}
 
 }

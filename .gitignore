@@ -9,3 +9,4 @@ bin_towny/
 bin_factions/
 dist/
 src/missing_api.txt
+.settings/org.eclipse.jdt.core.prefs
