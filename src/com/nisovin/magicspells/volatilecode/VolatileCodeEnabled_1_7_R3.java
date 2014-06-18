@@ -570,4 +570,17 @@ public class VolatileCodeEnabled_1_7_R3 implements VolatileCodeHandle {
 		}
 	}
 
+	@Override
+	public ItemStack setUnbreakable(ItemStack item) {
+		if (!(item instanceof CraftItemStack)) {
+			item = CraftItemStack.asCraftCopy(item);
+		}
+		NBTTagCompound tag = getTag(item);
+		if (tag == null) {
+			tag = new NBTTagCompound();
+		}
+		tag.setByte("Unbreakable", (byte)1);
+		return setTag(item, tag);
+	}
+
 }

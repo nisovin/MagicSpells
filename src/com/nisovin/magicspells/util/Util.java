@@ -272,6 +272,11 @@ public class Util {
 			// set meta
 			item.setItemMeta(meta);
 			
+			// unbreakable
+			if (config.getBoolean("unbreakable", false)) {
+				item = MagicSpells.getVolatileCodeHandler().setUnbreakable(item);
+			}
+			
 			// empty enchant
 			if (emptyEnchants) {
 				item = MagicSpells.getVolatileCodeHandler().addFakeEnchantment(item);

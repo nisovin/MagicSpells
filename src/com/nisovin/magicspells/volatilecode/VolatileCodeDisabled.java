@@ -206,4 +206,9 @@ public class VolatileCodeDisabled implements VolatileCodeHandle {
 	@Override
 	public void saveSkinData(Player player, String name) {		
 	}
+
+	@Override
+	public ItemStack setUnbreakable(ItemStack item) {
+		return item;
+	}
 }
