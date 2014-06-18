@@ -82,10 +82,11 @@ public class MagicLogger implements Listener {
 	
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onSpellTarget(SpellTargetEvent event) {
+		Player caster = event.getCaster();
 		log("  TARGET ENTITY" + 
 				"; spell=" + event.getSpell().getInternalName() + 
-				"; caster=" + event.getCaster().getName() + 
-				"; casterloc=" + formatLoc(event.getCaster().getLocation()) +
+				"; caster=" + (caster != null ? caster.getName() : "null") + 
+				"; casterloc=" + (caster != null ? formatLoc(caster.getLocation()) : "null") +
 				": target=" + getTargetName(event.getTarget()) + 
 				"; targetloc=" + formatLoc(event.getTarget().getLocation()) +
 				"; canceled=" + event.isCancelled());

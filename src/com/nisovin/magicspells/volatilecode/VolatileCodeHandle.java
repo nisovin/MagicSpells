@@ -78,4 +78,6 @@ public interface VolatileCodeHandle {
 	
 	public ItemStack setUnbreakable(ItemStack item);
 	
+	public void setArrowsStuck(LivingEntity entity, int count);
+	
 }

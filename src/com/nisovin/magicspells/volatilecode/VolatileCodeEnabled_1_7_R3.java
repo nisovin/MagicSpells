@@ -582,5 +582,10 @@ public class VolatileCodeEnabled_1_7_R3 implements VolatileCodeHandle {
 		tag.setByte("Unbreakable", (byte)1);
 		return setTag(item, tag);
 	}
+		
+	@Override
+	public void setArrowsStuck(LivingEntity entity, int count) {
+		((CraftLivingEntity)entity).getHandle().p(count);
+	}
 
 }

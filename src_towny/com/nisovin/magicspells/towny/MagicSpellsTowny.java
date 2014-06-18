@@ -63,6 +63,7 @@ public class MagicSpellsTowny extends JavaPlugin implements Listener {
 	
 	@EventHandler(ignoreCancelled=true)
 	public void onSpellTarget(SpellTargetEvent event) {
+		if (event.getCaster() == null) return;
 		boolean friendlySpell = false;
 		if (event.getSpell() instanceof TargetedSpell && ((TargetedSpell)event.getSpell()).isBeneficial()) {
 			friendlySpell = true;

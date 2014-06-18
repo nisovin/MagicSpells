@@ -211,4 +211,8 @@ public class VolatileCodeDisabled implements VolatileCodeHandle {
 	public ItemStack setUnbreakable(ItemStack item) {
 		return item;
 	}
+
+	@Override
+	public void setArrowsStuck(LivingEntity entity, int count) {
+	}
 }

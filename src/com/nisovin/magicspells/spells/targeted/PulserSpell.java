@@ -238,7 +238,7 @@ public class PulserSpell extends TargetedSpell implements TargetedLocationSpell 
 			Iterator<Pulser> iter = pulsers.values().iterator();
 			while (iter.hasNext()) {
 				Pulser pulser = iter.next();
-				if (pulser.caster.equals(player)) {
+				if (pulser.caster != null && pulser.caster.equals(player)) {
 					pulser.stop();
 					iter.remove();
 				}

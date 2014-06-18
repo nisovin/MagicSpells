@@ -23,6 +23,7 @@ public class MagicSpellsFactions extends JavaPlugin implements Listener {
 	
 	@EventHandler
 	public void onSpellTarget(SpellTargetEvent event) {
+		if (event.getCaster() == null) return;
 		if (!(event.getTarget() instanceof Player)) return;
 		
 		boolean beneficial = event.getSpell().isBeneficial();
