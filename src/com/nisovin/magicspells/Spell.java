@@ -42,6 +42,9 @@ import com.nisovin.magicspells.mana.ManaHandler;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spelleffects.SpellEffect;
 import com.nisovin.magicspells.spells.PassiveSpell;
+import com.nisovin.magicspells.spells.TargetedEntityFromLocationSpell;
+import com.nisovin.magicspells.spells.TargetedEntitySpell;
+import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.util.BlockUtils;
 import com.nisovin.magicspells.util.CastItem;
 import com.nisovin.magicspells.util.ExperienceUtils;
@@ -801,6 +804,74 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	 * @return the action to take after the spell is processed
 	 */
 	public abstract PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args);
+	
+	public boolean castAsSubspell(Player player, float power) {
+		SpellCastEvent event = new SpellCastEvent(this, player, SpellCastState.NORMAL, power, null, 0, null, 0);
+		Bukkit.getPluginManager().callEvent(event);
+		if (!event.isCancelled() && event.getSpellCastState() == SpellCastState.NORMAL) {
+			castSpell(player, SpellCastState.NORMAL, event.getPower(), null);
+			Bukkit.getPluginManager().callEvent(new SpellCastedEvent(this, player, SpellCastState.NORMAL, event.getPower(), null, 0, null, PostCastAction.HANDLE_NORMALLY));
+			return true;
+		}
+		return false;
+	}
+	
+	public boolean castAsSubspellAtEntity(Player player, LivingEntity target, float power) {
+		boolean ret = false;
+		if (this instanceof TargetedEntitySpell) {
+			SpellCastEvent event = new SpellCastEvent(this, player, SpellCastState.NORMAL, power, null, 0, null, 0);
+			Bukkit.getPluginManager().callEvent(event);
+			if (!event.isCancelled() && event.getSpellCastState() == SpellCastState.NORMAL) {
+				if (player != null) {
+					ret = ((TargetedEntitySpell)this).castAtEntity(player, target, event.getPower());
+				} else {
+					ret = ((TargetedEntitySpell)this).castAtEntity(target, event.getPower());
+				}
+				if (ret) {
+					Bukkit.getPluginManager().callEvent(new SpellCastedEvent(this, player, SpellCastState.NORMAL, event.getPower(), null, 0, null, PostCastAction.HANDLE_NORMALLY));
+				}
+			}
+		}
+		return ret;
+	}
+	
+	public boolean castAsSubspellAtLocation(Player player, Location target, float power) {
+		boolean ret = false;
+		if (this instanceof TargetedLocationSpell) {
+			SpellCastEvent event = new SpellCastEvent(this, player, SpellCastState.NORMAL, power, null, 0, null, 0);
+			Bukkit.getPluginManager().callEvent(event);
+			if (!event.isCancelled() && event.getSpellCastState() == SpellCastState.NORMAL) {
+				if (player != null) {
+					ret = ((TargetedLocationSpell)this).castAtLocation(player, target, event.getPower());
+				} else {
+					ret = ((TargetedLocationSpell)this).castAtLocation(target, event.getPower());
+				}
+				if (ret) {
+					Bukkit.getPluginManager().callEvent(new SpellCastedEvent(this, player, SpellCastState.NORMAL, event.getPower(), null, 0, null, PostCastAction.HANDLE_NORMALLY));
+				}
+			}
+		}
+		return ret;
+	}
+	
+	public boolean castAsSubspellAtEntityFromLocation(Player player, LivingEntity target, Location from, float power) {
+		boolean ret = false;
+		if (this instanceof TargetedEntityFromLocationSpell) {
+			SpellCastEvent event = new SpellCastEvent(this, player, SpellCastState.NORMAL, power, null, 0, null, 0);
+			Bukkit.getPluginManager().callEvent(event);
+			if (!event.isCancelled() && event.getSpellCastState() == SpellCastState.NORMAL) {
+				if (player != null) {
+					ret = ((TargetedEntityFromLocationSpell)this).castAtEntityFromLocation(player, from, target, event.getPower());
+				} else {
+					ret = ((TargetedEntityFromLocationSpell)this).castAtEntityFromLocation(from, target, event.getPower());
+				}
+				if (ret) {
+					Bukkit.getPluginManager().callEvent(new SpellCastedEvent(this, player, SpellCastState.NORMAL, event.getPower(), null, 0, null, PostCastAction.HANDLE_NORMALLY));
+				}
+			}
+		}
+		return ret;
+	}
 	
 	public List<String> tabComplete(CommandSender sender, String partial) {
 		return null;
