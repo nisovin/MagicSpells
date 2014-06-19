@@ -192,6 +192,8 @@ public class MagicItemNameResolver implements ItemNameResolver {
 			return getLeaves(sdata);
 		} else if (type == Material.WOOL) {
 			return getWool(sdata);
+		} else if (sdata.matches("^[0-9]+$")) {
+			return new MaterialData(type, Byte.parseByte(sdata));
 		} else {
 			return new MaterialData(type);
 		}
