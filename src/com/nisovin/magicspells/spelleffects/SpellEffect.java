@@ -103,12 +103,12 @@ public abstract class SpellEffect {
 	}
 	
 	private void playEffectLocationReal(Location location) {
-		if (heightOffset > 0 || forwardOffset > 0) {
+		if (heightOffset != 0 || forwardOffset != 0) {
 			Location loc = location.clone();
-			if (heightOffset > 0) {
+			if (heightOffset != 0) {
 				loc.setY(loc.getY() + heightOffset);
 			}
-			if (forwardOffset > 0) {
+			if (forwardOffset != 0) {
 				loc.add(loc.getDirection().setY(0).normalize().multiply(forwardOffset));
 			}
 			playEffectLocation(loc);
