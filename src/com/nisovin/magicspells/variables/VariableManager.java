@@ -58,16 +58,18 @@ public class VariableManager implements Listener {
 					String objName = "MSV_" + var;
 					if (objName.length() > 16) objName = objName.substring(0, 16);
 					objective = Bukkit.getScoreboardManager().getMainScoreboard().getObjective(objName);
-					if (objective == null) {
-						objective = Bukkit.getScoreboardManager().getMainScoreboard().registerNewObjective(objName, objName);
-						objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', scoreName));
-						if (scorePos.equalsIgnoreCase("nameplate")) {
-							objective.setDisplaySlot(DisplaySlot.BELOW_NAME);
-						} else if (scorePos.equalsIgnoreCase("playerlist")) {
-							objective.setDisplaySlot(DisplaySlot.PLAYER_LIST);
-						} else {
-							objective.setDisplaySlot(DisplaySlot.SIDEBAR);
-						}
+					if (objective != null) {
+						objective.unregister();
+						objective = null;
+					}
+					objective = Bukkit.getScoreboardManager().getMainScoreboard().registerNewObjective(objName, objName);
+					objective.setDisplayName(ChatColor.translateAlternateColorCodes('&', scoreName));
+					if (scorePos.equalsIgnoreCase("nameplate")) {
+						objective.setDisplaySlot(DisplaySlot.BELOW_NAME);
+					} else if (scorePos.equalsIgnoreCase("playerlist")) {
+						objective.setDisplaySlot(DisplaySlot.PLAYER_LIST);
+					} else {
+						objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 					}
 				}
 				String bossBar = section.getString(var + ".boss-bar", null);
@@ -92,6 +94,7 @@ public class VariableManager implements Listener {
 		for (Player player : Bukkit.getOnlinePlayers()) {
 			loadPlayerVars(player.getName(), Util.getUniqueId(player));
 			loadBossBar(player);
+			loadExpBar(player);
 		}
 		
 		// start save task
@@ -214,7 +217,7 @@ public class VariableManager implements Listener {
 					if (!line.isEmpty()) {
 						String[] s = line.split("=");
 						Variable variable = variables.get(s[0]);
-						if (variable != null && variable instanceof GlobalVariable) {
+						if (variable != null && variable instanceof GlobalVariable && variable.permanent) {
 							variable.set("", Double.parseDouble(s[1]));
 						}
 					}
@@ -284,7 +287,7 @@ public class VariableManager implements Listener {
 					if (!line.isEmpty()) {
 						String[] s = line.split("=");
 						Variable variable = variables.get(s[0]);
-						if (variable != null && variable instanceof PlayerVariable) {
+						if (variable != null && variable instanceof PlayerVariable && variable.permanent) {
 							variable.set(player, Double.parseDouble(s[1]));
 						}
 					}
@@ -353,6 +356,15 @@ public class VariableManager implements Listener {
 		for (Variable var : variables.values()) {
 			if (var.bossBar != null) {
 				MagicSpells.getBossBarManager().setPlayerBar(player, var.bossBar, var.getValue(player) / var.maxValue);
+				break;
+			}
+		}
+	}
+	
+	private void loadExpBar(Player player) {
+		for (Variable var : variables.values()) {
+			if (var.expBar) {
+				MagicSpells.getVolatileCodeHandler().setExperienceBar(player, (int)var.getValue(player), (float)(var.getValue(player) / var.maxValue));
 				break;
 			}
 		}
