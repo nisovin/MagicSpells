@@ -168,15 +168,16 @@ public abstract class BuffSpell extends Spell {
 						turnOff(p);
 					}
 				}
-			}, Math.round(dur * 20) + 20); // overestimate ticks, since the duration is real-time ms based
-			
-			playSpellEffectsBuff(player, new SpellEffect.SpellEffectActiveChecker() {							
-				@Override
-				public boolean isActive(Entity entity) {
-					return thisSpell.isActive((Player)entity);
-				}
-			});
+			}, Math.round(dur * 20) + 20); // overestimate ticks, since the duration is real-time ms based			
 		}
+		
+		playSpellEffectsBuff(player, new SpellEffect.SpellEffectActiveChecker() {							
+			@Override
+			public boolean isActive(Entity entity) {
+				return thisSpell.isActiveAndNotExpired((Player)entity);
+			}
+		});
+		
 		BuffManager buffman = MagicSpells.getBuffManager();
 		if (buffman != null) buffman.addBuff(player, this);
 		playSpellEffects(EffectPosition.CASTER, player);
