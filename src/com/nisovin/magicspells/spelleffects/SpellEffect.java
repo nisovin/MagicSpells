@@ -132,7 +132,7 @@ public abstract class SpellEffect {
 		if (c <= 0) return;
 		Vector v = location2.toVector().subtract(location1.toVector()).normalize().multiply(distanceBetween);
 		Location l = location1.clone();
-		if (heightOffset > 0) {
+		if (heightOffset != 0) {
 			l.setY(l.getY() + heightOffset);
 		}
 		
