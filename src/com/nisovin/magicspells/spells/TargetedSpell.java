@@ -9,7 +9,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 
 import com.nisovin.magicspells.MagicSpells;
-import com.nisovin.magicspells.Spell;
+import com.nisovin.magicspells.Subspell;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.TargetInfo;
 import com.nisovin.magicspells.util.Util;
@@ -20,7 +20,7 @@ public abstract class TargetedSpell extends InstantSpell {
 	protected boolean playFizzleSound;
 	protected boolean targetSelf;
 	protected String spellNameOnFail;
-	protected Spell spellOnFail;
+	protected Subspell spellOnFail;
 	protected String strCastTarget;
 	protected String strNoTarget;
 
@@ -40,8 +40,9 @@ public abstract class TargetedSpell extends InstantSpell {
 		super.initialize();
 		
 		if (spellNameOnFail != null && !spellNameOnFail.isEmpty()) {
-			spellOnFail = MagicSpells.getSpellByInternalName(spellNameOnFail);
-			if (spellOnFail == null) {
+			spellOnFail = new Subspell(spellNameOnFail);
+			if (!spellOnFail.process()) {
+				spellOnFail = null;
 				MagicSpells.error("Invalid spell-on-fail for spell " + internalName);
 			}
 		}
@@ -153,7 +154,7 @@ public abstract class TargetedSpell extends InstantSpell {
 		fizzle(player);
 		sendMessage(player, message);
 		if (spellOnFail != null) {
-			spellOnFail.castSpell(player, SpellCastState.NORMAL, 1.0F, null);
+			spellOnFail.cast(player, 1.0F);
 		}
 		return alwaysActivate ? PostCastAction.NO_MESSAGES : PostCastAction.ALREADY_HANDLED;		
 	}

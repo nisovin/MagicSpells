@@ -10,12 +10,11 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 
 import com.nisovin.magicspells.MagicSpells;
-import com.nisovin.magicspells.Spell;
+import com.nisovin.magicspells.Subspell;
 import com.nisovin.magicspells.events.SpellTargetEvent;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedEntityFromLocationSpell;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
-import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.TargetInfo;
@@ -23,7 +22,7 @@ import com.nisovin.magicspells.util.TargetInfo;
 public class ChainSpell extends TargetedSpell implements TargetedEntitySpell, TargetedEntityFromLocationSpell {
 
 	String spellNameToCast;
-	TargetedSpell spellToCast;
+	Subspell spellToCast;
 	ValidTargetChecker checker;
 	int bounces;
 	int bounceRange;
@@ -46,12 +45,12 @@ public class ChainSpell extends TargetedSpell implements TargetedEntitySpell, Ta
 	public void initialize() {
 		super.initialize();
 		
-		Spell spell = MagicSpells.getSpellByInternalName(spellNameToCast);
-		if (spell == null || !(spell instanceof TargetedSpell)) {
-			MagicSpells.error("Invalid spell defined for ChainSpell '" + this.name + "'");
+		Subspell spell = new Subspell(spellNameToCast);
+		if (spell.process()) {
+			spellToCast = spell;
+			checker = spell.getSpell().getValidTargetChecker();
 		} else {
-			spellToCast = (TargetedSpell)spell;
-			checker = spellToCast.getValidTargetChecker();
+			MagicSpells.error("Invalid spell defined for ChainSpell '" + this.name + "'");
 		}
 	}
 
@@ -143,20 +142,12 @@ public class ChainSpell extends TargetedSpell implements TargetedEntitySpell, Ta
 	}
 	
 	private boolean castSpellAt(Player caster, Location from, LivingEntity target, float power) {
-		if (caster != null) {
-			if (spellToCast instanceof TargetedEntityFromLocationSpell && from != null) {
-				return ((TargetedEntityFromLocationSpell)spellToCast).castAtEntityFromLocation(caster, from, target, power);
-			} else if (spellToCast instanceof TargetedEntitySpell) {
-				return ((TargetedEntitySpell)spellToCast).castAtEntity(caster, target, power);
-			} else if (spellToCast instanceof TargetedLocationSpell) {
-				return ((TargetedLocationSpell)spellToCast).castAtLocation(caster, target.getLocation(), power);
-			}
-		} else {
-			if (spellToCast instanceof TargetedEntitySpell) {
-				return ((TargetedEntitySpell)spellToCast).castAtEntity(target, power);
-			} else if (spellToCast instanceof TargetedLocationSpell) {
-				return ((TargetedLocationSpell)spellToCast).castAtLocation(target.getLocation(), power);
-			}
+		if (spellToCast.isTargetedEntityFromLocationSpell() && from != null) {
+			return spellToCast.castAtEntityFromLocation(caster, from, target, power);
+		} else if (spellToCast.isTargetedEntitySpell()) {
+			return spellToCast.castAtEntity(caster, target, power);
+		} else if (spellToCast.isTargetedLocationSpell()) {
+			return spellToCast.castAtLocation(caster, target.getLocation(), power);
 		}
 		return true;
 	}

@@ -23,6 +23,7 @@ import org.bukkit.metadata.MetadataValue;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.Spellbook;
+import com.nisovin.magicspells.Subspell;
 import com.nisovin.magicspells.events.SpellCastEvent;
 import com.nisovin.magicspells.events.SpellTargetEvent;
 import com.nisovin.magicspells.util.MagicConfig;
@@ -35,8 +36,8 @@ public class ArrowSpell extends Spell {
 	String bowName;
 	String spellNameOnHitEntity;
 	String spellNameOnHitGround;
-	TargetedEntitySpell spellOnHitEntity;
-	TargetedLocationSpell spellOnHitGround;
+	Subspell spellOnHitEntity;
+	Subspell spellOnHitGround;
 	
 	public ArrowSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -51,15 +52,15 @@ public class ArrowSpell extends Spell {
 		super.initialize();
 		
 		if (spellNameOnHitEntity != null && !spellNameOnHitEntity.isEmpty()) {
-			Spell spell = MagicSpells.getSpellByInternalName(spellNameOnHitEntity);
-			if (spell != null && spell instanceof TargetedEntitySpell) {
-				spellOnHitEntity = (TargetedEntitySpell)spell;
+			Subspell spell = new Subspell(spellNameOnHitEntity);
+			if (spell.process() && spell.isTargetedEntitySpell()) {
+				spellOnHitEntity = spell;
 			}
 		}
 		if (spellNameOnHitGround != null && !spellNameOnHitGround.isEmpty()) {
-			Spell spell = MagicSpells.getSpellByInternalName(spellNameOnHitGround);
-			if (spell != null && spell instanceof TargetedLocationSpell) {
-				spellOnHitGround = (TargetedLocationSpell)spell;
+			Subspell spell = new Subspell(spellNameOnHitGround);
+			if (spell.process() && spell.isTargetedLocationSpell()) {
+				spellOnHitGround = spell;
 			}
 		}
 		
@@ -176,10 +177,6 @@ public class ArrowSpell extends Spell {
 							data.spell.spellOnHitEntity.castAtEntity(shooter, (LivingEntity)event.getEntity(), evt.getPower());
 							data.spell.setCooldown(shooter, data.spell.cooldown);
 						}
-						data.casted = true;
-					} else if (data.spell.spellOnHitGround != null) {
-						data.spell.spellOnHitGround.castAtLocation(shooter, arrow.getLocation(), data.power);
-						data.spell.setCooldown(shooter, data.spell.cooldown);
 						data.casted = true;
 					}
 				}

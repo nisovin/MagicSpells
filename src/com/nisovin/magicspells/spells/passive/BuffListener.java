@@ -13,9 +13,9 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
 import com.nisovin.magicspells.MagicSpells;
-import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.Spell.SpellCastState;
 import com.nisovin.magicspells.Spellbook;
+import com.nisovin.magicspells.Subspell;
 import com.nisovin.magicspells.events.SpellForgetEvent;
 import com.nisovin.magicspells.events.SpellLearnEvent;
 import com.nisovin.magicspells.spells.BuffSpell;
@@ -28,9 +28,9 @@ public class BuffListener extends PassiveListener {
 	@Override
 	public void registerSpell(PassiveSpell spell, PassiveTrigger trigger, String var) {
 		spells.add(spell);
-		for (Spell s : spell.getActivatedSpells()) {
-			if (s instanceof BuffSpell) {
-				BuffSpell buff = (BuffSpell)s;
+		for (Subspell s : spell.getActivatedSpells()) {
+			if (s.getSpell() instanceof BuffSpell) {
+				BuffSpell buff = (BuffSpell)s.getSpell();
 				buff.setAsEverlasting();
 			}
 		}
@@ -95,9 +95,9 @@ public class BuffListener extends PassiveListener {
 	}
 	
 	private void on(Player player, PassiveSpell spell) {
-		for (Spell s : spell.getActivatedSpells()) {
-			if (s instanceof BuffSpell) {
-				BuffSpell buff = (BuffSpell)s;
+		for (Subspell s : spell.getActivatedSpells()) {
+			if (s.getSpell() instanceof BuffSpell) {
+				BuffSpell buff = (BuffSpell)s.getSpell();
 				if (!buff.isActive(player)) {
 					buff.castSpell(player, SpellCastState.NORMAL, 1.0F, null);
 				}
@@ -115,9 +115,9 @@ public class BuffListener extends PassiveListener {
 	}
 	
 	private void off(Player player, PassiveSpell spell) {
-		for (Spell s : spell.getActivatedSpells()) {
-			if (s instanceof BuffSpell) {
-				BuffSpell buff = (BuffSpell)s;
+		for (Subspell s : spell.getActivatedSpells()) {
+			if (s.getSpell() instanceof BuffSpell) {
+				BuffSpell buff = (BuffSpell)s.getSpell();
 				if (buff.isActive(player)) {
 					buff.turnOff(player);
 				}

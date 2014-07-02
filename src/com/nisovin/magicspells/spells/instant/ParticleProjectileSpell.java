@@ -15,13 +15,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.MagicSpells;
-import com.nisovin.magicspells.Spell;
+import com.nisovin.magicspells.Subspell;
 import com.nisovin.magicspells.events.SpellTargetEvent;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
-import com.nisovin.magicspells.spells.TargetedEntitySpell;
-import com.nisovin.magicspells.spells.TargetedLocationSpell;
-import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.BlockUtils;
 import com.nisovin.magicspells.util.BoundingBox;
 import com.nisovin.magicspells.util.MagicConfig;
@@ -67,7 +64,7 @@ public class ParticleProjectileSpell extends InstantSpell {
 	boolean stopOnHitGround;
 	
 	String landSpellName;
-	TargetedSpell spell;
+	Subspell spell;
 	
 	ParticleProjectileSpell thisSpell;
 	Random rand = new Random();
@@ -125,9 +122,9 @@ public class ParticleProjectileSpell extends InstantSpell {
 	public void initialize() {
 		super.initialize();
 		
-		Spell s = MagicSpells.getSpellByInternalName(landSpellName);
-		if (s != null && s instanceof TargetedSpell) {
-			spell = (TargetedSpell)s;
+		Subspell s = new Subspell(landSpellName);
+		if (s.process()) {
+			spell = s;
 		} else {
 			MagicSpells.error("ParticleProjectileSpell " + internalName + " has an invalid spell defined!");
 		}
@@ -218,8 +215,8 @@ public class ParticleProjectileSpell extends InstantSpell {
 			
 			// check if duration is up
 			if (maxDuration > 0 && startTime + maxDuration < System.currentTimeMillis()) {
-				if (hitAirAfterDuration && spell != null && spell instanceof TargetedLocationSpell) {
-					((TargetedLocationSpell)spell).castAtLocation(caster, currentLocation, power);
+				if (hitAirAfterDuration && spell != null && spell.isTargetedLocationSpell()) {
+					spell.castAtLocation(caster, currentLocation, power);
 					playSpellEffects(EffectPosition.TARGET, currentLocation);
 				}
 				stop();
@@ -283,20 +280,20 @@ public class ParticleProjectileSpell extends InstantSpell {
 			counter++;
 			
 			// cast spell mid air
-			if (hitAirDuring && counter % spellInterval == 0 && spell instanceof TargetedLocationSpell) {
-				((TargetedLocationSpell)spell).castAtLocation(caster, currentLocation, power);
+			if (hitAirDuring && counter % spellInterval == 0 && spell.isTargetedLocationSpell()) {
+				spell.castAtLocation(caster, currentLocation, power);
 			}
 			
 			if (stopOnHitGround && !BlockUtils.isPathable(currentLocation.getBlock())) {
-				if (hitGround && spell != null && spell instanceof TargetedLocationSpell) {
+				if (hitGround && spell != null && spell.isTargetedLocationSpell()) {
 					Util.setLocationFacingFromVector(previousLocation, currentVelocity);
-					((TargetedLocationSpell)spell).castAtLocation(caster, previousLocation, power);
+					spell.castAtLocation(caster, previousLocation, power);
 					playSpellEffects(EffectPosition.TARGET, currentLocation);
 				}
 				stop();
 			} else if (currentLocation.distanceSquared(startLocation) >= maxDistanceSquared) {
-				if (hitAirAtEnd && spell != null && spell instanceof TargetedLocationSpell) {
-					((TargetedLocationSpell)spell).castAtLocation(caster, currentLocation, power);
+				if (hitAirAtEnd && spell != null && spell.isTargetedLocationSpell()) {
+					spell.castAtLocation(caster, currentLocation, power);
 					playSpellEffects(EffectPosition.TARGET, currentLocation);
 				}
 				stop();
@@ -306,8 +303,8 @@ public class ParticleProjectileSpell extends InstantSpell {
 					LivingEntity e = inRange.get(i);
 					if (!e.isDead() && hitBox.contains(e.getLocation().add(0, 0.6, 0))) {
 						if (spell != null) {
-							if (spell instanceof TargetedEntitySpell) {
-								ValidTargetChecker checker = spell.getValidTargetChecker();
+							if (spell.isTargetedEntitySpell()) {
+								ValidTargetChecker checker = spell.getSpell().getValidTargetChecker();
 								if (checker != null && !checker.isValidTarget(e)) {
 									inRange.remove(i);
 									break;
@@ -323,10 +320,10 @@ public class ParticleProjectileSpell extends InstantSpell {
 									target = event.getTarget();
 									thisPower = event.getPower();
 								}
-								((TargetedEntitySpell)spell).castAtEntity(caster, target, thisPower);
+								spell.castAtEntity(caster, target, thisPower);
 								playSpellEffects(EffectPosition.TARGET, e);
-							} else if (spell instanceof TargetedLocationSpell) {
-								((TargetedLocationSpell)spell).castAtLocation(caster, currentLocation, power);
+							} else if (spell.isTargetedLocationSpell()) {
+								spell.castAtLocation(caster, currentLocation, power);
 								playSpellEffects(EffectPosition.TARGET, currentLocation);
 							}
 						}

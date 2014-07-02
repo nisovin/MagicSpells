@@ -42,9 +42,6 @@ import com.nisovin.magicspells.mana.ManaHandler;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spelleffects.SpellEffect;
 import com.nisovin.magicspells.spells.PassiveSpell;
-import com.nisovin.magicspells.spells.TargetedEntityFromLocationSpell;
-import com.nisovin.magicspells.spells.TargetedEntitySpell;
-import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.util.BlockUtils;
 import com.nisovin.magicspells.util.CastItem;
 import com.nisovin.magicspells.util.ExperienceUtils;
@@ -653,64 +650,12 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	}
 	
 	public final SpellCastResult cast(Player player, float power, String[] args) {
-		MagicSpells.debug(1, "Player " + player.getName() + " is trying to cast " + internalName);
-		
-		// get spell state
-		SpellCastState state = getCastState(player);
-		MagicSpells.debug(2, "    Spell cast state: " + state);
-		
-		// call events
-		float cooldown = this.cooldown;
-		int castTime = this.castTime;
-		SpellReagents reagents = this.reagents.clone();
-		SpellCastEvent event = new SpellCastEvent(this, player, state, power, args, cooldown, reagents, castTime);
-		Bukkit.getServer().getPluginManager().callEvent(event);
-		if (event.isCancelled()) {
-			MagicSpells.debug(2, "    Spell canceled");
+		SpellCastEvent spellCast = preCast(player, power, args);
+		if (spellCast == null) {
 			return new SpellCastResult(SpellCastState.CANT_CAST, PostCastAction.HANDLE_NORMALLY);
-		} else {
-			cooldown = event.getCooldown();
-			power = event.getPower();
-			castTime = event.getCastTime();
-			if (event.haveReagentsChanged()) {
-				reagents = event.getReagents();
-				boolean hasReagents = hasReagents(player, reagents);
-				if (!hasReagents && state != SpellCastState.MISSING_REAGENTS) {
-					state = SpellCastState.MISSING_REAGENTS;
-					MagicSpells.debug(2, "    Spell cast state changed: " + state);
-				} else if (hasReagents && state == SpellCastState.MISSING_REAGENTS) {
-					state = SpellCastState.NORMAL;
-					MagicSpells.debug(2, "    Spell cast state changed: " + state);
-				}
-			}
-			if (event.hasSpellCastStateChanged()) {
-				state = event.getSpellCastState();
-				MagicSpells.debug(2, "    Spell cast state changed: " + state);
-			}
 		}
-		if (player.hasPermission("magicspells.nocasttime")) {
-			castTime = 0;
-		}
-				
-		// cast spell
-		PostCastAction action;
-		MagicSpells.debug(3, "    Cast time: " + castTime);
-		if (castTime <= 0 || state != SpellCastState.NORMAL) {
-			action = handleCast(player, state, power, cooldown, reagents, args);
-		} else if (!preCastTimeCheck(player, args)) {
-			action = PostCastAction.ALREADY_HANDLED;
-		} else {
-			action = PostCastAction.DELAYED;
-			sendMessage(player, strCastStart);
-			playSpellEffects(EffectPosition.START_CAST, player);
-			if (MagicSpells.plugin.useExpBarAsCastTimeBar) {
-				new DelayedSpellCastWithBar(player, this, state, power, cooldown, reagents, castTime, args);
-			} else {
-				new DelayedSpellCast(player, this, state, power, cooldown, reagents, castTime, args);
-			}
-		}
-		
-		return new SpellCastResult(state, action);
+		PostCastAction action = handleCast(spellCast);
+		return new SpellCastResult(spellCast.getSpellCastState(), action);
 	}
 	
 	protected SpellCastState getCastState(Player player) {
@@ -729,16 +674,51 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		}
 	}
 	
-	private PostCastAction handleCast(Player player, SpellCastState state, float power, float cooldown, SpellReagents reagents, String[] args) {
-		long start = System.nanoTime();		
+	protected SpellCastEvent preCast(Player player, float power, String[] args) {
+		// get spell state
+		SpellCastState state = getCastState(player);
+		MagicSpells.debug(2, "    Spell cast state: " + state);
+		
+		// call events
+		SpellCastEvent event = new SpellCastEvent(this, player, state, power, args, cooldown, reagents.clone(), castTime);
+		Bukkit.getServer().getPluginManager().callEvent(event);
+		if (event.isCancelled()) {
+			MagicSpells.debug(2, "    Spell canceled");
+			return null;
+		} else {
+			if (event.haveReagentsChanged()) {
+				boolean hasReagents = hasReagents(player, reagents);
+				if (!hasReagents && state != SpellCastState.MISSING_REAGENTS) {
+					event.setSpellCastState(SpellCastState.MISSING_REAGENTS);
+					MagicSpells.debug(2, "    Spell cast state changed: " + state);
+				} else if (hasReagents && state == SpellCastState.MISSING_REAGENTS) {
+					event.setSpellCastState(state = SpellCastState.NORMAL);
+					MagicSpells.debug(2, "    Spell cast state changed: " + state);
+				}
+			}
+			if (event.hasSpellCastStateChanged()) {
+				MagicSpells.debug(2, "    Spell cast state changed: " + state);
+			}
+		}
+		if (player.hasPermission("magicspells.nocasttime")) {
+			event.setCastTime(0);
+		}
+		
+		return event;
+	}
+	
+	private PostCastAction handleCast(SpellCastEvent spellCast) {
+		long start = System.nanoTime();
+		Player player = spellCast.getCaster();
+		SpellCastState state = spellCast.getSpellCastState();
+		String[] args = spellCast.getSpellArgs();
+		float power = spellCast.getPower();
 		MagicSpells.debug(3, "    Power: " + power);
 		MagicSpells.debug(3, "    Cooldown: " + cooldown);
 		if (MagicSpells.plugin.debug && args != null && args.length > 0) {
 			MagicSpells.debug(3, "    Args: {" + Util.arrayJoin(args, ',') + "}");
 		}
 		PostCastAction action = castSpell(player, state, power, args);
-		MagicSpells.debug(3, "    Post-cast action: " + action);
-		
 		if (MagicSpells.plugin.enableProfiling) {
         	Long total = MagicSpells.plugin.profilingTotalTime.get(profilingKey);
         	if (total == null) total = (long)0;
@@ -749,14 +729,21 @@ public abstract class Spell implements Comparable<Spell>, Listener {
         	runs += 1;
         	MagicSpells.plugin.profilingRuns.put(profilingKey, runs);
 		}
-
+		postCast(spellCast, action);
+		return action;
+	}
+	
+	protected void postCast(SpellCastEvent spellCast, PostCastAction action) {
+		MagicSpells.debug(3, "    Post-cast action: " + action);
+		Player player = spellCast.getCaster();
+		SpellCastState state = spellCast.getSpellCastState();
 		if (action != null && action != PostCastAction.ALREADY_HANDLED) {
 			if (state == SpellCastState.NORMAL) {
 				if (action == PostCastAction.HANDLE_NORMALLY || action == PostCastAction.COOLDOWN_ONLY || action == PostCastAction.NO_MESSAGES || action == PostCastAction.NO_REAGENTS) {
-					setCooldown(player, cooldown);
+					setCooldown(player, spellCast.getCooldown());
 				}
 				if (action == PostCastAction.HANDLE_NORMALLY || action == PostCastAction.REAGENTS_ONLY || action == PostCastAction.NO_MESSAGES || action == PostCastAction.NO_COOLDOWN) {
-					removeReagents(player, reagents);
+					removeReagents(player, spellCast.getReagents());
 				}
 				if (action == PostCastAction.HANDLE_NORMALLY || action == PostCastAction.MESSAGES_ONLY || action == PostCastAction.NO_COOLDOWN || action == PostCastAction.NO_REAGENTS) {
 					sendMessages(player);
@@ -779,11 +766,8 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 				MagicSpells.sendMessage(player, strWrongWorld);
 			}
 		}
-		
-		SpellCastedEvent event = new SpellCastedEvent(this, player, state, power, args, cooldown, reagents, action);
+		SpellCastedEvent event = new SpellCastedEvent(this, player, state, spellCast.getPower(), spellCast.getSpellArgs(), cooldown, reagents, action);
 		Bukkit.getPluginManager().callEvent(event);
-		
-		return action;
 	}
 	
 	public void sendMessages(Player player) {
@@ -804,75 +788,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	 * @return the action to take after the spell is processed
 	 */
 	public abstract PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args);
-	
-	public boolean castAsSubspell(Player player, float power) {
-		SpellCastEvent event = new SpellCastEvent(this, player, SpellCastState.NORMAL, power, null, 0, null, 0);
-		Bukkit.getPluginManager().callEvent(event);
-		if (!event.isCancelled() && event.getSpellCastState() == SpellCastState.NORMAL) {
-			castSpell(player, SpellCastState.NORMAL, event.getPower(), null);
-			Bukkit.getPluginManager().callEvent(new SpellCastedEvent(this, player, SpellCastState.NORMAL, event.getPower(), null, 0, null, PostCastAction.HANDLE_NORMALLY));
-			return true;
-		}
-		return false;
-	}
-	
-	public boolean castAsSubspellAtEntity(Player player, LivingEntity target, float power) {
-		boolean ret = false;
-		if (this instanceof TargetedEntitySpell) {
-			SpellCastEvent event = new SpellCastEvent(this, player, SpellCastState.NORMAL, power, null, 0, null, 0);
-			Bukkit.getPluginManager().callEvent(event);
-			if (!event.isCancelled() && event.getSpellCastState() == SpellCastState.NORMAL) {
-				if (player != null) {
-					ret = ((TargetedEntitySpell)this).castAtEntity(player, target, event.getPower());
-				} else {
-					ret = ((TargetedEntitySpell)this).castAtEntity(target, event.getPower());
-				}
-				if (ret) {
-					Bukkit.getPluginManager().callEvent(new SpellCastedEvent(this, player, SpellCastState.NORMAL, event.getPower(), null, 0, null, PostCastAction.HANDLE_NORMALLY));
-				}
-			}
-		}
-		return ret;
-	}
-	
-	public boolean castAsSubspellAtLocation(Player player, Location target, float power) {
-		boolean ret = false;
-		if (this instanceof TargetedLocationSpell) {
-			SpellCastEvent event = new SpellCastEvent(this, player, SpellCastState.NORMAL, power, null, 0, null, 0);
-			Bukkit.getPluginManager().callEvent(event);
-			if (!event.isCancelled() && event.getSpellCastState() == SpellCastState.NORMAL) {
-				if (player != null) {
-					ret = ((TargetedLocationSpell)this).castAtLocation(player, target, event.getPower());
-				} else {
-					ret = ((TargetedLocationSpell)this).castAtLocation(target, event.getPower());
-				}
-				if (ret) {
-					Bukkit.getPluginManager().callEvent(new SpellCastedEvent(this, player, SpellCastState.NORMAL, event.getPower(), null, 0, null, PostCastAction.HANDLE_NORMALLY));
-				}
-			}
-		}
-		return ret;
-	}
-	
-	public boolean castAsSubspellAtEntityFromLocation(Player player, LivingEntity target, Location from, float power) {
-		boolean ret = false;
-		if (this instanceof TargetedEntityFromLocationSpell) {
-			SpellCastEvent event = new SpellCastEvent(this, player, SpellCastState.NORMAL, power, null, 0, null, 0);
-			Bukkit.getPluginManager().callEvent(event);
-			if (!event.isCancelled() && event.getSpellCastState() == SpellCastState.NORMAL) {
-				if (player != null) {
-					ret = ((TargetedEntityFromLocationSpell)this).castAtEntityFromLocation(player, from, target, event.getPower());
-				} else {
-					ret = ((TargetedEntityFromLocationSpell)this).castAtEntityFromLocation(from, target, event.getPower());
-				}
-				if (ret) {
-					Bukkit.getPluginManager().callEvent(new SpellCastedEvent(this, player, SpellCastState.NORMAL, event.getPower(), null, 0, null, PostCastAction.HANDLE_NORMALLY));
-				}
-			}
-		}
-		return ret;
-	}
-	
+		
 	public List<String> tabComplete(CommandSender sender, String partial) {
 		return null;
 	}
@@ -1713,6 +1629,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	
 	public enum SpellCastState {
 		NORMAL,
+		SUB_SPELL,
 		ON_COOLDOWN,
 		MISSING_REAGENTS,
 		CANT_CAST,
@@ -1766,25 +1683,17 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		private Player player;
 		private Location prevLoc;
 		private Spell spell;
-		private SpellCastState state;
-		private float power;
-		private float cooldown;
-		private SpellReagents reagents;
-		private String[] args;
+		private SpellCastEvent spellCast;
 		private int taskId;
 		private boolean cancelled = false;
 		
-		public DelayedSpellCast(Player player, Spell spell, SpellCastState state, float power, float cooldown, SpellReagents reagents, int castTime, String[] args) {
+		public DelayedSpellCast(Player player, Spell spell, SpellCastEvent spellCast) {
 			this.player = player;
 			this.prevLoc = player.getLocation().clone();
 			this.spell = spell;
-			this.state = state;
-			this.power = power;
-			this.cooldown = cooldown;
-			this.reagents = reagents;
-			this.args = args;
+			this.spellCast = spellCast;
 			
-			taskId = scheduleDelayedTask(this, castTime);
+			taskId = scheduleDelayedTask(this, spellCast.getCastTime());
 			registerEvents(this);
 		}
 		
@@ -1794,9 +1703,9 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 				Location currLoc = player.getLocation();
 				if (!interruptOnMove || (Math.abs(currLoc.getX() - prevLoc.getX()) < .2 && Math.abs(currLoc.getY() - prevLoc.getY()) < .2 && Math.abs(currLoc.getZ() - prevLoc.getZ()) < .2)) {
 					if (!spell.hasReagents(player, reagents)) {
-						state = SpellCastState.MISSING_REAGENTS;
+						spellCast.setSpellCastState(SpellCastState.MISSING_REAGENTS);
 					}
-					spell.handleCast(player, state, power, cooldown, reagents, args);
+					spell.handleCast(spellCast);
 				} else {
 					interrupt();
 				}
@@ -1834,7 +1743,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		private void interrupt() {
 			sendMessage(player, strInterrupted);
 			if (spellOnInterrupt != null) {
-				spellOnInterrupt.castSpell(player, SpellCastState.NORMAL, power, null);
+				spellOnInterrupt.castSpell(player, SpellCastState.NORMAL, spellCast.getPower(), null);
 			}
 		}
 	}
@@ -1843,28 +1752,20 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		private Player player;
 		private Location prevLoc;
 		private Spell spell;
-		private SpellCastState state;
-		private float power;
-		private float cooldown;
-		private SpellReagents reagents;
+		private SpellCastEvent spellCast;
 		private int castTime;
-		private String[] args;
 		private int taskId;
 		private boolean cancelled = false;
 		
 		private int interval = 5;
 		private int elapsed = 0;
 		
-		public DelayedSpellCastWithBar(Player player, Spell spell, SpellCastState state, float power, float cooldown, SpellReagents reagents, int castTime, String[] args) {
+		public DelayedSpellCastWithBar(Player player, Spell spell, SpellCastEvent spellCast) {
 			this.player = player;
 			this.prevLoc = player.getLocation().clone();
 			this.spell = spell;
-			this.state = state;
-			this.power = power;
-			this.cooldown = cooldown;
-			this.reagents = reagents;
-			this.castTime = castTime;
-			this.args = args;
+			this.spellCast = spellCast;
+			this.castTime = spellCast.getCastTime();
 			
 			MagicSpells.getExpBarManager().lock(player, this);
 			
@@ -1880,9 +1781,9 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 				if (!interruptOnMove || (Math.abs(currLoc.getX() - prevLoc.getX()) < .2 && Math.abs(currLoc.getY() - prevLoc.getY()) < .2 && Math.abs(currLoc.getZ() - prevLoc.getZ()) < .2)) {
 					if (elapsed >= castTime) {
 						if (!spell.hasReagents(player, reagents)) {
-							state = SpellCastState.MISSING_REAGENTS;
+							spellCast.setSpellCastState(SpellCastState.MISSING_REAGENTS);
 						}
-						spell.handleCast(player, state, power, cooldown, reagents, args);
+						spell.handleCast(spellCast);
 						cancelled = true;
 					}
 					MagicSpells.getExpBarManager().update(player, 0, ((float)elapsed / (float)castTime), this);
@@ -1922,7 +1823,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 			sendMessage(player, strInterrupted);
 			end();
 			if (spellOnInterrupt != null) {
-				spellOnInterrupt.castSpell(player, SpellCastState.NORMAL, power, null);
+				spellOnInterrupt.castSpell(player, SpellCastState.NORMAL, spellCast.getPower(), null);
 			}
 		}
 		

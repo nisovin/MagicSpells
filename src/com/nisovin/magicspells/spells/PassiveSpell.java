@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
+import com.nisovin.magicspells.Subspell;
 import com.nisovin.magicspells.events.SpellCastEvent;
 import com.nisovin.magicspells.events.SpellCastedEvent;
 import com.nisovin.magicspells.events.SpellTargetEvent;
@@ -38,7 +39,7 @@ public class PassiveSpell extends Spell {
 	private boolean sendFailureMessages;
 	
 	private List<String> spellNames;
-	private List<Spell> spells;
+	private List<Subspell> spells;
 	
 	public PassiveSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -60,7 +61,7 @@ public class PassiveSpell extends Spell {
 		return manager;
 	}
 	
-	public List<Spell> getActivatedSpells() {
+	public List<Subspell> getActivatedSpells() {
 		return spells;
 	}
 	
@@ -69,11 +70,11 @@ public class PassiveSpell extends Spell {
 		super.initialize();
 		
 		// create spell list
-		spells = new ArrayList<Spell>();
+		spells = new ArrayList<Subspell>();
 		if (spellNames != null) {
 			for (String spellName : spellNames) {
-				Spell spell = MagicSpells.getSpellByInternalName(spellName);
-				if (spell != null) {
+				Subspell spell = new Subspell(spellName);
+				if (spell.process()) {
 					spells.add(spell);
 				}
 			}
@@ -163,24 +164,24 @@ public class PassiveSpell extends Spell {
 				}
 				setCooldown(caster, event.getCooldown());
 				basePower = event.getPower();
-				for (Spell spell : spells) {
-					MagicSpells.debug(3, "    Casting spell effect '" + spell.getName() + "'");
+				for (Subspell spell : spells) {
+					MagicSpells.debug(3, "    Casting spell effect '" + spell.getSpell().getName() + "'");
 					if (castWithoutTarget) {
 						MagicSpells.debug(3, "    Casting without target");
-						spell.castSpell(caster, SpellCastState.NORMAL, basePower, null);
+						spell.cast(caster, basePower);
 						playSpellEffects(EffectPosition.CASTER, caster);
-					} else if (spell instanceof TargetedEntitySpell && target != null && !isNonTargetedExternal(spell)) {
+					} else if (spell.isTargetedEntitySpell() && target != null && !isNonTargetedExternal(spell.getSpell())) {
 						MagicSpells.debug(3, "    Casting at entity");
 						SpellTargetEvent targetEvent = new SpellTargetEvent(this, caster, target, basePower);
 						Bukkit.getPluginManager().callEvent(targetEvent);
 						if (!targetEvent.isCancelled()) {
 							target = targetEvent.getTarget();
-							((TargetedEntitySpell)spell).castAtEntity(caster, target, targetEvent.getPower());
+							spell.castAtEntity(caster, target, targetEvent.getPower());
 							playSpellEffects(caster, target);
 						} else {
 							MagicSpells.debug(3, "      Target cancelled (TE)");
 						}
-					} else if (spell instanceof TargetedLocationSpell && (location != null || target != null)) {
+					} else if (spell.isTargetedLocationSpell() && (location != null || target != null)) {
 						MagicSpells.debug(3, "    Casting at location");
 						Location loc = null;
 						if (location != null) {
@@ -193,7 +194,7 @@ public class PassiveSpell extends Spell {
 							Bukkit.getPluginManager().callEvent(targetEvent);
 							if (!targetEvent.isCancelled()) {
 								loc = targetEvent.getTargetLocation();
-								((TargetedLocationSpell)spell).castAtLocation(caster, loc, targetEvent.getPower());
+								spell.castAtLocation(caster, loc, targetEvent.getPower());
 								playSpellEffects(caster, loc);
 							} else {
 								MagicSpells.debug(3, "      Target cancelled (TL)");
@@ -221,7 +222,7 @@ public class PassiveSpell extends Spell {
 								continue;
 							}
 						}
-						spell.castSpell(caster, SpellCastState.NORMAL, power, null);
+						spell.cast(caster, power);
 						playSpellEffects(EffectPosition.CASTER, caster);
 					}
 				}

@@ -34,13 +34,10 @@ import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.MagicSpells;
-import com.nisovin.magicspells.Spell;
+import com.nisovin.magicspells.Subspell;
 import com.nisovin.magicspells.events.SpellTargetEvent;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
-import com.nisovin.magicspells.spells.TargetedEntitySpell;
-import com.nisovin.magicspells.spells.TargetedLocationSpell;
-import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.Util;
 
@@ -58,7 +55,7 @@ public class ProjectileSpell extends InstantSpell {
 	private int maxDistanceSquared;
 	private int effectInterval;
 	private List<String> spellNames;
-	private List<Spell> spells;
+	private List<Subspell> spells;
 	private int aoeRadius;
 	private boolean targetPlayers;
 	private boolean allowTargetChange;
@@ -121,12 +118,12 @@ public class ProjectileSpell extends InstantSpell {
 	@Override
 	public void initialize() {
 		super.initialize();
-		spells = new ArrayList<Spell>();
+		spells = new ArrayList<Subspell>();
 		if (spellNames != null) {
 			for (String spellName : spellNames) {
-				Spell spell = MagicSpells.getSpellByInternalName(spellName);
-				if (spell != null && (spell instanceof TargetedEntitySpell || spell instanceof TargetedLocationSpell)) {
-					spells.add((TargetedSpell)spell);
+				Subspell spell = new Subspell(spellName);
+				if (spell.process()) {
+					spells.add(spell);
 				} else {
 					MagicSpells.error("Projectile spell '" + internalName + "' attempted to add invalid spell '" + spellName + "'.");
 				}
@@ -208,12 +205,12 @@ public class ProjectileSpell extends InstantSpell {
 				}
 				
 				// run spells
-				for (Spell spell : spells) {
-					if (spell instanceof TargetedEntitySpell) {
-						((TargetedEntitySpell)spell).castAtEntity(info.player, target, power);
+				for (Subspell spell : spells) {
+					if (spell.isTargetedEntitySpell()) {
+						spell.castAtEntity(info.player, target, power);
 						playSpellEffects(EffectPosition.TARGET, target);
-					} else if (spell instanceof TargetedLocationSpell) {
-						((TargetedLocationSpell)spell).castAtLocation(info.player, target.getLocation(), power);
+					} else if (spell.isTargetedLocationSpell()) {
+						spell.castAtLocation(info.player, target.getLocation(), power);
 						playSpellEffects(EffectPosition.TARGET, target.getLocation());
 					}
 				}
@@ -246,11 +243,11 @@ public class ProjectileSpell extends InstantSpell {
 	private boolean projectileHitLocation(Entity projectile, ProjectileInfo info) {
 		if (!requireHitEntity && !info.done && (maxDistanceSquared == 0 || projectile.getLocation().distanceSquared(info.start) <= maxDistanceSquared)) {
 			if (aoeRadius == 0) {
-				for (Spell spell : spells) {
-					if (spell instanceof TargetedLocationSpell) {
+				for (Subspell spell : spells) {
+					if (spell.isTargetedLocationSpell()) {
 						Location loc = projectile.getLocation();
 						Util.setLocationFacingFromVector(loc, projectile.getVelocity());
-						((TargetedLocationSpell)spell).castAtLocation(info.player, loc, info.power);
+						spell.castAtLocation(info.player, loc, info.power);
 						playSpellEffects(EffectPosition.TARGET, loc);
 					}
 				}
@@ -282,12 +279,12 @@ public class ProjectileSpell extends InstantSpell {
 				power = evt.getPower();
 				
 				// run spells
-				for (Spell spell : spells) {
-					if (spell instanceof TargetedEntitySpell) {
-						((TargetedEntitySpell)spell).castAtEntity(info.player, target, power);
+				for (Subspell spell : spells) {
+					if (spell.isTargetedEntitySpell()) {
+						spell.castAtEntity(info.player, target, power);
 						playSpellEffects(EffectPosition.TARGET, target);
-					} else if (spell instanceof TargetedLocationSpell) {
-						((TargetedLocationSpell)spell).castAtLocation(info.player, target.getLocation(), power);
+					} else if (spell.isTargetedLocationSpell()) {
+						spell.castAtLocation(info.player, target.getLocation(), power);
 						playSpellEffects(EffectPosition.TARGET, target.getLocation());
 					}
 				}

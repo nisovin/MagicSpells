@@ -16,6 +16,7 @@ import org.bukkit.inventory.ItemStack;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.Spellbook;
+import com.nisovin.magicspells.Subspell;
 import com.nisovin.magicspells.events.SpellCastEvent;
 import com.nisovin.magicspells.events.SpellCastedEvent;
 import com.nisovin.magicspells.util.MagicConfig;
@@ -28,7 +29,7 @@ public class BowSpell extends Spell {
 	
 	String bowName;
 	String spellNameOnShoot;
-	Spell spellOnShoot;
+	Subspell spellOnShoot;
 	
 	public BowSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -43,8 +44,9 @@ public class BowSpell extends Spell {
 		super.initialize();
 		
 		if (spellNameOnShoot != null && !spellNameOnShoot.isEmpty()) {
-			spellOnShoot = MagicSpells.getSpellByInternalName(spellNameOnShoot);
-			if (spellOnShoot == null) {
+			spellOnShoot = new Subspell(spellNameOnShoot);
+			if (!spellOnShoot.process()) {
+				spellOnShoot = null;
 				MagicSpells.error("Bow spell '" + internalName + "' has invalid spell defined: '" + spellNameOnShoot + "'");
 			}
 		}
@@ -107,7 +109,7 @@ public class BowSpell extends Spell {
 					if (!evt1.isCancelled()) {
 						event.setCancelled(true);
 						event.getProjectile().remove();
-						spell.spellOnShoot.cast(shooter, event.getForce(), null);
+						spell.spellOnShoot.cast(shooter, event.getForce());
 						SpellCastedEvent evt2 = new SpellCastedEvent(thisSpell, shooter, SpellCastState.NORMAL, event.getForce(), null, thisSpell.cooldown, thisSpell.reagents, PostCastAction.HANDLE_NORMALLY);
 						Bukkit.getPluginManager().callEvent(evt2);
 					}

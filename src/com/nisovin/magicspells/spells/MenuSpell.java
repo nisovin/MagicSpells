@@ -22,7 +22,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import com.nisovin.magicspells.MagicSpells;
-import com.nisovin.magicspells.Spell;
+import com.nisovin.magicspells.Subspell;
 import com.nisovin.magicspells.castmodifiers.ModifierSet;
 import com.nisovin.magicspells.events.MagicSpellsGenericPlayerEvent;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
@@ -104,8 +104,8 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 		super.initialize();
 		
 		for (MenuOption option : options.values()) {
-			Spell spell = MagicSpells.getSpellByInternalName(option.spellName);
-			if (spell != null) {
+			Subspell spell = new Subspell(option.spellName);
+			if (spell.process()) {
 				option.spell = spell;
 				if (option.modifierList != null) {
 					option.modifiers = new ModifierSet(option.modifierList);
@@ -230,20 +230,20 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 				String key = uniqueNames ? getOptionKey(item) : Util.getLoreData(item);
 				if (key != null && !key.isEmpty() && options.containsKey(key)) {
 					MenuOption option = options.get(key);
-					Spell spell = option.spell;
+					Subspell spell = option.spell;
 					if (spell != null) {
 						float power = option.power;
 						if (castPower.containsKey(player.getName())) {
 							power *= castPower.get(player.getName()).floatValue();
 						}
-						if (spell instanceof TargetedEntitySpell && castEntityTarget.containsKey(player.getName())) {
-							((TargetedEntitySpell)spell).castAtEntity(player, castEntityTarget.get(player.getName()), power);
-						} else if (spell instanceof TargetedLocationSpell && castLocTarget.containsKey(player.getName())) {
-							((TargetedLocationSpell)spell).castAtLocation(player, castLocTarget.get(player.getName()), power);
+						if (spell.isTargetedEntitySpell() && castEntityTarget.containsKey(player.getName())) {
+							spell.castAtEntity(player, castEntityTarget.get(player.getName()), power);
+						} else if (spell.isTargetedLocationSpell() && castLocTarget.containsKey(player.getName())) {
+							spell.castAtLocation(player, castLocTarget.get(player.getName()), power);
 						} else if (bypassNormalCast) {
-							spell.castSpell(player, SpellCastState.NORMAL, power, null);
+							spell.cast(player, power);
 						} else {
-							spell.cast(player, power, null);
+							spell.getSpell().cast(player, power, null);
 						}
 					}
 				}
@@ -324,7 +324,7 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 		int slot;
 		ItemStack item;
 		String spellName;
-		Spell spell;
+		Subspell spell;
 		float power;
 		List<String> modifierList;
 		ModifierSet modifiers;

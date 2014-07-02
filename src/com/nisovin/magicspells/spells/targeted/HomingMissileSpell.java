@@ -6,11 +6,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.MagicSpells;
-import com.nisovin.magicspells.Spell;
+import com.nisovin.magicspells.Subspell;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedEntityFromLocationSpell;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
-import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.BoundingBox;
 import com.nisovin.magicspells.util.MagicConfig;
@@ -38,7 +37,7 @@ public class HomingMissileSpell extends TargetedSpell implements TargetedEntityS
 	int renderDistance;
 	
 	String hitSpellName;
-	TargetedSpell spell;
+	Subspell spell;
 	
 	HomingMissileSpell thisSpell;
 	
@@ -68,9 +67,9 @@ public class HomingMissileSpell extends TargetedSpell implements TargetedEntityS
 	public void initialize() {
 		super.initialize();
 		
-		Spell s = MagicSpells.getSpellByInternalName(hitSpellName);
-		if (s != null && s instanceof TargetedSpell) {
-			spell = (TargetedSpell)s;
+		Subspell s = new Subspell(hitSpellName);
+		if (s.process()) {
+			spell = s;
 		} else {
 			MagicSpells.error("ParticleProjectileSpell " + internalName + " has an invalid spell defined!");
 		}
@@ -79,7 +78,7 @@ public class HomingMissileSpell extends TargetedSpell implements TargetedEntityS
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			ValidTargetChecker checker = spell != null ? spell.getValidTargetChecker() : null;
+			ValidTargetChecker checker = spell != null ? spell.getSpell().getValidTargetChecker() : null;
 			TargetInfo<LivingEntity> target = getTargetedEntity(player, power, checker);
 			if (target == null) {
 				return noTarget(player);
@@ -209,18 +208,10 @@ public class HomingMissileSpell extends TargetedSpell implements TargetedEntityS
 			if (hitRadius > 0 && spell != null) {
 				BoundingBox hitBox = new BoundingBox(currentLocation, hitRadius);
 				if (hitBox.contains(target.getLocation().add(0, yOffset, 0))) {
-					if (spell instanceof TargetedEntitySpell) {
-						if (caster != null) {
-							((TargetedEntitySpell)spell).castAtEntity(caster, target, power);
-						} else {
-							((TargetedEntitySpell)spell).castAtEntity(target, power);
-						}
-					} else if (spell instanceof TargetedLocationSpell) {
-						if (caster != null) {
-							((TargetedLocationSpell)spell).castAtLocation(caster, target.getLocation(), power);
-						} else {
-							((TargetedLocationSpell)spell).castAtLocation(target.getLocation(), power);
-						}
+					if (spell.isTargetedEntitySpell()) {
+						spell.castAtEntity(caster, target, power);
+					} else if (spell.isTargetedLocationSpell()) {
+						spell.castAtLocation(caster, target.getLocation(), power);
 					}
 					playSpellEffects(EffectPosition.TARGET, target);
 					stop();
