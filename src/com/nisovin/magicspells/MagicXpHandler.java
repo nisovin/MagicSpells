@@ -262,7 +262,7 @@ public class MagicXpHandler implements Listener {
 			folder = new File(folder, world);
 			if (!folder.exists()) folder.mkdirs();
 		}
-		File file = new File(folder, Util.getUniqueId(player));
+		File file = new File(folder, Util.getUniqueId(player) + ".txt");
 		if (file.exists()) file.delete();
 		
 		YamlConfiguration conf = new YamlConfiguration();
