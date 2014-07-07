@@ -74,6 +74,7 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 			}
 			int optionQuantity = getConfigInt("options." + optionName + ".quantity", 1);
 			List<String> modifierList = getConfigStringList("options." + optionName + ".modifiers", null);
+			boolean optionStayOpen = getConfigBoolean("options." + optionName + ".stay-open", false);
 			if (optionSlot >= 0 && !optionSpellName.isEmpty() && optionItem != null) {
 				optionItem.setAmount(optionQuantity);
 				Util.setLoreData(optionItem, optionName);
@@ -84,6 +85,7 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 				option.power = optionPower;
 				option.item = optionItem;
 				option.modifierList = modifierList;
+				option.stayOpen = optionStayOpen;
 				String optionKey = uniqueNames ? getOptionKey(option.item) : optionName;
 				options.put(optionKey, option);
 				if (optionSlot > maxSlot) {
@@ -183,6 +185,24 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 		}
 		
 		Inventory inv = Bukkit.createInventory(opener, size, title);
+		applyOptionsToInventory(opener, inv);
+		opener.openInventory(inv);
+		
+		if (entityTarget != null && caster != null) {
+			playSpellEffects(caster, entityTarget);
+		} else {
+			if (caster != null) {
+				playSpellEffects(EffectPosition.CASTER, caster);
+			}
+			playSpellEffects(EffectPosition.SPECIAL, opener);
+			if (locTarget != null) {
+				playSpellEffects(EffectPosition.TARGET, locTarget);
+			}
+		}
+	}
+	
+	void applyOptionsToInventory(Player opener, Inventory inv) {
+		inv.clear();
 		for (MenuOption option : options.values()) {
 			if (option.spell != null && inv.getItem(option.slot) == null) {
 				if (option.modifiers != null) {
@@ -204,19 +224,6 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 				inv.setItem(option.slot, item);
 			}
 		}
-		opener.openInventory(inv);
-		
-		if (entityTarget != null && caster != null) {
-			playSpellEffects(caster, entityTarget);
-		} else {
-			if (caster != null) {
-				playSpellEffects(EffectPosition.CASTER, caster);
-			}
-			playSpellEffects(EffectPosition.SPECIAL, opener);
-			if (locTarget != null) {
-				playSpellEffects(EffectPosition.TARGET, locTarget);
-			}
-		}
 	}
 	
 	@EventHandler
@@ -224,6 +231,8 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 		if (event.getInventory().getTitle().equals(title)) {
 			event.setCancelled(true);
 			final Player player = (Player)event.getWhoClicked();
+			
+			boolean close = true;
 			
 			ItemStack item = event.getCurrentItem();
 			if (item != null) {
@@ -246,6 +255,7 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 							spell.getSpell().cast(player, power, null);
 						}
 					}
+					if (option.stayOpen) close = false;
 				}
 			}
 			
@@ -253,11 +263,15 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 			castEntityTarget.remove(player.getName());
 			castLocTarget.remove(player.getName());
 			
-			MagicSpells.scheduleDelayedTask(new Runnable() {
-				public void run() {
-					player.closeInventory();
-				}
-			}, 0);
+			if (close) {
+				MagicSpells.scheduleDelayedTask(new Runnable() {
+					public void run() {
+						player.closeInventory();
+					}
+				}, 0);
+			} else {
+				applyOptionsToInventory(player, event.getView().getTopInventory());
+			}
 		}
 	}
 	
@@ -328,6 +342,7 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 		float power;
 		List<String> modifierList;
 		ModifierSet modifiers;
+		boolean stayOpen;
 	}
 
 }
