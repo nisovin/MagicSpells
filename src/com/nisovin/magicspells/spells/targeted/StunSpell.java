@@ -10,6 +10,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -153,6 +154,14 @@ public class StunSpell extends TargetedSpell implements TargetedEntitySpell {
 		@EventHandler
 		public void onQuit(PlayerQuitEvent event) {
 			String playerName = event.getPlayer().getName();
+			if (stunnedPlayersUntil.containsKey(playerName)) {
+				removePlayer(playerName);
+			}
+		}
+		
+		@EventHandler
+		public void onDeath(PlayerDeathEvent event) {
+			String playerName = event.getEntity().getName();
 			if (stunnedPlayersUntil.containsKey(playerName)) {
 				removePlayer(playerName);
 			}
