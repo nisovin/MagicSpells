@@ -87,7 +87,7 @@ public class PasteSpell extends TargetedSpell implements TargetedLocationSpell {
 	}
 
 	@Override
-	public boolean castAtLocation(Player caster, Location target, float power) {	
+	public boolean castAtLocation(Player caster, Location target, float power) {
 		boolean ok;
 		if (tickInterval == 0) {
 			ok = pasteInstant(target);
@@ -190,7 +190,7 @@ public class PasteSpell extends TargetedSpell implements TargetedLocationSpell {
 							BlockState state = blocks.get(current);
 							state.update(true, false);
 							if (playBlockBreakEffect && state.getType() != Material.AIR) {
-								center.getWorld().playEffect(state.getLocation(), Effect.STEP_SOUND, state.getData());
+								center.getWorld().playEffect(state.getLocation(), Effect.STEP_SOUND, state.getType());
 							}
 							current++;
 							if (current >= blocks.size()) {

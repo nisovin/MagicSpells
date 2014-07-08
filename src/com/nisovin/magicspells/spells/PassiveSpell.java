@@ -164,12 +164,16 @@ public class PassiveSpell extends Spell {
 				}
 				setCooldown(caster, event.getCooldown());
 				basePower = event.getPower();
+				boolean spellEffectsDone = false;
 				for (Subspell spell : spells) {
 					MagicSpells.debug(3, "    Casting spell effect '" + spell.getSpell().getName() + "'");
 					if (castWithoutTarget) {
 						MagicSpells.debug(3, "    Casting without target");
 						spell.cast(caster, basePower);
-						playSpellEffects(EffectPosition.CASTER, caster);
+						if (!spellEffectsDone) {
+							playSpellEffects(EffectPosition.CASTER, caster);
+							spellEffectsDone = true;
+						}
 					} else if (spell.isTargetedEntitySpell() && target != null && !isNonTargetedExternal(spell.getSpell())) {
 						MagicSpells.debug(3, "    Casting at entity");
 						SpellTargetEvent targetEvent = new SpellTargetEvent(this, caster, target, basePower);
@@ -177,7 +181,10 @@ public class PassiveSpell extends Spell {
 						if (!targetEvent.isCancelled()) {
 							target = targetEvent.getTarget();
 							spell.castAtEntity(caster, target, targetEvent.getPower());
-							playSpellEffects(caster, target);
+							if (!spellEffectsDone) {
+								playSpellEffects(caster, target);
+								spellEffectsDone = true;
+							}
 						} else {
 							MagicSpells.debug(3, "      Target cancelled (TE)");
 						}
@@ -195,7 +202,10 @@ public class PassiveSpell extends Spell {
 							if (!targetEvent.isCancelled()) {
 								loc = targetEvent.getTargetLocation();
 								spell.castAtLocation(caster, loc, targetEvent.getPower());
-								playSpellEffects(caster, loc);
+								if (!spellEffectsDone) {
+									playSpellEffects(caster, loc);
+									spellEffectsDone = true;
+								}
 							} else {
 								MagicSpells.debug(3, "      Target cancelled (TL)");
 							}
@@ -223,7 +233,10 @@ public class PassiveSpell extends Spell {
 							}
 						}
 						spell.cast(caster, power);
-						playSpellEffects(EffectPosition.CASTER, caster);
+						if (!spellEffectsDone) {
+							playSpellEffects(EffectPosition.CASTER, caster);
+							spellEffectsDone = true;
+						}
 					}
 				}
 				removeReagents(caster, event.getReagents());

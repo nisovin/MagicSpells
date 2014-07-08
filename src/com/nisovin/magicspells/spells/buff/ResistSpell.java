@@ -52,7 +52,7 @@ public class ResistSpell extends BuffSpell {
 	
 	@EventHandler(ignoreCancelled = true)
 	public void onSpellTarget(SpellTargetEvent event) {
-		if (spellDamageTypes != null && event.getSpell() instanceof SpellDamageSpell && event.getTarget() instanceof Player && isActive((Player)event.getTarget())) {
+		if (spellDamageTypes != null && event.getSpell() instanceof SpellDamageSpell && event.getCaster() != null && event.getTarget() instanceof Player && isActive((Player)event.getTarget())) {
 			SpellDamageSpell spell = (SpellDamageSpell)event.getSpell();
 			if (spell.getSpellDamageType() != null && spellDamageTypes.contains(spell.getSpellDamageType())) {
 				float power = multiplier;
