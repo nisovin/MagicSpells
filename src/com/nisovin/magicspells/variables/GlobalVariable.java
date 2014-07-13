@@ -10,12 +10,18 @@ public class GlobalVariable extends Variable {
 	}
 	
 	@Override
-	public void modify(String player, double amount) {
-		value += amount;
-		if (value > maxValue) {
-			value = maxValue;
-		} else if (value < minValue) {
-			value = minValue;
+	public boolean modify(String player, double amount) {
+		double newvalue = value + amount;
+		if (newvalue > maxValue) {
+			newvalue = maxValue;
+		} else if (newvalue < minValue) {
+			newvalue = minValue;
+		}
+		if (value != newvalue) {
+			value = newvalue;
+			return true;
+		} else {
+			return false;
 		}
 	}
 

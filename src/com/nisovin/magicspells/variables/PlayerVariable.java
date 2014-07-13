@@ -10,17 +10,22 @@ public class PlayerVariable extends Variable {
 	Map<String, Double> map = new HashMap<String, Double>();
 	
 	@Override
-	public void modify(String player, double amount) {
+	public boolean modify(String player, double amount) {
 		double value = getValue(player);
-		value += amount;
-		if (value > maxValue) {
-			value = maxValue;
-		} else if (value < minValue) {
-			value = minValue;
+		double newvalue = value + amount;
+		if (newvalue > maxValue) {
+			newvalue = maxValue;
+		} else if (newvalue < minValue) {
+			newvalue = minValue;
 		}
-		map.put(player, value);
-		if (objective != null) {
-			objective.getScore(Bukkit.getOfflinePlayer(player)).setScore((int)value);
+		if (value != newvalue) {
+			map.put(player, newvalue);
+			if (objective != null) {
+				objective.getScore(Bukkit.getOfflinePlayer(player)).setScore((int)newvalue);
+			}
+			return true;
+		} else {
+			return false;
 		}
 	}
 

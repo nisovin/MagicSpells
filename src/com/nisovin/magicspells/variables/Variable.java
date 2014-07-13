@@ -29,11 +29,11 @@ public abstract class Variable {
 	
 	protected void init() {}
 	
-	public final void modify(Player player, double amount) {
-		modify(player.getName(), amount);
+	public final boolean modify(Player player, double amount) {
+		return modify(player.getName(), amount);
 	}
 	
-	public abstract void modify(String player, double amount);
+	public abstract boolean modify(String player, double amount);
 	
 	public final void set(Player player, double amount) {
 		set(player.getName(), amount);
