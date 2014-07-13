@@ -16,6 +16,7 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import com.nisovin.magicspells.mana.ManaChangeReason;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.util.Util;
@@ -107,6 +108,27 @@ public class CastCommand implements CommandExecutor, TabCompleter {
 							sender.sendMessage(plugin.textColor + p.getName() + "'s mana rank already correct.");
 						}
 					}
+				} else if (sender.isOp() && args[0].equalsIgnoreCase("setmaxmana") && args.length == 3 && plugin.mana != null) {
+					Player p = Bukkit.getPlayer(args[1]);
+					if (p != null) {
+						int amt = Integer.parseInt(args[2]);
+						plugin.mana.setMaxMana(p, amt);
+						sender.sendMessage(plugin.textColor + p.getName() + "'s max mana set to " + amt + ".");
+					}					
+				} else if (sender.isOp() && args[0].equalsIgnoreCase("modifymana") && args.length == 3 && plugin.mana != null) {
+					Player p = Bukkit.getPlayer(args[1]);
+					if (p != null) {
+						int amt = Integer.parseInt(args[2]);
+						plugin.mana.addMana(p, amt, ManaChangeReason.OTHER);
+						sender.sendMessage(plugin.textColor + p.getName() + "'s mana modified by " + amt + ".");
+					}					
+				} else if (sender.isOp() && args[0].equalsIgnoreCase("setmana") && args.length == 3 && plugin.mana != null) {
+					Player p = Bukkit.getPlayer(args[1]);
+					if (p != null) {
+						int amt = Integer.parseInt(args[2]);
+						plugin.mana.setMana(p, amt, ManaChangeReason.OTHER);
+						sender.sendMessage(plugin.textColor + p.getName() + "'s mana set to " + amt + ".");
+					}					
 				} else if (sender.isOp() && args[0].equals("modifyvariable") && args.length == 4) {
 					String var = args[1];
 					String player = args[2];
