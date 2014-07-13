@@ -499,6 +499,7 @@ public class VolatileCodeEnabled_1_7_R3 implements VolatileCodeHandle {
 	
 	@Override
 	public void setBossBar(Player player, String title, double percent) {
+		if (percent <= 0) percent = 0.001D;
 		bossBarEntity.setCustomName(ChatColor.translateAlternateColorCodes('&', title));
 		bossBarEntity.getDataWatcher().watch(6, (float)(percent * 200));
 		
@@ -518,6 +519,7 @@ public class VolatileCodeEnabled_1_7_R3 implements VolatileCodeHandle {
 	
 	@Override
 	public void updateBossBar(Player player, String title, double percent) {
+		if (percent <= 0) percent = 0.001D;
 		bossBarEntity.setCustomName(ChatColor.translateAlternateColorCodes('&', title));
 		bossBarEntity.getDataWatcher().watch(6, (float)(percent * 200));
 		
