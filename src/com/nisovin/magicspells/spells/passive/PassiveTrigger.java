@@ -36,6 +36,7 @@ public class PassiveTrigger {
 	public static PassiveTrigger HOT_BAR_DESELECT = addTrigger("hotbardeselect", HotBarListener.class);
 	public static PassiveTrigger DROP_ITEM = addTrigger("dropitem", DropItemListener.class);
 	public static PassiveTrigger PICKUP_ITEM = addTrigger("pickupitem", PickupItemListener.class);
+	public static PassiveTrigger CRAFT = addTrigger("craft", CraftListener.class);
 	public static PassiveTrigger FISH = addTrigger("fish", FishListener.class);
 	public static PassiveTrigger SHOOT = addTrigger("shoot", ShootListener.class);
 	public static PassiveTrigger TELEPORT = addTrigger("teleport", TeleportListener.class);
