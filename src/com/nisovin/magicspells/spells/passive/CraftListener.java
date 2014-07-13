@@ -58,14 +58,18 @@ public class CraftListener extends PassiveListener {
 	
 	@EventHandler
 	public void onCraft(CraftItemEvent event) {
+		if (event.getCurrentItem() == null && event.getCurrentItem().getType() == Material.AIR) return;
 		Player player = (Player)event.getWhoClicked();
+		
 		if (allTypes.size() > 0) {
 			Spellbook spellbook = MagicSpells.getSpellbook(player);
 			for (PassiveSpell spell : allTypes) {
-				if (spellbook.hasSpell(spell)) {
-					boolean casted = spell.activate(player);
-					if (casted && spell.cancelDefaultAction()) {
-						event.setCancelled(true);
+				if (spell.ignoreCancelled() || !event.isCancelled()) {
+					if (spellbook.hasSpell(spell)) {
+						boolean casted = spell.activate(player);
+						if (casted && spell.cancelDefaultAction()) {
+							event.setCancelled(true);
+						}
 					}
 				}
 			}
@@ -76,10 +80,12 @@ public class CraftListener extends PassiveListener {
 			if (list != null) {
 				Spellbook spellbook = MagicSpells.getSpellbook(player);
 				for (PassiveSpell spell : list) {
-					if (spellbook.hasSpell(spell)) {
-						boolean casted = spell.activate(player);
-						if (casted && spell.cancelDefaultAction()) {
-							event.setCancelled(true);
+					if (spell.ignoreCancelled() || !event.isCancelled()) {
+						if (spellbook.hasSpell(spell)) {
+							boolean casted = spell.activate(player);
+							if (casted && spell.cancelDefaultAction()) {
+								event.setCancelled(true);
+							}
 						}
 					}
 				}
