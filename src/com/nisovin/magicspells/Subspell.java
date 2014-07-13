@@ -28,7 +28,7 @@ public class Subspell {
 	private boolean isTargetedEntityFromLocation = false;
 	
 	public Subspell(String data) {
-		String[] split = data.split("(", 2);
+		String[] split = data.split("\\(", 2);
 		
 		spellName = split[0].trim();
 		
