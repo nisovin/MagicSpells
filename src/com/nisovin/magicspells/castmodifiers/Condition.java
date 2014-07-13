@@ -46,6 +46,8 @@ public abstract class Condition {
 		conditions.put("lightlevelbelow", LightLevelBelowCondition.class);
 		conditions.put("onblock", OnBlockCondition.class);
 		conditions.put("inblock", InBlockCondition.class);
+		conditions.put("inregion", InRegionCondition.class);
+		conditions.put("innomagiczone", InNoMagicZoneCondition.class);
 		conditions.put("outside", OutsideCondition.class);
 		conditions.put("roof", RoofCondition.class);
 		conditions.put("elevationabove", ElevationAboveCondition.class);

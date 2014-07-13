@@ -82,8 +82,12 @@ public class NoMagicZoneManager {
 	}
 	
 	public boolean inZone(Player player, String zoneName) {
+		return inZone(player.getLocation(), zoneName);
+	}
+	
+	public boolean inZone(Location loc, String zoneName) {
 		NoMagicZone zone = zones.get(zoneName);
-		if (zone != null && zone.inZone(player.getLocation())) {
+		if (zone != null && zone.inZone(loc)) {
 			return true;
 		}
 		return false;
