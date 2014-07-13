@@ -92,7 +92,6 @@ public class MinionSpell extends BuffSpell {
 			if (minion instanceof Creature) {
 				minions.put(player.getName(), minion);
 				targets.put(player.getName(), null);
-				startSpellDuration(player, power);
 			} else {
 				minion.remove();
 				MagicSpells.error("Cannot summon a non-creature with the minion spell!");
