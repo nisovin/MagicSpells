@@ -27,6 +27,8 @@ public abstract class ManaHandler {
 	
 	public abstract boolean addMana(Player player, int amount, ManaChangeReason reason);
 	
+	public abstract boolean setMana(Player player, int amount, ManaChangeReason reason);
+	
 	public void showMana(Player player) {
 		showMana(player, false);
 	}

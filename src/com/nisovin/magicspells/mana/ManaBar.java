@@ -102,6 +102,20 @@ public class ManaBar {
 		return true;
 	}
 	
+	public boolean setMana(int amount, ManaChangeReason reason) {
+		int newAmt = amount;
+		if (newAmt > maxMana) {
+			newAmt = maxMana;
+		} else if (newAmt < 0) {
+			newAmt = 0;
+		}
+		
+		newAmt = callManaChangeEvent(newAmt, reason);
+		if (newAmt == mana) return false;
+		mana = newAmt;
+		return true;
+	}
+	
 	public boolean regenerate() {
 		if ((regenAmount > 0 && mana == maxMana) || (regenAmount < 0 && mana == 0)) return false;
 		return changeMana(regenAmount, ManaChangeReason.REGEN);

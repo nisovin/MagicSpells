@@ -225,6 +225,18 @@ public class ManaSystem extends ManaHandler {
 	public boolean removeMana(Player player, int amount, ManaChangeReason reason) {
 		return addMana(player, -amount, reason);
 	}
+	
+	@Override
+	public boolean setMana(Player player, int amount, ManaChangeReason reason) {
+		ManaBar bar = getManaBar(player);
+		if (bar != null) {
+			boolean r = bar.setMana(amount, reason);
+			if (r) showMana(player, showManaOnUse);
+			return r;
+		} else {
+			return false;
+		}
+	}
 
 	@Override
 	public void showMana(Player player, boolean showInChat) {
