@@ -20,17 +20,18 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 
 import com.nisovin.magicspells.BuffManager;
 import com.nisovin.magicspells.MagicSpells;
-import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.events.SpellCastEvent;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spelleffects.SpellEffect;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.SpellReagents;
+import com.nisovin.magicspells.util.TargetInfo;
 
-public abstract class BuffSpell extends Spell {
+public abstract class BuffSpell extends TargetedSpell implements TargetedEntitySpell {
 	
 	private BuffSpell thisSpell;
 	
+	protected boolean targeted;
 	protected boolean toggle;
 	protected int healthCost = 0;
 	protected int manaCost = 0;
@@ -60,6 +61,7 @@ public abstract class BuffSpell extends Spell {
 		super(config, spellName);
 		thisSpell = this;
 		
+		targeted = getConfigBoolean("targeted", false);
 		toggle = getConfigBoolean("toggle", true);
 		reagents = getConfigReagents("use-cost");
 		useCostInterval = getConfigInt("use-cost-interval", 0);
@@ -115,24 +117,65 @@ public abstract class BuffSpell extends Spell {
 	
 	@Override
 	public final PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
-		if (isActive(player)) {
+		Player target;
+		if (targeted) {
+			TargetInfo<Player> targetInfo = getTargetedPlayer(player, power);
+			if (targetInfo == null) return noTarget(player);
+			target = targetInfo.getTarget();
+			power = targetInfo.getPower();
+		} else {
+			target = player;
+		}
+		return activate(player, target, power, args, state == SpellCastState.NORMAL);
+	}
+
+	@Override
+	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
+		if (target instanceof Player) {
+			return activate(caster, (Player)target, power, null, true) == PostCastAction.HANDLE_NORMALLY;
+		} else {
+			return false;
+		}
+	}
+	
+	@Override
+	public boolean castAtEntity(LivingEntity target, float power) {
+		if (target instanceof Player) {
+			return activate(null, (Player)target, power, null, true) == PostCastAction.HANDLE_NORMALLY;
+		} else {
+			return false;
+		}
+	}
+	
+	private PostCastAction activate(Player caster, Player target, float power, String[] args, boolean normal) {
+		if (isActive(target)) {
 			if (toggle) {
-				turnOff(player);
+				turnOff(target);
 				return PostCastAction.ALREADY_HANDLED;
 			} else {
-				if (state == SpellCastState.NORMAL) {
-					boolean ok = recastBuff(player, power, args);
+				if (normal) {
+					boolean ok = recastBuff(target, power, args);
 					if (ok) {
-						startSpellDuration(player, power);
+						startSpellDuration(target, power);
+						if (caster == null) {
+							playSpellEffects(EffectPosition.TARGET, target);
+						} else {
+							playSpellEffects(caster, target);
+						}
 					}
 				}
 				return PostCastAction.HANDLE_NORMALLY;
 			}
 		}
-		if (state == SpellCastState.NORMAL) {
-			boolean ok = castBuff(player, power, args);
+		if (normal) {
+			boolean ok = castBuff(target, power, args);
 			if (ok) {
-				startSpellDuration(player, power);
+				startSpellDuration(target, power);
+				if (caster == null) {
+					playSpellEffects(EffectPosition.TARGET, target);
+				} else {
+					playSpellEffects(caster, target);
+				}
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
@@ -154,7 +197,7 @@ public abstract class BuffSpell extends Spell {
 	 * Begins counting the spell duration for a player
 	 * @param player the player to begin counting duration
 	 */
-	protected void startSpellDuration(final Player player, float power) {
+	private void startSpellDuration(final Player player, float power) {
 		if (duration > 0 && durationEndTime != null) {
 			float dur = duration;
 			if (powerAffectsDuration) dur *= power;
@@ -171,7 +214,7 @@ public abstract class BuffSpell extends Spell {
 			}, Math.round(dur * 20) + 20); // overestimate ticks, since the duration is real-time ms based			
 		}
 		
-		playSpellEffectsBuff(player, new SpellEffect.SpellEffectActiveChecker() {							
+		playSpellEffectsBuff(player, new SpellEffect.SpellEffectActiveChecker() {
 			@Override
 			public boolean isActive(Entity entity) {
 				return thisSpell.isActiveAndNotExpired((Player)entity);
@@ -180,7 +223,6 @@ public abstract class BuffSpell extends Spell {
 		
 		BuffManager buffman = MagicSpells.getBuffManager();
 		if (buffman != null) buffman.addBuff(player, this);
-		playSpellEffects(EffectPosition.CASTER, player);
 	}
 	
 	/**
