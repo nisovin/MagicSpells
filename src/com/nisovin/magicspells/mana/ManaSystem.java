@@ -191,6 +191,15 @@ public class ManaSystem extends ManaHandler {
 	}
 
 	@Override
+	public int getMana(Player player) {
+		ManaBar bar = getManaBar(player);
+		if (bar != null) {
+			return bar.getMana();
+		}
+		return 0;
+	}
+	
+	@Override
 	public boolean hasMana(Player player, int amount) {
 		ManaBar bar = getManaBar(player);
 		if (bar != null) {

@@ -19,6 +19,8 @@ public abstract class ManaHandler {
 	
 	public abstract void setRegenAmount(Player player, int amount);
 	
+	public abstract int getMana(Player player);
+	
 	public abstract boolean hasMana(Player player, int amount);
 	
 	public abstract boolean removeMana(Player player, int amount, ManaChangeReason reason);
