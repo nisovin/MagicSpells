@@ -46,6 +46,7 @@ public abstract class Condition {
 		conditions.put("lightlevelbelow", LightLevelBelowCondition.class);
 		conditions.put("onblock", OnBlockCondition.class);
 		conditions.put("inblock", InBlockCondition.class);
+		conditions.put("onground", OnGroundCondition.class);
 		conditions.put("inregion", InRegionCondition.class);
 		conditions.put("incuboid", InCuboidCondition.class);
 		conditions.put("innomagiczone", InNoMagicZoneCondition.class);
@@ -56,6 +57,8 @@ public abstract class Condition {
 		conditions.put("biome", BiomeCondition.class);
 		conditions.put("sneaking", SneakingCondition.class);
 		conditions.put("sprinting", SprintingCondition.class);
+		conditions.put("flying", FlyingCondition.class);
+		conditions.put("falling", FallingCondition.class);
 		conditions.put("blocking", BlockingCondition.class);
 		conditions.put("riding", RidingCondition.class);
 		conditions.put("wearing", WearingCondition.class);
