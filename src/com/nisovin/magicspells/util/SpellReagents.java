@@ -1,7 +1,9 @@
 package com.nisovin.magicspells.util;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 import org.bukkit.inventory.ItemStack;
 
@@ -15,21 +17,25 @@ public class SpellReagents {
 	private int levels;
 	private int durability;
 	private float money;
+	private HashMap<String, Double> variables;
 	
 	public SpellReagents() {
-		this.items = new HashSet<ItemStack>();
+		this.items = null;
 		this.mana = 0;
 		this.health = 0;
 		this.hunger = 0;
 		this.experience = 0;
 		this.levels = 0;
 		this.money = 0;
+		this.variables = null;
 	}
 	
 	public SpellReagents(SpellReagents other) {
-		this.items = new HashSet<ItemStack>();
-		for (ItemStack item : other.items) {
-			this.items.add(item.clone());
+		if (other.items != null) {
+			this.items = new HashSet<ItemStack>();
+			for (ItemStack item : other.items) {
+				this.items.add(item.clone());
+			}
 		}
 		this.mana = other.mana;
 		this.health = other.health;
@@ -37,49 +43,47 @@ public class SpellReagents {
 		this.experience = other.experience;
 		this.levels = other.levels;
 		this.money = other.money;
-	}
-	
-	/*public SpellReagents(ItemStack[] items, int mana, int health, int hunger, int experience, int levels, int durability, float money) {
-		this.items = new HashSet<ItemStack>();
-		if (items != null) {
-			for (ItemStack i : items) {
-				if (i != null) {
-					this.items.add(i.clone());
-				}
+		if (other.variables != null) {
+			this.variables = new HashMap<String, Double>();
+			for (String var : other.variables.keySet()) {
+				this.variables.put(var, other.variables.get(var));
 			}
 		}
-		this.mana = mana;
-		this.health = health;
-		this.hunger = hunger;
-		this.experience = experience;
-		this.levels = levels;
-		this.durability = durability;
-		this.money = money;
-	}*/
+	}
 	
 	public HashSet<ItemStack> getItems() {
 		return items;
 	}
 	
 	public ItemStack[] getItemsAsArray() {
+		if (items == null || items.size() == 0) return null;
 		ItemStack[] arr = new ItemStack[items.size()];
 		arr = items.toArray(arr);
 		return arr;
 	}
 	
 	public void setItems(Collection<ItemStack> items) {
-		this.items.clear();
-		this.items.addAll(items);
+		if (items == null || items.size() == 0) {
+			this.items = null;
+		} else {
+			this.items = new HashSet<ItemStack>();
+			this.items.addAll(items);
+		}
 	}
 	
 	public void setItems(ItemStack[] items) {
-		this.items.clear();
-		for (ItemStack i : items) {
-			this.items.add(i);
+		if (items == null || items.length == 0) {
+			this.items = null;
+		} else {
+			this.items = new HashSet<ItemStack>();
+			for (ItemStack i : items) {
+				this.items.add(i);
+			}
 		}
 	}
 	
 	public void addItem(ItemStack item) {
+		if (this.items == null) this.items = new HashSet<ItemStack>();
 		this.items.add(item);
 	}
 	
@@ -139,10 +143,31 @@ public class SpellReagents {
 		this.money = money;
 	}
 	
+	public HashMap<String, Double> getVariables() {
+		return variables;
+	}
+	
+	public void addVariable(String var, double val) {
+		if (variables == null) variables = new HashMap<String, Double>();
+		variables.put(var, val);
+	}
+	
+	public void setVariables(Map<String, Double> variables) {
+		if (variables == null || variables.size() == 0) {
+			this.variables = null;
+		} else {
+			this.variables = new HashMap<String, Double>();
+			this.variables.putAll(variables);
+		}
+	}
+	
 	public SpellReagents clone() {
 		SpellReagents other = new SpellReagents();
-		for (ItemStack item : this.items) {
-			other.items.add(item.clone());
+		if (this.items != null) {
+			other.items = new HashSet<ItemStack>();
+			for (ItemStack item : this.items) {
+				other.items.add(item.clone());
+			}
 		}
 		other.mana = this.mana;
 		other.health = this.health;
@@ -151,15 +176,24 @@ public class SpellReagents {
 		other.levels = this.levels;
 		other.durability = this.durability;
 		other.money = this.money;
+		if (this.variables != null) {
+			other.variables = new HashMap<String, Double>();
+			for (String var : this.variables.keySet()) {
+				other.variables.put(var, this.variables.get(var));
+			}
+		}
 		return other;
 	}
 	
 	public SpellReagents multiply(float x) {
 		SpellReagents other = new SpellReagents();
-		for (ItemStack item : this.items) {
-			ItemStack i = item.clone();
-			i.setAmount(Math.round(i.getAmount() * x));
-			other.items.add(i);
+		if (this.items != null) {
+			other.items = new HashSet<ItemStack>();
+			for (ItemStack item : this.items) {
+				ItemStack i = item.clone();
+				i.setAmount(Math.round(i.getAmount() * x));
+				other.items.add(i);
+			}
 		}
 		other.mana = Math.round(this.mana * x);
 		other.health = Math.round(this.health * x);
@@ -168,6 +202,12 @@ public class SpellReagents {
 		other.levels = Math.round(this.levels * x);
 		other.durability = Math.round(this.durability * x);
 		other.money = this.money * x;
+		if (this.variables != null) {
+			other.variables = new HashMap<String, Double>();
+			for (String var : this.variables.keySet()) {
+				other.variables.put(var, this.variables.get(var) * x);
+			}
+		}
 		return other;
 	}
 	
