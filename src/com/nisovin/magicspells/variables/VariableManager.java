@@ -24,8 +24,10 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.Spell.PostCastAction;
 import com.nisovin.magicspells.Spell.SpellCastState;
 import com.nisovin.magicspells.events.SpellCastEvent;
+import com.nisovin.magicspells.events.SpellCastedEvent;
 import com.nisovin.magicspells.events.SpellTargetEvent;
 import com.nisovin.magicspells.util.Util;
 
@@ -409,6 +411,25 @@ public class VariableManager implements Listener {
 						modify(var, player, val);
 					}
 					MagicSpells.debug(3, "Variable '" + var + "' for player '" + player.getName() + "' modified by " + val + " as a result of spell cast '" + event.getSpell().getName() + "'");
+				}
+			}
+		}
+	}
+	
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onSpellCasted(SpellCastedEvent event) {
+		if (event.getSpellCastState() == SpellCastState.NORMAL && event.getPostCastAction() != PostCastAction.ALREADY_HANDLED) {
+			Map<String, Double> varMods = event.getSpell().getVariableModsCasted();
+			if (varMods != null && varMods.size() > 0) {
+				Player player = event.getCaster();
+				for (String var : varMods.keySet()) {
+					double val = varMods.get(var);
+					if (val == 0) {
+						reset(var, player);
+					} else {
+						modify(var, player, val);
+					}
+					MagicSpells.debug(3, "Variable '" + var + "' for player '" + player.getName() + "' modified by " + val + " as a result of spell casted '" + event.getSpell().getName() + "'");
 				}
 			}
 		}

@@ -121,6 +121,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	protected List<String> worldRestrictions;
 	
 	protected Map<String, Double> variableModsCast;
+	protected Map<String, Double> variableModsCasted;
 	protected Map<String, Double> variableModsTarget;
 	
 	protected String strCost;
@@ -405,6 +406,20 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 					variableModsCast.put(var, val);
 				} catch (Exception e) {
 					MagicSpells.error("Invalid variable-mods-cast option for spell '" + spellName + "': " + s);
+				}
+			}
+		}
+		List<String> varModsCasted = config.getStringList(section + "." + spellName + ".variable-mods-casted", null);
+		if (varModsCasted != null && varModsCasted.size() > 0) {
+			variableModsCasted = new HashMap<String, Double>();
+			for (String s : varModsCasted) {
+				try {
+					String[] data = s.split(" ");
+					String var = data[0];
+					double val = Double.parseDouble(data[1]);
+					variableModsCasted.put(var, val);
+				} catch (Exception e) {
+					MagicSpells.error("Invalid variable-mods-casted option for spell '" + spellName + "': " + s);
 				}
 			}
 		}
@@ -1604,6 +1619,10 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	
 	public Map<String, Double> getVariableModsCast() {
 		return variableModsCast;
+	}
+	
+	public Map<String, Double> getVariableModsCasted() {
+		return variableModsCasted;
 	}
 	
 	public Map<String, Double> getVariableModsTarget() {
