@@ -278,9 +278,8 @@ public final class TargetedMultiSpell extends TargetedSpell implements TargetedE
 			if (!cancelled) {
 				if (player.isValid()) {
 					boolean ok = castTargetedSpell(spell, player, entTarget, locTarget, power);
-					if (ok) {
-						delayedSpells.remove(this);
-					} else {
+					delayedSpells.remove(this);
+					if (!ok && stopOnFail) {
 						cancelAll();
 					}
 				} else {
