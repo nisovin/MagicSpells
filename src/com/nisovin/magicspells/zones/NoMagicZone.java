@@ -8,38 +8,47 @@ import org.bukkit.entity.Player;
 
 import com.nisovin.magicspells.Spell;
 
-public abstract class NoMagicZone {
+public abstract class NoMagicZone implements Comparable<NoMagicZone> {
 
+	private int priority;
 	private String message;
 	private List<String> allowedSpells;
 	private List<String> disallowedSpells;
+	private boolean allowAll;
+	private boolean disallowAll;
 	
 	public final void create(ConfigurationSection config) {
+		priority = config.getInt("priority", 0);
 		message = config.getString("message", "You are in a no-magic zone.");
 		allowedSpells = config.getStringList("allowed-spells");
 		disallowedSpells = config.getStringList("disallowed-spells");
+		allowAll = config.getBoolean("allow-all", true);
+		disallowAll = config.getBoolean("disallow-all", true);
 		if (allowedSpells != null && allowedSpells.size() == 0) allowedSpells = null;
 		if (disallowedSpells != null && disallowedSpells.size() == 0) disallowedSpells = null;
+		if (disallowedSpells != null) disallowAll = false;
+		if (allowedSpells != null) allowAll = false;
 		initialize(config);
 	}
 	
 	public abstract void initialize(ConfigurationSection config);
 	
-	public boolean willFizzle(Player player, Spell spell) {
-		return willFizzle(player.getLocation(), spell);
+	public final ZoneCheckResult check(Player player, Spell spell) {
+		return check(player.getLocation(), spell);
 	}
 	
-	public boolean willFizzle(Location location, Spell spell) {
-		if (disallowedSpells != null) {
-			if (disallowedSpells.contains(spell.getInternalName())) {
-				return inZone(location);
-			} else {
-				return false;
-			}
+	public final ZoneCheckResult check(Location location, Spell spell) {
+		if (!inZone(location)) return ZoneCheckResult.IGNORED;
+		if (disallowedSpells != null && disallowedSpells.contains(spell.getInternalName())) {
+			return ZoneCheckResult.DENY;
 		} else if (allowedSpells != null && allowedSpells.contains(spell.getInternalName())) {
-			return false;
+			return ZoneCheckResult.ALLOW;
+		} else if (disallowAll) {
+			return ZoneCheckResult.DENY;
+		} else if (allowAll) {
+			return ZoneCheckResult.ALLOW;
 		} else {
-			return inZone(location);
+			return ZoneCheckResult.IGNORED;
 		}
 	}
 	
@@ -47,6 +56,21 @@ public abstract class NoMagicZone {
 	
 	public String getMessage() {
 		return message;
+	}
+	
+	@Override
+	public int compareTo(NoMagicZone other) {
+		if (this.priority < other.priority) {
+			return 1;
+		} else if (this.priority > other.priority) {
+			return -1;
+		} else {
+			return 0;
+		}
+	}
+	
+	public enum ZoneCheckResult {
+		ALLOW, DENY, IGNORED
 	}
 	
 }

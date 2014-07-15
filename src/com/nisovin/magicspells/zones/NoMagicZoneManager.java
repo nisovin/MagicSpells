@@ -1,7 +1,9 @@
 package com.nisovin.magicspells.zones;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
@@ -10,11 +12,13 @@ import org.bukkit.entity.Player;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.zones.NoMagicZone.ZoneCheckResult;
 
 public class NoMagicZoneManager {
 	
-	private HashMap<String, Class<? extends NoMagicZone>> zoneTypes;
-	private HashMap<String, NoMagicZone> zones;
+	private Map<String, Class<? extends NoMagicZone>> zoneTypes;
+	private Map<String, NoMagicZone> zones;
+	private Set<NoMagicZone> zonesOrdered;
 
 	public NoMagicZoneManager() {
 		// create zone types
@@ -27,6 +31,7 @@ public class NoMagicZoneManager {
 	public void load(MagicConfig config) {
 		// get zones
 		zones = new HashMap<String, NoMagicZone>();
+		zonesOrdered = new TreeSet<NoMagicZone>();
 				
 		Set<String> zoneNodes = config.getKeys("no-magic-zones");
 		if (zoneNodes != null) {
@@ -61,6 +66,7 @@ public class NoMagicZoneManager {
 				}
 				zone.create(zoneConfig);
 				zones.put(node, zone);
+				zonesOrdered.add(zone);
 				MagicSpells.debug(3, "Loaded no-magic zone: " + node);
 			}
 		}
@@ -73,9 +79,12 @@ public class NoMagicZoneManager {
 	}
 	
 	public boolean willFizzle(Location location, Spell spell) {
-		for (NoMagicZone zone : zones.values()) {
-			if (zone.willFizzle(location, spell)) {
+		for (NoMagicZone zone : zonesOrdered) {
+			ZoneCheckResult result = zone.check(location, spell);
+			if (result == ZoneCheckResult.DENY) {
 				return true;
+			} else if (result == ZoneCheckResult.ALLOW) {
+				return false;
 			}
 		}
 		return false;
@@ -94,8 +103,9 @@ public class NoMagicZoneManager {
 	}
 	
 	public void sendNoMagicMessage(Player player, Spell spell) {
-		for (NoMagicZone zone : zones.values()) {
-			if (zone.willFizzle(player, spell)) {
+		for (NoMagicZone zone : zonesOrdered) {
+			ZoneCheckResult result = zone.check(player.getLocation(), spell);
+			if (result == ZoneCheckResult.DENY) {
 				MagicSpells.sendMessage(player, zone.getMessage());
 				return;
 			}
