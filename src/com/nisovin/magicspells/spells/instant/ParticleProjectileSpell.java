@@ -19,12 +19,13 @@ import com.nisovin.magicspells.Subspell;
 import com.nisovin.magicspells.events.SpellTargetEvent;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
+import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.util.BlockUtils;
 import com.nisovin.magicspells.util.BoundingBox;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.Util;
 
-public class ParticleProjectileSpell extends InstantSpell {
+public class ParticleProjectileSpell extends InstantSpell implements TargetedLocationSpell {
 
 	float projectileVelocity;
 	float projectileVelocityVertOffset;
@@ -133,7 +134,7 @@ public class ParticleProjectileSpell extends InstantSpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			new ProjectileTracker(player, power);
+			new ProjectileTracker(player, player.getLocation(), power);
 			playSpellEffects(EffectPosition.CASTER, player);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
@@ -156,16 +157,16 @@ public class ParticleProjectileSpell extends InstantSpell {
 		
 		int counter = 0;
 		
-		public ProjectileTracker(Player caster, float power) {
+		public ProjectileTracker(Player caster, Location from, float power) {
 			this.caster = caster;
 			this.power = power;
 			this.startTime = System.currentTimeMillis();
-			this.startLocation = caster.getLocation();
+			this.startLocation = from.clone();
 			this.startLocation.setY(this.startLocation.getY() + 1);
 			this.startLocation.add(this.startLocation.getDirection());
 			this.previousLocation = startLocation.clone();
 			this.currentLocation = startLocation.clone();
-			this.currentVelocity = caster.getLocation().getDirection();
+			this.currentVelocity = from.getDirection();
 			if (projectileVelocityHorizOffset != 0) {
 				Util.rotateVector(this.currentVelocity, projectileVelocityHorizOffset);
 			}
@@ -189,7 +190,7 @@ public class ParticleProjectileSpell extends InstantSpell {
 				Iterator<LivingEntity> iter = inRange.iterator();
 				while (iter.hasNext()) {
 					LivingEntity e = iter.next();
-					if (!hitSelf && e.equals(caster)) {
+					if (!hitSelf && caster != null && e.equals(caster)) {
 						iter.remove();
 						continue;
 					}
@@ -208,7 +209,7 @@ public class ParticleProjectileSpell extends InstantSpell {
 		
 		@Override
 		public void run() {
-			if (!caster.isValid()) {
+			if (caster != null && !caster.isValid()) {
 				stop();
 				return;
 			}
@@ -361,6 +362,22 @@ public class ParticleProjectileSpell extends InstantSpell {
 			}
 		}
 		
+	}
+
+	@Override
+	public boolean castAtLocation(Player caster, Location target, float power) {
+		Location loc = target.clone();
+		loc.setDirection(caster.getLocation().getDirection());
+		new ProjectileTracker(caster, target, power);
+		playSpellEffects(EffectPosition.CASTER, caster);
+		return true;
+	}
+
+	@Override
+	public boolean castAtLocation(Location target, float power) {
+		new ProjectileTracker(null, target, power);
+		playSpellEffects(EffectPosition.CASTER, target);
+		return true;
 	}
 	
 }

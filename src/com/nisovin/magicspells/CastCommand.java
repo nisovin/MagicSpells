@@ -213,12 +213,18 @@ public class CastCommand implements CommandExecutor, TabCompleter {
 						if (sender instanceof BlockCommandSender) {
 							if (spell instanceof TargetedLocationSpell) {
 								Location loc = ((BlockCommandSender)sender).getBlock().getLocation().add(.5, .5, .5);
-								if (spellArgs != null && spellArgs.length == 3) {
+								if (spellArgs != null && spellArgs.length >= 3) {
 									try {
 										int x = Integer.parseInt(spellArgs[0]);
 										int y = Integer.parseInt(spellArgs[1]);
 										int z = Integer.parseInt(spellArgs[2]);
+										float yaw = 0;
+										float pitch = 0;
+										if (spellArgs.length > 3) yaw = Float.parseFloat(spellArgs[3]);
+										if (spellArgs.length > 4) pitch = Float.parseFloat(spellArgs[4]);
 										loc.add(x, y, z);
+										loc.setYaw(yaw);
+										loc.setPitch(pitch);
 									} catch (NumberFormatException e) {}
 								}
 								((TargetedLocationSpell)spell).castAtLocation(loc, 1.0F);
@@ -244,11 +250,13 @@ public class CastCommand implements CommandExecutor, TabCompleter {
 									} else {
 										sender.sendMessage("Invalid target.");
 									}
-								} else if (spell instanceof TargetedLocationSpell && spellArgs != null && spellArgs.length == 1 && spellArgs[0].matches("^[^,]+,-?[0-9]+,-?[0-9]+,-?[0-9]+$")) {
+								} else if (spell instanceof TargetedLocationSpell && spellArgs != null && spellArgs.length == 1 && spellArgs[0].matches("^[^,]+,-?[0-9]+,-?[0-9]+,-?[0-9]+(,-?[0-9]+,-?[0-9]+)?$")) {
 									String[] locData = spellArgs[0].split(",");
 									World world = Bukkit.getWorld(locData[0]);
 									if (world != null) {
 										Location loc = new Location(world, Integer.parseInt(locData[1]), Integer.parseInt(locData[2]), Integer.parseInt(locData[3]));
+										if (locData.length > 4) loc.setYaw(Integer.parseInt(locData[4]));
+										if (locData.length > 5) loc.setPitch(Integer.parseInt(locData[5]));
 										ok = ((TargetedLocationSpell)spell).castAtLocation(loc, 1.0F);
 										if (ok) {
 											sender.sendMessage("Spell casted!");
