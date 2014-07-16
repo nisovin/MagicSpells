@@ -52,17 +52,18 @@ public class ResistSpell extends BuffSpell {
 	
 	@EventHandler(ignoreCancelled = true)
 	public void onSpellTarget(SpellTargetEvent event) {
-		if (spellDamageTypes != null && event.getSpell() instanceof SpellDamageSpell && event.getCaster() != null && event.getTarget() instanceof Player && isActive((Player)event.getTarget())) {
+		if (spellDamageTypes != null && event.getSpell() instanceof SpellDamageSpell && event.getTarget() instanceof Player && isActive((Player)event.getTarget())) {
 			SpellDamageSpell spell = (SpellDamageSpell)event.getSpell();
 			if (spell.getSpellDamageType() != null && spellDamageTypes.contains(spell.getSpellDamageType())) {
+				Player player = (Player)event.getTarget();
 				float power = multiplier;
 				if (multiplier < 1) {
-					power *= (1 / buffed.get(event.getCaster().getName()));
+					power *= (1 / buffed.get(player.getName()));
 				} else if (multiplier > 1) {
-					power *= buffed.get(event.getCaster().getName());
+					power *= buffed.get(player.getName());
 				}
 				event.increasePower(power);
-				addUseAndChargeCost((Player)event.getTarget());
+				addUseAndChargeCost(player);
 			}
 		}
 	}
@@ -70,8 +71,15 @@ public class ResistSpell extends BuffSpell {
 	@EventHandler(ignoreCancelled = true)
 	public void onEntityDamage(EntityDamageEvent event) {
 		if (normalDamageTypes != null && normalDamageTypes.contains(event.getCause()) && event.getEntity() instanceof Player && isActive((Player)event.getEntity())) {
-			event.setDamage(event.getDamage() * multiplier);
-			addUseAndChargeCost((Player)event.getEntity());
+			Player player = (Player)event.getEntity();
+			float mult = multiplier;
+			if (multiplier < 1) {
+				mult *= (1 / buffed.get(player.getName()));
+			} else if (multiplier > 1) {
+				mult *= buffed.get(player.getName());
+			}
+			event.setDamage(event.getDamage() * mult);
+			addUseAndChargeCost(player);
 		}
 	}
 
