@@ -95,21 +95,26 @@ public class ThrowBlockSpell extends InstantSpell implements TargetedLocationSpe
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			Vector v = player.getLocation().getDirection();
-			if (verticalAdjustment != 0) {
-				v.setY(v.getY() + verticalAdjustment);
-			}
-			if (rotationOffset != 0) {
-				Util.rotateVector(v, rotationOffset);
-			}
-			v.normalize().multiply(velocity);
-			if (applySpellPowerToVelocity) {
-				v.multiply(power);
-			}
+			Vector v = getVector(player.getLocation(), power);
 			spawnFallingBlock(player, power, player.getEyeLocation().add(v), v);
 			playSpellEffects(EffectPosition.CASTER, player);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+	
+	private Vector getVector(Location loc, float power) {
+		Vector v = loc.getDirection();
+		if (verticalAdjustment != 0) {
+			v.setY(v.getY() + verticalAdjustment);
+		}
+		if (rotationOffset != 0) {
+			Util.rotateVector(v, rotationOffset);
+		}
+		v.normalize().multiply(velocity);
+		if (applySpellPowerToVelocity) {
+			v.multiply(power);
+		}
+		return v;
 	}
 	
 	private void spawnFallingBlock(Player player, float power, Location location, Vector velocity) {
@@ -299,13 +304,15 @@ public class ThrowBlockSpell extends InstantSpell implements TargetedLocationSpe
 
 	@Override
 	public boolean castAtLocation(Player caster, Location target, float power) {
-		spawnFallingBlock(caster, power, target, target.getDirection().multiply(velocity).add(new Vector(0, verticalAdjustment, 0)));
+		Vector v = getVector(target, power);
+		spawnFallingBlock(caster, power, target, v);
 		return true;
 	}
 
 	@Override
 	public boolean castAtLocation(Location target, float power) {
-		spawnFallingBlock(null, power, target, new Vector(0, velocity + verticalAdjustment, 0));
+		Vector v = getVector(target, power);
+		spawnFallingBlock(null, power, target, v);
 		return true;
 	}
 
