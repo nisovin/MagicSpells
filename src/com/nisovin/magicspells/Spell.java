@@ -672,7 +672,22 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		if (spellCast == null) {
 			return new SpellCastResult(SpellCastState.CANT_CAST, PostCastAction.HANDLE_NORMALLY);
 		}
-		PostCastAction action = handleCast(spellCast);
+		PostCastAction action;
+		int castTime = spellCast.getCastTime();
+		if (castTime <= 0 || spellCast.getSpellCastState() != SpellCastState.NORMAL) {
+			action = handleCast(spellCast);
+		} else if (!preCastTimeCheck(player, args)) {
+			action = PostCastAction.ALREADY_HANDLED;
+		} else {
+			action = PostCastAction.DELAYED;
+			sendMessage(player, strCastStart);
+			playSpellEffects(EffectPosition.START_CAST, player);
+			if (MagicSpells.plugin.useExpBarAsCastTimeBar) {
+				new DelayedSpellCastWithBar(spellCast);
+			} else {
+				new DelayedSpellCast(spellCast);
+			}
+		}
 		return new SpellCastResult(spellCast.getSpellCastState(), action);
 	}
 	
@@ -1718,10 +1733,10 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		private int taskId;
 		private boolean cancelled = false;
 		
-		public DelayedSpellCast(Player player, Spell spell, SpellCastEvent spellCast) {
-			this.player = player;
+		public DelayedSpellCast(SpellCastEvent spellCast) {
+			this.player = spellCast.getCaster();
 			this.prevLoc = player.getLocation().clone();
-			this.spell = spell;
+			this.spell = spellCast.getSpell();
 			this.spellCast = spellCast;
 			
 			taskId = scheduleDelayedTask(this, spellCast.getCastTime());
@@ -1791,10 +1806,10 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		private int interval = 5;
 		private int elapsed = 0;
 		
-		public DelayedSpellCastWithBar(Player player, Spell spell, SpellCastEvent spellCast) {
-			this.player = player;
+		public DelayedSpellCastWithBar(SpellCastEvent spellCast) {
+			this.player = spellCast.getCaster();
 			this.prevLoc = player.getLocation().clone();
-			this.spell = spell;
+			this.spell = spellCast.getSpell();
 			this.spellCast = spellCast;
 			this.castTime = spellCast.getCastTime();
 			
