@@ -22,7 +22,7 @@ public abstract class NoMagicZone implements Comparable<NoMagicZone> {
 		message = config.getString("message", "You are in a no-magic zone.");
 		allowedSpells = config.getStringList("allowed-spells");
 		disallowedSpells = config.getStringList("disallowed-spells");
-		allowAll = config.getBoolean("allow-all", true);
+		allowAll = config.getBoolean("allow-all", false);
 		disallowAll = config.getBoolean("disallow-all", true);
 		if (allowedSpells != null && allowedSpells.size() == 0) allowedSpells = null;
 		if (disallowedSpells != null && disallowedSpells.size() == 0) disallowedSpells = null;
