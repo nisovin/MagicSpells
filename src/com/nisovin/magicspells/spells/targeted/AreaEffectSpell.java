@@ -14,6 +14,7 @@ import org.bukkit.entity.Player;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
+import com.nisovin.magicspells.castmodifiers.ModifierSet;
 import com.nisovin.magicspells.events.SpellTargetEvent;
 import com.nisovin.magicspells.events.SpellTargetLocationEvent;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
@@ -35,6 +36,9 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 	private boolean spellSourceInCenter;
 	private List<Spell> spells;
 	
+	private ModifierSet locationTargetModifiers;
+	private ModifierSet entityTargetModifiers;
+	
 	public AreaEffectSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
@@ -45,6 +49,15 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 		maxTargets = getConfigInt("max-targets", 0);
 		spellSourceInCenter = getConfigBoolean("spell-source-in-center", false);
 		spellNames = getConfigStringList("spells", null);
+		
+		List<String> list = getConfigStringList("location-target-modifiers", null);
+		if (list != null) {
+			locationTargetModifiers = new ModifierSet(list);
+		}
+		list = getConfigStringList("entity-target-modifiers", null);
+		if (list != null) {
+			entityTargetModifiers = new ModifierSet(list);
+		}
 	}
 	
 	@Override
@@ -96,6 +109,9 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 			if (loc != null) {
 				SpellTargetLocationEvent event = new SpellTargetLocationEvent(this, player, loc, power);
 				Bukkit.getPluginManager().callEvent(event);
+				if (locationTargetModifiers != null) {
+					locationTargetModifiers.apply(event);
+				}
 				if (event.isCancelled()) {
 					loc = null;
 				} else {
@@ -135,6 +151,9 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 					if (player != null) {
 						SpellTargetEvent event = new SpellTargetEvent(this, player, target, power);
 						Bukkit.getPluginManager().callEvent(event);
+						if (entityTargetModifiers != null) {
+							entityTargetModifiers.apply(event);
+						}
 						if (event.isCancelled()) {
 							continue;
 						} else {
