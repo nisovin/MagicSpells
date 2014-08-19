@@ -266,7 +266,7 @@ public class MagicXpHandler implements Listener {
 		if (file.exists()) file.delete();
 		
 		YamlConfiguration conf = new YamlConfiguration();
-		IntMap<String> playerXp = xp.get(player);
+		IntMap<String> playerXp = xp.get(player.getName());
 		if (playerXp != null) {
 			for (String school : playerXp.keySet()) {
 				conf.set(school.toLowerCase(), playerXp.get(school));
