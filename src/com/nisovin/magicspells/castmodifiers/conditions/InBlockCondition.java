@@ -28,7 +28,7 @@ public class InBlockCondition extends Condition {
 			mats = new ArrayList<MagicMaterial>();
 			String[] split = var.split(",");
 			for (String s : split) {
-				mat = MagicSpells.getItemNameResolver().resolveBlock(s);
+				MagicMaterial mat = MagicSpells.getItemNameResolver().resolveBlock(s);
 				if (mat == null) return false;
 				types.add(mat.getMaterial());
 				mats.add(mat);
