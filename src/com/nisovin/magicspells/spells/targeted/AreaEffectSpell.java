@@ -135,8 +135,6 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 		return PostCastAction.HANDLE_NORMALLY;
 	}
 	
-	// TODO: target-modifiers not working?
-	// TODO: self targeting not working??
 	private boolean doAoe(Player player, Location location, float basePower) {
 		int count = 0;
 		
