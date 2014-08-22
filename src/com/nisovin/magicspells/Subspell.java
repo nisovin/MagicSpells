@@ -206,7 +206,7 @@ public class Subspell {
 			} else if (mode == CastMode.FULL && player != null) {
 				boolean success = false;
 				SpellCastEvent spellCast = spell.preCast(player, power * subPower, null);
-				if (spellCast.getSpellCastState() == SpellCastState.NORMAL) {
+				if (spellCast != null && spellCast.getSpellCastState() == SpellCastState.NORMAL) {
 					success = ((TargetedLocationSpell)spell).castAtLocation(player, target, spellCast.getPower());
 					spell.postCast(spellCast, success ? PostCastAction.HANDLE_NORMALLY : PostCastAction.ALREADY_HANDLED);
 				}
@@ -257,7 +257,7 @@ public class Subspell {
 			} else if (mode == CastMode.FULL && player != null) {
 				boolean success = false;
 				SpellCastEvent spellCast = spell.preCast(player, power * subPower, null);
-				if (spellCast.getSpellCastState() == SpellCastState.NORMAL) {
+				if (spellCast != null && spellCast.getSpellCastState() == SpellCastState.NORMAL) {
 					success = ((TargetedEntityFromLocationSpell)spell).castAtEntityFromLocation(player, from, target, spellCast.getPower());
 					spell.postCast(spellCast, success ? PostCastAction.HANDLE_NORMALLY : PostCastAction.ALREADY_HANDLED);
 				}
