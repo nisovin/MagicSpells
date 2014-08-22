@@ -27,6 +27,9 @@ import com.nisovin.magicspells.util.Util;
 
 public class ParticleProjectileSpell extends InstantSpell implements TargetedLocationSpell {
 
+	float startYOffset;
+	float startForwardOffset;
+	
 	float projectileVelocity;
 	float projectileVelocityVertOffset;
 	float projectileVelocityHorizOffset;
@@ -73,6 +76,9 @@ public class ParticleProjectileSpell extends InstantSpell implements TargetedLoc
 	public ParticleProjectileSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		thisSpell = this;
+		
+		startYOffset = getConfigFloat("start-y-offset", 1F);
+		startForwardOffset = getConfigFloat("start-forward-offset", 1F);
 		
 		projectileVelocity = getConfigFloat("projectile-velocity", 10F);
 		projectileVelocityVertOffset = getConfigFloat("projectile-vert-offset", 0F);
@@ -162,8 +168,12 @@ public class ParticleProjectileSpell extends InstantSpell implements TargetedLoc
 			this.power = power;
 			this.startTime = System.currentTimeMillis();
 			this.startLocation = from.clone();
-			this.startLocation.setY(this.startLocation.getY() + 1);
-			this.startLocation.add(this.startLocation.getDirection());
+			if (startYOffset != 0) {
+				this.startLocation.setY(this.startLocation.getY() + startYOffset);
+			}
+			if (startForwardOffset != 0) {
+				this.startLocation.add(this.startLocation.getDirection().clone().multiply(startForwardOffset));
+			}
 			this.previousLocation = startLocation.clone();
 			this.currentLocation = startLocation.clone();
 			this.currentVelocity = from.getDirection();
