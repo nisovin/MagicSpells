@@ -292,7 +292,7 @@ public class ParticleProjectileSpell extends InstantSpell implements TargetedLoc
 			
 			// cast spell mid air
 			if (hitAirDuring && counter % spellInterval == 0 && spell.isTargetedLocationSpell()) {
-				spell.castAtLocation(caster, currentLocation, power);
+				spell.castAtLocation(caster, currentLocation.clone(), power);
 			}
 			
 			if (stopOnHitGround && !BlockUtils.isPathable(currentLocation.getBlock())) {
@@ -304,7 +304,7 @@ public class ParticleProjectileSpell extends InstantSpell implements TargetedLoc
 				stop();
 			} else if (currentLocation.distanceSquared(startLocation) >= maxDistanceSquared) {
 				if (hitAirAtEnd && spell != null && spell.isTargetedLocationSpell()) {
-					spell.castAtLocation(caster, currentLocation, power);
+					spell.castAtLocation(caster, currentLocation.clone(), power);
 					playSpellEffects(EffectPosition.TARGET, currentLocation);
 				}
 				stop();
@@ -334,7 +334,7 @@ public class ParticleProjectileSpell extends InstantSpell implements TargetedLoc
 								spell.castAtEntity(caster, target, thisPower);
 								playSpellEffects(EffectPosition.TARGET, e);
 							} else if (spell.isTargetedLocationSpell()) {
-								spell.castAtLocation(caster, currentLocation, power);
+								spell.castAtLocation(caster, currentLocation.clone(), power);
 								playSpellEffects(EffectPosition.TARGET, currentLocation);
 							}
 						}
