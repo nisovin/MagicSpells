@@ -1,9 +1,11 @@
 package com.nisovin.magicspells.spells.passive;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import org.bukkit.Bukkit;
@@ -154,14 +156,13 @@ public class TicksListener extends PassiveListener {
 		public void run() {
 			long start = System.nanoTime();
 			for (Map.Entry<PassiveSpell, Collection<Player>> entry : spells.entrySet()) {
-				if (entry.getValue().size() > 0) {
-					Iterator<Player> iter = entry.getValue().iterator();
-					while (iter.hasNext()) {
-						Player p = iter.next();
+				Collection<Player> players = entry.getValue();
+				if (players.size() > 0) {
+					for (Player p : new ArrayList<Player>(players)) {
 						if (p.isValid()) {
 							entry.getKey().activate(p);
 						} else {
-							iter.remove();
+							players.remove(p);
 						}
 					}
 				}
