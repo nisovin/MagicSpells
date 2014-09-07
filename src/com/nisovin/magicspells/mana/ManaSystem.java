@@ -34,6 +34,7 @@ public class ManaSystem extends ManaHandler {
 	private boolean showManaOnHungerBar;
 	private boolean showManaOnExperienceBar;
 	
+	private List<String> modifierList;
 	private ModifierSet modifiers;
 	
 	private ManaRank defaultRank;
@@ -61,13 +62,7 @@ public class ManaSystem extends ManaHandler {
 		showManaOnHungerBar = config.getBoolean("mana.show-mana-on-hunger-bar", false);
 		showManaOnExperienceBar = config.getBoolean("mana.show-mana-on-experience-bar", false);
 
-		if (config.contains("general.mana.modifiers")) {
-			List<String> list = config.getStringList("general.mana.modifiers", null);
-			if (list != null && list.size() > 0) {
-				MagicSpells.debug(2, "Adding mana modifiers");
-				modifiers = new ModifierSet(list);
-			}
-		}
+		modifierList = config.getStringList("mana.modifiers", null);
 		
 		defaultRank = new ManaRank();
 		defaultRank.name = "default";
@@ -96,6 +91,15 @@ public class ManaSystem extends ManaHandler {
 		
 		manaBars = new HashMap<String, ManaBar>();
 		taskId = MagicSpells.scheduleRepeatingTask(new Regenerator(), regenInterval, regenInterval);
+	}
+	
+	@Override
+	public void initialize() {
+		if (modifierList != null && modifierList.size() > 0) {
+			MagicSpells.debug(2, "Adding mana modifiers");
+			modifiers = new ModifierSet(modifierList);
+			modifierList = null;
+		}
 	}
 	
 	private ManaBar getManaBar(Player player) {

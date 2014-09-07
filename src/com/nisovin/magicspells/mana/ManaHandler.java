@@ -7,6 +7,8 @@ import com.nisovin.magicspells.castmodifiers.ModifierSet;
 
 public abstract class ManaHandler {
 
+	public abstract void initialize();
+	
 	public abstract void createManaBar(Player player);
 	
 	public abstract boolean updateManaRankIfNecessary(Player player);

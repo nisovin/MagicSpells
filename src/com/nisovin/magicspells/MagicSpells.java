@@ -430,6 +430,9 @@ public class MagicSpells extends JavaPlugin {
 		
 		// setup mana
 		if (enableManaBars) {
+			// init
+			mana.initialize();
+			
 			// setup online player mana bars
 			for (Player p : getServer().getOnlinePlayers()) {
 				mana.createManaBar(p);
