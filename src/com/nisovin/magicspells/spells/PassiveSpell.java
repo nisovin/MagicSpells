@@ -174,7 +174,7 @@ public class PassiveSpell extends Spell {
 							playSpellEffects(EffectPosition.CASTER, caster);
 							spellEffectsDone = true;
 						}
-					} else if (spell.isTargetedEntitySpell() && target != null && !isNonTargetedExternal(spell.getSpell())) {
+					} else if (spell.isTargetedEntitySpell() && target != null && !isActuallyNonTargeted(spell.getSpell())) {
 						MagicSpells.debug(3, "    Casting at entity");
 						SpellTargetEvent targetEvent = new SpellTargetEvent(this, caster, target, basePower);
 						Bukkit.getPluginManager().callEvent(targetEvent);
@@ -263,9 +263,11 @@ public class PassiveSpell extends Spell {
 		return false;
 	}
 	
-	private boolean isNonTargetedExternal(Spell spell) {
+	private boolean isActuallyNonTargeted(Spell spell) {
 		if (spell instanceof ExternalCommandSpell) {
 			return !((ExternalCommandSpell)spell).requiresPlayerTarget();
+		} else if (spell instanceof BuffSpell) {
+			return !((BuffSpell)spell).isTargeted();
 		}
 		return false;
 	}

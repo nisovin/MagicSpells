@@ -347,6 +347,10 @@ public abstract class BuffSpell extends TargetedSpell implements TargetedEntityS
 		return true;
 	}
 	
+	public boolean isTargeted() {
+		return targeted;
+	}
+	
 	@EventHandler
 	public void onJoin(PlayerJoinEvent event) {
 		if (isActive(event.getPlayer()) && isExpired(event.getPlayer())) {
