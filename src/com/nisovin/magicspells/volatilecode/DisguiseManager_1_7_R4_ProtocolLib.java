@@ -453,8 +453,9 @@ public class DisguiseManager_1_7_R4_ProtocolLib extends DisguiseManager {
 			} else if (packet instanceof PacketPlayOutRelEntityMove) {
 				int entId = refPacketRelEntityMove.getInt(packet, "a");
 				if (mounts.containsKey(entId)) {
-					PacketPlayOutRelEntityMove newpacket = new PacketPlayOutRelEntityMove(mounts.get(entId), refPacketRelEntityMove.getByte(packet, "b"), refPacketRelEntityMove.getByte(packet, "c"), refPacketRelEntityMove.getByte(packet, "d"));
-					((CraftPlayer)player).getHandle().playerConnection.sendPacket(newpacket);
+					// TODO: FIX: broken in Spigot 1.8 protocol hack
+					//PacketPlayOutRelEntityMove newpacket = new PacketPlayOutRelEntityMove(mounts.get(entId), refPacketRelEntityMove.getByte(packet, "b"), refPacketRelEntityMove.getByte(packet, "c"), refPacketRelEntityMove.getByte(packet, "d"));
+					//((CraftPlayer)player).getHandle().playerConnection.sendPacket(newpacket);
 				}
 			} else if (packet instanceof PacketPlayOutEntityMetadata) {
 				int entId = refPacketEntityMetadata.getInt(packet, "a");

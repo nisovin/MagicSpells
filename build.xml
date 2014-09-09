@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <project name="MagicSpells" default="build" basedir=".">
 	
-	<property name="core.version" value="3.4"/>
+	<property name="core.version" value="3.4.1"/>
 	<property name="core.src.dir" location="src"/>
 	<property name="core.build.dir" location="bin"/>
 	
