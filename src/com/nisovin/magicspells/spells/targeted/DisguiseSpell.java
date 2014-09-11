@@ -421,16 +421,18 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 	
 	@Override
 	public void turnOff() {
-		for (String name : new ArrayList<String>(disguised.keySet())) {
-			Player player = Bukkit.getPlayerExact(name);
-			if (player != null) {
-				manager.removeDisguise(player);
+		if (manager != null) {
+			for (String name : new ArrayList<String>(disguised.keySet())) {
+				Player player = Bukkit.getPlayerExact(name);
+				if (player != null) {
+					manager.removeDisguise(player);
+				}
 			}
-		}
-		manager.unregisterSpell(this);
-		if (manager.registeredSpellsCount() == 0) {
-			manager.destroy();
-			manager = null;
+			manager.unregisterSpell(this);
+			if (manager.registeredSpellsCount() == 0) {
+				manager.destroy();
+				manager = null;
+			}
 		}
 	}
 

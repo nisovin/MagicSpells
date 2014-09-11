@@ -1163,7 +1163,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 			VariableManager varMan = MagicSpells.getVariableManager();
 			if (varMan != null) {
 				for (String var : variables.keySet()) {
-					varMan.modify(var, player, variables.get(var));
+					varMan.modify(var, player, -variables.get(var));
 				}
 			}
 		}
