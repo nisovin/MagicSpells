@@ -35,7 +35,7 @@ public class SoundPersonalEffect extends SpellEffect {
 	public void loadFromConfig(ConfigurationSection config) {
 		sound = config.getString("sound", sound);
 		volume = (float)config.getDouble("volume", volume);
-		pitch = (float)config.getDouble("pitch", volume);
+		pitch = (float)config.getDouble("pitch", pitch);
 	}
 
 	@Override
