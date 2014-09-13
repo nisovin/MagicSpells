@@ -293,6 +293,12 @@ public class VariableManager implements Listener {
 						Variable variable = variables.get(s[0]);
 						if (variable != null && variable instanceof PlayerVariable && variable.permanent) {
 							variable.set(player, Double.parseDouble(s[1]));
+							if (variable.expBar) {
+								Player p = Bukkit.getPlayerExact(player);
+								if (p != null) {
+									MagicSpells.getExpBarManager().update(p, (int)variable.getValue(player), (float)(variable.getValue(player) / variable.maxValue));
+								}
+							}
 						}
 					}
 				}
