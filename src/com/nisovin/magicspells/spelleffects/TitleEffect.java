@@ -37,15 +37,17 @@ public class TitleEffect extends SpellEffect {
 	protected void playEffectEntity(Entity entity) {
 		if (entity instanceof Player) {
 			PlayerConnection conn = ((CraftPlayer)entity).getHandle().playerConnection;
-			PacketTitle packet = new PacketTitle(PacketTitle.Action.TIMES, fadeIn, stay, fadeOut);
-			conn.sendPacket(packet);
-			if (title != null) {
-				packet = new PacketTitle(PacketTitle.Action.TITLE, new ChatComponentText(title));
+			if (conn.networkManager.getVersion() >= 47) {
+				PacketTitle packet = new PacketTitle(PacketTitle.Action.TIMES, fadeIn, stay, fadeOut);
 				conn.sendPacket(packet);
-			}
-			if (subtitle != null) {
-				packet = new PacketTitle(PacketTitle.Action.SUBTITLE, new ChatComponentText(subtitle));
-				conn.sendPacket(packet);
+				if (title != null) {
+					packet = new PacketTitle(PacketTitle.Action.TITLE, new ChatComponentText(title));
+					conn.sendPacket(packet);
+				}
+				if (subtitle != null) {
+					packet = new PacketTitle(PacketTitle.Action.SUBTITLE, new ChatComponentText(subtitle));
+					conn.sendPacket(packet);
+				}
 			}
 		}
 	}
