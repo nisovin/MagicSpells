@@ -48,11 +48,56 @@ public class ConjureBookSpell extends InstantSpell implements TargetedLocationSp
 		book.setItemMeta(meta);
 	}
 	
+	private ItemStack getBook(Player player, String[] args) {
+		ItemStack item = book.clone();
+		BookMeta meta = (BookMeta)item.getItemMeta();
+		String title = meta.getTitle();
+		String author = meta.getAuthor();
+		List<String> lore = meta.getLore();
+		List<String> pages = meta.getPages();
+		if (player != null) {
+			title = title.replace("{{name}}", player.getName()).replace("{{disp}}", player.getDisplayName());
+			author = author.replace("{{name}}", player.getName()).replace("{{disp}}", player.getDisplayName());
+			if (lore != null && lore.size() > 0) {
+				for (int l = 0; l < lore.size(); l++) {
+					lore.set(l, lore.get(l).replace("{{name}}", player.getName()).replace("{{disp}}", player.getDisplayName()));
+				}
+			}
+			if (pages != null && pages.size() > 0) {
+				for (int p = 0; p < pages.size(); p++) {
+					pages.set(p, pages.get(p).replace("{{name}}", player.getName()).replace("{{disp}}", player.getDisplayName()));
+				}
+			}
+		}
+		if (args != null) {
+			for (int i = 0; i < args.length; i++) {
+				title = title.replace("{{"+i+"}}", args[i]);
+				author = author.replace("{{"+i+"}}", args[i]);
+				if (lore != null && lore.size() > 0) {
+					for (int l = 0; l < lore.size(); l++) {
+						lore.set(l, lore.get(l).replace("{{"+i+"}}", args[i]));
+					}
+				}
+				if (pages != null && pages.size() > 0) {
+					for (int p = 0; p < pages.size(); p++) {
+						pages.set(p, pages.get(p).replace("{{"+i+"}}", args[i]));
+					}
+				}
+			}
+		}
+		meta.setTitle(title);
+		meta.setAuthor(author);
+		meta.setLore(lore);
+		meta.setPages(pages);
+		item.setItemMeta(meta);
+		return item;
+	}
+	
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
 			boolean added = false;
-			ItemStack item = book.clone();
+			ItemStack item = getBook(player, args);
 			if (addToInventory) {
 				if (player.getItemInHand() == null || player.getItemInHand().getType() == Material.AIR) {
 					player.setItemInHand(item);
