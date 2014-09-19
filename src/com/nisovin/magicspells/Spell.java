@@ -90,6 +90,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	protected boolean beneficial;
 	private DamageCause targetDamageCause;
 	private double targetDamageAmount;
+	protected HashSet<Byte> losTransparentBlocks;
 
 	protected int castTime;
 	protected boolean interruptOnMove;
@@ -298,6 +299,11 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 			}
 		}
 		this.targetDamageAmount = config.getDouble(section + "." + spellName + ".target-damage-amount", 0);
+		this.losTransparentBlocks = MagicSpells.getTransparentBlocks();
+		if (config.contains(section + "." + spellName + ".los-transparent-blocks")) {
+			this.losTransparentBlocks = new HashSet<Byte>(config.getByteList(section + "." + spellName + ".target-damage-amount", null));
+			this.losTransparentBlocks.add((byte)0);
+		}
 		
 		// graphical effects
 		if (config.contains(section + "." + spellName + ".effects")) {
@@ -1272,7 +1278,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 			bx = b.getX();
 			by = b.getY();
 			bz = b.getZ();
-			if (obeyLos && !BlockUtils.isTransparent(b)) {
+			if (obeyLos && !BlockUtils.isTransparent(this, b)) {
 				// line of sight is broken, stop without target
 				break;
 			} else {
@@ -1359,11 +1365,15 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	}
 	
 	protected Block getTargetedBlock(LivingEntity entity, float power) {
-		return BlockUtils.getTargetBlock(entity, spellPowerAffectsRange ? Math.round(range * power) : range);
+		return BlockUtils.getTargetBlock(this, entity, spellPowerAffectsRange ? Math.round(range * power) : range);
 	}
 	
 	protected List<Block> getLastTwoTargetedBlocks(LivingEntity entity, float power) {
-		return BlockUtils.getLastTwoTargetBlock(entity, spellPowerAffectsRange ? Math.round(range * power) : range);
+		return BlockUtils.getLastTwoTargetBlock(this, entity, spellPowerAffectsRange ? Math.round(range * power) : range);
+	}
+	
+	public HashSet<Byte> getLosTransparentBlocks() {
+		return losTransparentBlocks;
 	}
 	
 	protected void playSpellEffects(Entity pos1, Entity pos2) {

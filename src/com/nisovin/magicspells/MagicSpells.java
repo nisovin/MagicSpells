@@ -662,7 +662,7 @@ public class MagicSpells extends JavaPlugin {
 	 * Gets a list of blocks that are considered transparent
 	 * @return list of block types
 	 */
-	public static HashSet<Byte> getTransparentBlocks() {
+	protected static HashSet<Byte> getTransparentBlocks() {
 		return plugin.losTransparentBlocks;
 	}
 	

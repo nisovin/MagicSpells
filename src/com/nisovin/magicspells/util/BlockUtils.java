@@ -10,19 +10,20 @@ import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.LivingEntity;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.Spell;
 
 public class BlockUtils {
 
-	public static boolean isTransparent(Block block) {
-		return MagicSpells.getTransparentBlocks().contains((byte)block.getTypeId());
+	public static boolean isTransparent(Spell spell, Block block) {
+		return spell.getLosTransparentBlocks().contains((byte)block.getTypeId());
 	}
 	
-	public static Block getTargetBlock(LivingEntity entity, int range) {
-		return entity.getTargetBlock(MagicSpells.getTransparentBlocks(), range);
+	public static Block getTargetBlock(Spell spell, LivingEntity entity, int range) {
+		return entity.getTargetBlock(spell.getLosTransparentBlocks(), range);
 	}
 	
-	public static List<Block> getLastTwoTargetBlock(LivingEntity entity, int range) {
-		return entity.getLastTwoTargetBlocks(MagicSpells.getTransparentBlocks(), range);
+	public static List<Block> getLastTwoTargetBlock(Spell spell, LivingEntity entity, int range) {
+		return entity.getLastTwoTargetBlocks(spell.getLosTransparentBlocks(), range);
 	}
 	
 	public static void setTypeAndData(Block block, Material material, byte data, boolean physics) {

@@ -22,31 +22,24 @@ public class TelekinesisSpell extends TargetedSpell implements TargetedLocationS
 	
 	private boolean checkPlugins;
 	
-	private HashSet<Byte> transparent;
-	
 	public TelekinesisSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
 		checkPlugins = getConfigBoolean("check-plugins", true);
 		
-		transparent = new HashSet<Byte>(MagicSpells.getTransparentBlocks());
-		transparent.remove((byte)Material.LEVER.getId());
-		transparent.remove((byte)Material.STONE_PLATE.getId());
-		transparent.remove((byte)Material.WOOD_PLATE.getId());
-		transparent.remove((byte)Material.IRON_PLATE.getId());
-		transparent.remove((byte)Material.GOLD_PLATE.getId());
-		transparent.remove((byte)Material.STONE_BUTTON.getId());
-		transparent.remove((byte)Material.WOOD_BUTTON.getId());
+		losTransparentBlocks = new HashSet<Byte>(losTransparentBlocks);
+		losTransparentBlocks.remove((byte)Material.LEVER.getId());
+		losTransparentBlocks.remove((byte)Material.STONE_PLATE.getId());
+		losTransparentBlocks.remove((byte)Material.WOOD_PLATE.getId());
+		losTransparentBlocks.remove((byte)Material.IRON_PLATE.getId());
+		losTransparentBlocks.remove((byte)Material.GOLD_PLATE.getId());
+		losTransparentBlocks.remove((byte)Material.STONE_BUTTON.getId());
+		losTransparentBlocks.remove((byte)Material.WOOD_BUTTON.getId());
 	}
 	
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			Block target = null;
-			try {
-				target = player.getTargetBlock(transparent, getRange(power));
-			} catch (IllegalStateException e) {
-				target = null;
-			}
+			Block target = getTargetedBlock(player, power);
 			if (target == null) {
 				// fail
 				return noTarget(player);

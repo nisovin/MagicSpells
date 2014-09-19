@@ -52,7 +52,7 @@ public class BlinkSpell extends TargetedSpell implements TargetedLocationSpell {
 			if (iter != null) {
 				while (iter.hasNext()) {
 					b = iter.next();
-					if (BlockUtils.isTransparent(b)) {
+					if (BlockUtils.isTransparent(this, b)) {
 						prev = b;
 						if (smokeTrail) {
 							smokes.add(b.getLocation());
