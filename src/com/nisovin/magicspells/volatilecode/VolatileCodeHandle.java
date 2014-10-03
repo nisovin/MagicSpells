@@ -80,4 +80,10 @@ public interface VolatileCodeHandle {
 	
 	public void setArrowsStuck(LivingEntity entity, int count);
 	
+	public void sendTitleToPlayer(Player player, String title, String subtitle, int fadeIn, int stay, int fadeOut);
+	
+	public void sendActionBarMessage(Player player, String message);
+	
+	public void setTabMenuHeaderFooter(Player player, String header, String footer);
+	
 }

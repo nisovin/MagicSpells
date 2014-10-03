@@ -215,4 +215,16 @@ public class VolatileCodeDisabled implements VolatileCodeHandle {
 	@Override
 	public void setArrowsStuck(LivingEntity entity, int count) {
 	}
+
+	@Override
+	public void sendTitleToPlayer(Player player, String title, String subtitle, int fadeIn, int stay, int fadeOut) {
+	}
+
+	@Override
+	public void sendActionBarMessage(Player player, String message) {
+	}
+
+	@Override
+	public void setTabMenuHeaderFooter(Player player, String header, String footer) {
+	}
 }

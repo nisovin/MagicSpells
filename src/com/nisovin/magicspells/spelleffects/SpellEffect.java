@@ -247,6 +247,7 @@ public abstract class SpellEffect {
 	}
 	
 	static {
+		effects.put("actionbartext", ActionBarTextEffect.class);
 		effects.put("angry", AngryEffect.class);
 		effects.put("bigsmoke", BigSmokeEffect.class);
 		effects.put("blockbreak", BlockBreakEffect.class);

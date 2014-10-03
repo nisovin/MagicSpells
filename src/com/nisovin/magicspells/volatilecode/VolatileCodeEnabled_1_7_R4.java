@@ -33,6 +33,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
+import org.spigotmc.ProtocolInjector.PacketTitle;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.util.BoundingBox;
@@ -588,6 +589,18 @@ public class VolatileCodeEnabled_1_7_R4 implements VolatileCodeHandle {
 	@Override
 	public void setArrowsStuck(LivingEntity entity, int count) {
 		((CraftLivingEntity)entity).getHandle().p(count);
+	}
+
+	@Override
+	public void sendTitleToPlayer(Player player, String title, String subtitle, int fadeIn, int stay, int fadeOut) {
+	}
+
+	@Override
+	public void sendActionBarMessage(Player player, String message) {
+	}
+
+	@Override
+	public void setTabMenuHeaderFooter(Player player, String header, String footer) {
 	}
 
 }

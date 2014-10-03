@@ -182,7 +182,13 @@ public class MagicSpells extends JavaPlugin {
 		if (config.getBoolean("general.enable-volatile-features", true)) {
 			try {
 				Class.forName("net.minecraft.server.v1_7_R4.MinecraftServer");
-				volatileCodeHandle = new VolatileCodeEnabled_1_7_R4();
+				try {
+					Class.forName("org.spigotmc.ProtocolInjector");
+					volatileCodeHandle = new VolatileCodeEnabled_1_7_Spigot();
+					log("Spigot found, some 1.8 functionality enabled");
+				} catch (ClassNotFoundException e_spigot) {
+					volatileCodeHandle = new VolatileCodeEnabled_1_7_R4();
+				}				
 			} catch (ClassNotFoundException e_1_7_r4) {
 				try {
 					Class.forName("net.minecraft.server.v1_7_R3.MinecraftServer");
@@ -387,17 +393,20 @@ public class MagicSpells extends JavaPlugin {
 			}
 			spell.initialize();
 		}
+		log("Spells initialized");
 		
 		// load online player spellbooks
 		for (Player p : getServer().getOnlinePlayers()) {
 			spellbooks.put(p.getName(), new Spellbook(p, this));
 		}
+		log("Online player spellbooks loaded");
 		
 		// initialize passive manager
 		PassiveManager passiveManager = PassiveSpell.getManager();
 		if (passiveManager != null) {
 			passiveManager.initialize();
 		}
+		log("Passive manager initialized");
 		
 		// load saved cooldowns
 		if (cooldownsPersistThroughReload) {
@@ -426,6 +435,7 @@ public class MagicSpells extends JavaPlugin {
 					file.delete();
 				}
 			}
+			log("Restored cooldowns");
 		}
 		
 		// setup mana
@@ -457,6 +467,7 @@ public class MagicSpells extends JavaPlugin {
 				}
 				manaPotionCooldowns = new HashMap<Player,Long>();
 			}
+			log("Enabled mana bars");
 		}
 		
 		// load no-magic zones
@@ -484,6 +495,7 @@ public class MagicSpells extends JavaPlugin {
 			new DanceCastListener(this, config.getString("general.dance-cast-item", "2256"), config.getInt("general.dance-cast-duration", 200));
 		}
 		ModifierSet.initializeModifierListeners();
+		log("Cast listeners loaded");
 		
 		// initialize logger
 		if (config.getBoolean("general.enable-logging", false)) {
@@ -495,6 +507,7 @@ public class MagicSpells extends JavaPlugin {
 		getCommand("magicspellcast").setExecutor(exec);
 		getCommand("magicspellmana").setExecutor(exec);
 		getCommand("magicspellxp").setExecutor(exec);
+		log("Commands registered");
 		
 		// setup profiling
 		if (enableProfiling) {

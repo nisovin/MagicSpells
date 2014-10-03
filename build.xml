@@ -59,6 +59,9 @@
 		<javac srcdir="${core.src.dir}" destdir="${core.build.dir}" debug="true" source="1.6" target="1.6">
 			<classpath>
 				<fileset dir="${lib.dir}">
+					<include name="spigot*.jar"/>
+				</fileset>
+				<fileset dir="${lib.dir}">
 					<include name="bukkit*.jar"/>
 					<include name="*.jar"/>
 				</fileset>

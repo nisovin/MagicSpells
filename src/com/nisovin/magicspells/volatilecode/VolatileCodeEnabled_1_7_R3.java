@@ -590,4 +590,16 @@ public class VolatileCodeEnabled_1_7_R3 implements VolatileCodeHandle {
 		((CraftLivingEntity)entity).getHandle().p(count);
 	}
 
+	@Override
+	public void sendTitleToPlayer(Player player, String title, String subtitle, int fadeIn, int stay, int fadeOut) {
+	}
+
+	@Override
+	public void sendActionBarMessage(Player player, String message) {
+	}
+
+	@Override
+	public void setTabMenuHeaderFooter(Player player, String header, String footer) {
+	}
+
 }
