@@ -78,7 +78,9 @@ public class Spellbook {
 		}
 		
 		// add spells granted by permissions
-		addGrantedSpells();
+		if (!plugin.ignoreGrantPerms) {
+			addGrantedSpells();
+		}
 		
 		// sort spells or pre-select if just one
 		for (CastItem i : itemSpells.keySet()) {
@@ -157,7 +159,7 @@ public class Spellbook {
 		for (Spell spell : plugin.spellsOrdered) {
 			MagicSpells.debug(3, "    Checking spell " + spell.getInternalName() + "...");
 			if (!spell.isHelperSpell() && !hasSpell(spell, false)) {
-				if (plugin.ignoreGrantPerms || spell.isAlwaysGranted() || player.hasPermission("magicspells.grant." + spell.getPermissionName())) {
+				if (spell.isAlwaysGranted() || player.hasPermission("magicspells.grant." + spell.getPermissionName())) {
 					addSpell(spell);
 					added = true;
 				}
