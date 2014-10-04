@@ -306,6 +306,7 @@ public class ThrowBlockSpell extends InstantSpell implements TargetedLocationSpe
 	public boolean castAtLocation(Player caster, Location target, float power) {
 		Vector v = getVector(target, power);
 		spawnFallingBlock(caster, power, target, v);
+		playSpellEffects(EffectPosition.CASTER, target);
 		return true;
 	}
 
@@ -313,6 +314,7 @@ public class ThrowBlockSpell extends InstantSpell implements TargetedLocationSpe
 	public boolean castAtLocation(Location target, float power) {
 		Vector v = getVector(target, power);
 		spawnFallingBlock(null, power, target, v);
+		playSpellEffects(EffectPosition.CASTER, target);
 		return true;
 	}
 
