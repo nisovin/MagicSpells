@@ -115,7 +115,7 @@ public class ManaSystem extends ManaHandler {
 	}
 	
 	@Override
-	public void createManaBar(Player player) {
+	public void createManaBar(final Player player) {
 		boolean update = manaBars.containsKey(player.getName().toLowerCase());
 		ManaBar bar = getManaBar(player);
 		if (bar != null) {
@@ -126,7 +126,11 @@ public class ManaSystem extends ManaHandler {
 					bar.setRank(rank);
 				}
 			}
-			showMana(player);
+			MagicSpells.scheduleDelayedTask(new Runnable() {
+				public void run() {
+					showMana(player);
+				}
+			}, 11);
 		}
 	}
 	
