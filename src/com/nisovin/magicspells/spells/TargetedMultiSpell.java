@@ -13,6 +13,7 @@ import org.bukkit.entity.Player;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Subspell;
+import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.TargetInfo;
 
@@ -122,10 +123,7 @@ public final class TargetedMultiSpell extends TargetedSpell implements TargetedE
 			
 			if (entTarget != null) {
 				sendMessages(player, entTarget);
-				playSpellEffects(player, entTarget);
 				return PostCastAction.NO_MESSAGES;
-			} else if (locTarget != null) {
-				playSpellEffects(player, locTarget);
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
@@ -138,7 +136,7 @@ public final class TargetedMultiSpell extends TargetedSpell implements TargetedE
 	
 	@Override
 	public boolean castAtLocation(Location location, float power) {
-		return false;
+		return runSpells(null, null, location, power);
 	}
 
 	@Override
@@ -148,12 +146,12 @@ public final class TargetedMultiSpell extends TargetedSpell implements TargetedE
 
 	@Override
 	public boolean castAtEntity(LivingEntity target, float power) {
-		return false;
+		return runSpells(null, target, null, power);
 	}
 	
 	boolean runSpells(Player player, LivingEntity entTarget, Location locTarget, float power) {
+		boolean somethingWasDone = false;
 		if (!castRandomSpellInstead) {
-			boolean somethingWasDone = false;
 			int delay = 0;
 			Subspell spell;
 			List<DelayedSpell> delayedSpells = new ArrayList<DelayedSpell>();
@@ -182,15 +180,30 @@ public final class TargetedMultiSpell extends TargetedSpell implements TargetedE
 					}
 				}
 			}
-			return somethingWasDone;
 		} else {
 			Action action = actions.get(random.nextInt(actions.size()));
 			if (action.isSpell()) {
-				return castTargetedSpell(action.getSpell(), player, entTarget, locTarget, power);
+				somethingWasDone = castTargetedSpell(action.getSpell(), player, entTarget, locTarget, power);
 			} else {
-				return false;
+				somethingWasDone = false;
 			}
 		}
+		if (somethingWasDone) {
+			if (player != null) {
+				if (entTarget != null) {
+					playSpellEffects(player, entTarget);
+				} else if (locTarget != null) {
+					playSpellEffects(player, locTarget);
+				}
+			} else {
+				if (entTarget != null) {
+					playSpellEffects(EffectPosition.TARGET, entTarget);
+				} else if (locTarget != null) {
+					playSpellEffects(EffectPosition.TARGET, locTarget);
+				}
+			}
+		}
+		return somethingWasDone;
 	}
 	
 	private boolean castTargetedSpell(Subspell spell, Player caster, LivingEntity entTarget, Location locTarget, float power) {
@@ -276,7 +289,7 @@ public final class TargetedMultiSpell extends TargetedSpell implements TargetedE
 		@Override
 		public void run() {
 			if (!cancelled) {
-				if (player.isValid()) {
+				if (player == null || player.isValid()) {
 					boolean ok = castTargetedSpell(spell, player, entTarget, locTarget, power);
 					delayedSpells.remove(this);
 					if (!ok && stopOnFail) {
