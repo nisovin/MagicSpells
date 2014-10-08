@@ -88,7 +88,7 @@ public class ReachSpell extends BuffSpell {
 			Action action = event.getAction();
 			List<Block> targets = getLastTwoTargetedBlocks(player, range);
 			Block airBlock, targetBlock;
-			if (targets.size() == 2) {
+			if (targets != null && targets.size() == 2) {
 				airBlock = targets.get(0);
 				targetBlock = targets.get(1);
 				if ((action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) && targetBlock.getType() != Material.AIR) {

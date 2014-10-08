@@ -19,11 +19,19 @@ public class BlockUtils {
 	}
 	
 	public static Block getTargetBlock(Spell spell, LivingEntity entity, int range) {
-		return entity.getTargetBlock(spell.getLosTransparentBlocks(), range);
+		try {
+			return entity.getTargetBlock(spell.getLosTransparentBlocks(), range);
+		} catch (IllegalStateException e) {
+			return null;
+		}
 	}
 	
 	public static List<Block> getLastTwoTargetBlock(Spell spell, LivingEntity entity, int range) {
-		return entity.getLastTwoTargetBlocks(spell.getLosTransparentBlocks(), range);
+		try {
+			return entity.getLastTwoTargetBlocks(spell.getLosTransparentBlocks(), range);
+		} catch (IllegalStateException e) {
+			return null;
+		}
 	}
 	
 	public static void setTypeAndData(Block block, Material material, byte data, boolean physics) {
