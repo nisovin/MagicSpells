@@ -192,8 +192,12 @@ public class DisguiseManager_1_7_Spigot extends DisguiseManager {
 				((EntityVillager)entity).setAge(-24000);
 			}
 			((EntityVillager)entity).setProfession(var);
+			
 		} else if (entityType == EntityType.PIG_ZOMBIE) {
 			entity = new EntityPigZombie(world);
+			if (flag) {
+				((EntityPigZombie)entity).setBaby(true);
+			}
 			
 		} else if (entityType == EntityType.SLIME) {
 			entity = new EntitySlime(world);

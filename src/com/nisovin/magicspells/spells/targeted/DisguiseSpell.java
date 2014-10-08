@@ -8,9 +8,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
-
-import net.minecraft.server.v1_7_R3.PlayerDistanceComparator;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
