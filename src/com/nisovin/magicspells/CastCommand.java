@@ -250,13 +250,13 @@ public class CastCommand implements CommandExecutor, TabCompleter {
 									} else {
 										sender.sendMessage("Invalid target.");
 									}
-								} else if (spell instanceof TargetedLocationSpell && spellArgs != null && spellArgs.length == 1 && spellArgs[0].matches("^[^,]+,-?[0-9]+,-?[0-9]+,-?[0-9]+(,-?[0-9]+,-?[0-9]+)?$")) {
+								} else if (spell instanceof TargetedLocationSpell && spellArgs != null && spellArgs.length == 1 && spellArgs[0].matches("^[^,]+,-?[0-9.]+,-?[0-9.]+,-?[0-9.]+(,-?[0-9.]+,-?[0-9.]+)?$")) {
 									String[] locData = spellArgs[0].split(",");
 									World world = Bukkit.getWorld(locData[0]);
 									if (world != null) {
-										Location loc = new Location(world, Integer.parseInt(locData[1]), Integer.parseInt(locData[2]), Integer.parseInt(locData[3]));
-										if (locData.length > 4) loc.setYaw(Integer.parseInt(locData[4]));
-										if (locData.length > 5) loc.setPitch(Integer.parseInt(locData[5]));
+										Location loc = new Location(world, Float.parseFloat(locData[1]), Float.parseFloat(locData[2]), Float.parseFloat(locData[3]));
+										if (locData.length > 4) loc.setYaw(Float.parseFloat(locData[4]));
+										if (locData.length > 5) loc.setPitch(Float.parseFloat(locData[5]));
 										ok = ((TargetedLocationSpell)spell).castAtLocation(loc, 1.0F);
 										if (ok) {
 											sender.sendMessage("Spell casted!");

@@ -1,5 +1,6 @@
 package com.nisovin.magicspells;
 
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -17,13 +18,14 @@ class MagicPlayerListener implements Listener {
 
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onPlayerJoin(PlayerJoinEvent event) {
+		final Player player = event.getPlayer();
 		// set up spell book
-		Spellbook spellbook = new Spellbook(event.getPlayer(), plugin);
-		plugin.spellbooks.put(event.getPlayer().getName(), spellbook);
+		Spellbook spellbook = new Spellbook(player, plugin);
+		plugin.spellbooks.put(player.getName(), spellbook);
 		
 		// set up mana bar
 		if (plugin.mana != null) {
-			plugin.mana.createManaBar(event.getPlayer());
+			plugin.mana.createManaBar(player);
 		}
 	}
 

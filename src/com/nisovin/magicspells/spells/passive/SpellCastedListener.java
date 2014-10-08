@@ -43,7 +43,7 @@ public class SpellCastedListener extends PassiveListener {
 	
 	@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
 	public void onSpellCast(SpellCastedEvent event) {
-		if (event.getSpellCastState() == SpellCastState.NORMAL && event.getPostCastAction() != PostCastAction.ALREADY_HANDLED) {
+		if (event.getSpellCastState() == SpellCastState.NORMAL && event.getPostCastAction() != PostCastAction.ALREADY_HANDLED && event.getCaster() != null) {
 			Spellbook spellbook = MagicSpells.getSpellbook(event.getCaster());
 			for (PassiveSpell spell : anySpell) {
 				if (!spell.equals(event.getSpell()) && spellbook.hasSpell(spell, false)) {

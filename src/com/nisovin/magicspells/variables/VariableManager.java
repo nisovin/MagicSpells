@@ -293,12 +293,6 @@ public class VariableManager implements Listener {
 						Variable variable = variables.get(s[0]);
 						if (variable != null && variable instanceof PlayerVariable && variable.permanent) {
 							variable.set(player, Double.parseDouble(s[1]));
-							if (variable.expBar) {
-								Player p = Bukkit.getPlayerExact(player);
-								if (p != null) {
-									MagicSpells.getExpBarManager().update(p, (int)variable.getValue(player), (float)(variable.getValue(player) / variable.maxValue));
-								}
-							}
 						}
 					}
 				}
@@ -392,8 +386,14 @@ public class VariableManager implements Listener {
 	
 	@EventHandler
 	public void onJoin(PlayerJoinEvent event) {
-		loadPlayerVars(event.getPlayer().getName(), Util.getUniqueId(event.getPlayer()));
-		loadBossBar(event.getPlayer());
+		final Player player = event.getPlayer();
+		loadPlayerVars(player.getName(), Util.getUniqueId(player));
+		loadBossBar(player);
+		MagicSpells.scheduleDelayedTask(new Runnable() {
+			public void run() {
+				loadExpBar(player);
+			}
+		}, 10);
 	}
 	
 	@EventHandler

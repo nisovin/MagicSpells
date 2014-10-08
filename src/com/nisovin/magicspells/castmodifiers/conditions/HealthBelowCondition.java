@@ -9,10 +9,15 @@ import com.nisovin.magicspells.castmodifiers.Condition;
 public class HealthBelowCondition extends Condition {
 	
 	int health = 0;
+	boolean percent = false;
 
 	@Override
 	public boolean setVar(String var) {
 		try {
+			if (var.endsWith("%")) {
+				percent = true;
+				var = var.replace("%", "");
+			}
 			health = Integer.parseInt(var);
 			return true;
 		} catch (NumberFormatException e) {
@@ -27,7 +32,11 @@ public class HealthBelowCondition extends Condition {
 
 	@Override
 	public boolean check(Player player, LivingEntity target) {
-		return target.getHealth() < health;
+		if (percent) {
+			return target.getHealth() / target.getMaxHealth() * 100 < health;
+		} else {
+			return target.getHealth() < health;
+		}
 	}
 	
 	@Override

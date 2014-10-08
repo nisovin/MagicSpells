@@ -1,5 +1,7 @@
 package com.nisovin.magicspells;
 
+import java.util.Random;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
@@ -17,11 +19,14 @@ import com.nisovin.magicspells.util.Util;
 
 public class Subspell {
 
+	private static Random random = new Random();
+	
 	private String spellName;
 	private Spell spell;
 	private CastMode mode = CastMode.PARTIAL;
 	private float subPower = 1F;
 	private int delay = 0;
+	private double chance = -1;
 	
 	private boolean isTargetedEntity = false;
 	private boolean isTargetedLocation = false;
@@ -56,6 +61,10 @@ public class Subspell {
 					} else if (keyval[0].equalsIgnoreCase("delay")) {
 						try {
 							delay = Integer.parseInt(keyval[1]);
+						} catch (NumberFormatException e) {}
+					} else if (keyval[0].equalsIgnoreCase("chance")) {
+						try {
+							chance = Double.parseDouble(keyval[1]) / 100;
 						} catch (NumberFormatException e) {}
 					}
 				} else if (arg.equalsIgnoreCase("hard")) {
@@ -102,6 +111,11 @@ public class Subspell {
 	}
 	
 	public PostCastAction cast(final Player player, final float power) {
+		if (chance > 0 && chance < 1) {
+			if (random.nextDouble() > chance) {
+				return PostCastAction.ALREADY_HANDLED;
+			}
+		}
 		if (delay <= 0) {
 			return castReal(player, power);
 		} else {

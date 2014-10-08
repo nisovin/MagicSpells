@@ -138,7 +138,7 @@ public class SilenceSpell extends TargetedSpell implements TargetedEntitySpell {
 	public class CastListener implements Listener {
 		@EventHandler(ignoreCancelled=true)
 		public void onSpellCast(final SpellCastEvent event) {
-			if (silenced.containsKey(event.getCaster().getName()) && (allowedSpells == null || !allowedSpells.contains(event.getSpell()))) {
+			if (event.getCaster() != null && silenced.containsKey(event.getCaster().getName()) && (allowedSpells == null || !allowedSpells.contains(event.getSpell()))) {
 				event.setCancelled(true);
 				Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new Runnable() {
 					public void run() {

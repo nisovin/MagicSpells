@@ -52,7 +52,7 @@ public class DummySpell extends TargetedSpell implements TargetedEntitySpell, Ta
 
 	@Override
 	public boolean castAtLocation(Location target, float power) {
-		playSpellEffects(EffectPosition.CASTER, target);
+		playSpellEffects(EffectPosition.TARGET, target);
 		return true;
 	}
 
