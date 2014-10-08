@@ -90,8 +90,14 @@ public class DrainlifeSpell extends TargetedSpell implements TargetedEntitySpell
 				player.setLastDamageCause(event);
 			}
 			if (ignoreArmor) {
-				double health = target.getHealth() - take;
+				double health = target.getHealth();
+				if (health > target.getMaxHealth()) health = target.getMaxHealth();
+				health -= take;
 				if (health < 0) health = 0;
+				if (health > target.getMaxHealth()) health = target.getMaxHealth();
+				if (health == 0 && player != null) {
+					MagicSpells.getVolatileCodeHandler().setKiller(target, player);
+				}
 				target.setHealth(health);
 				target.playEffect(EntityEffect.HURT);
 			} else {
