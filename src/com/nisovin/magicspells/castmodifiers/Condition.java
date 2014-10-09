@@ -62,6 +62,7 @@ public abstract class Condition {
 		conditions.put("blocking", BlockingCondition.class);
 		conditions.put("riding", RidingCondition.class);
 		conditions.put("wearing", WearingCondition.class);
+		conditions.put("wearinginslot", WearingInSlotCondition.class);
 		conditions.put("holding", HoldingCondition.class);
 		conditions.put("hasitem", HasItemCondition.class);
 		conditions.put("onteam", OnTeamCondition.class);
