@@ -115,9 +115,6 @@ public class MagicSpells extends JavaPlugin {
 	String strWrongWorld;
 	String strCantBind;
 	String strConsoleName;
-	String strDanceStart;
-	String strDanceComplete;
-	String strDanceFail;
 	String strXpAutoLearned;
 	
 	// spell containers
@@ -267,9 +264,6 @@ public class MagicSpells extends JavaPlugin {
 		strCantBind = config.getString("general.str-cant-bind", "You cannot bind that spell to that item.");
 		strWrongWorld = config.getString("general.str-wrong-world", "You cannot cast that spell here.");
 		strConsoleName = config.getString("general.console-name", "Admin");
-		strDanceStart = config.getString("general.str-dance-start", "You begin to cast a spell.");
-		strDanceComplete = config.getString("general.str-dance-complete", "");
-		strDanceFail = config.getString("general.str-dance-fail", "Your dancing has no effect.");
 		strXpAutoLearned = config.getString("general.str-xp-auto-learned", "You have learned the %s spell!");
 		
 		enableManaBars = config.getBoolean("mana.enable-mana-system", false);
@@ -492,7 +486,7 @@ public class MagicSpells extends JavaPlugin {
 			registerEvents(consumeListener);
 		}
 		if (config.getBoolean("general.enable-dance-casting", true)) {
-			new DanceCastListener(this, config.getString("general.dance-cast-item", "2256"), config.getInt("general.dance-cast-duration", 200));
+			new DanceCastListener(this, config);
 		}
 		ModifierSet.initializeModifierListeners();
 		log("Cast listeners loaded");
