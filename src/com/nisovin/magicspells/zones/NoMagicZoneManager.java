@@ -64,7 +64,7 @@ public class NoMagicZoneManager {
 					e.printStackTrace();
 					continue;
 				}
-				zone.create(zoneConfig);
+				zone.create(node, zoneConfig);
 				zones.put(node, zone);
 				zonesOrdered.add(zone);
 				MagicSpells.debug(3, "Loaded no-magic zone: " + node);

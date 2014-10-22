@@ -10,6 +10,7 @@ import com.nisovin.magicspells.Spell;
 
 public abstract class NoMagicZone implements Comparable<NoMagicZone> {
 
+	private String id;
 	private int priority;
 	private String message;
 	private List<String> allowedSpells;
@@ -17,7 +18,8 @@ public abstract class NoMagicZone implements Comparable<NoMagicZone> {
 	private boolean allowAll;
 	private boolean disallowAll;
 	
-	public final void create(ConfigurationSection config) {
+	public final void create(String id, ConfigurationSection config) {
+		this.id = id;
 		priority = config.getInt("priority", 0);
 		message = config.getString("message", "You are in a no-magic zone.");
 		allowedSpells = config.getStringList("allowed-spells");
@@ -54,6 +56,10 @@ public abstract class NoMagicZone implements Comparable<NoMagicZone> {
 	
 	public abstract boolean inZone(Location location);
 	
+	public String getId() {
+		return id;
+	}
+	
 	public String getMessage() {
 		return message;
 	}
@@ -65,7 +71,7 @@ public abstract class NoMagicZone implements Comparable<NoMagicZone> {
 		} else if (this.priority > other.priority) {
 			return -1;
 		} else {
-			return 0;
+			return this.id.compareTo(other.id);
 		}
 	}
 	
