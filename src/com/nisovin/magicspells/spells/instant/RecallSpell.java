@@ -4,16 +4,18 @@ import java.util.HashMap;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
+import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.MagicLocation;
 
-public class RecallSpell extends InstantSpell {
+public class RecallSpell extends InstantSpell implements TargetedEntitySpell {
 	
 	private String markSpellName;
 	private boolean allowCrossWorld;
@@ -61,18 +63,13 @@ public class RecallSpell extends InstantSpell {
 						mark = target.getBedSpawnLocation();
 					}
 				} else if (marks != null) {
-					MagicLocation loc = marks.get(target != null ? target.getName().toLowerCase() : args[0]);
+					MagicLocation loc = marks.get(target != null ? target.getName().toLowerCase() : args[0].toLowerCase());
 					if (loc != null) {
 						mark = loc.getLocation();
 					}
 				}
-			} else if (useBedLocation) {
-				mark = player.getBedSpawnLocation();
-			} else if (marks != null) {
-				MagicLocation loc = marks.get(player.getName().toLowerCase());
-				if (loc != null) {
-					mark = loc.getLocation();
-				}
+			} else {
+				mark = getRecallLocation(player);
 			}
 			if (mark == null) {
 				sendMessage(player, strNoMark);
@@ -101,6 +98,33 @@ public class RecallSpell extends InstantSpell {
 			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+	
+	Location getRecallLocation(Player caster) {
+		if (useBedLocation) {
+			return caster.getBedSpawnLocation();
+		} else if (marks != null) {
+			MagicLocation loc = marks.get(caster.getName().toLowerCase());
+			if (loc != null) {
+				return loc.getLocation();
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public boolean castAtEntity(Player caster, LivingEntity target, float power) {
+		Location mark = getRecallLocation(caster);
+		if (mark != null) {
+			target.teleport(mark);
+			return true;
+		}
+		return false;
+	}
+
+	@Override
+	public boolean castAtEntity(LivingEntity target, float power) {
+		return false;
 	}
 
 }
