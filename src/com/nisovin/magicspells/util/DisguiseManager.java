@@ -65,11 +65,15 @@ public abstract class DisguiseManager implements Listener {
 	}
 	
 	public void removeDisguise(Player player, boolean sendPlayerPackets) {
+		removeDisguise(player, sendPlayerPackets, true);
+	}
+	
+	public void removeDisguise(Player player, boolean sendPlayerPackets, boolean delaySpawnPacket) {
 		DisguiseSpell.Disguise disguise = disguises.remove(player.getName().toLowerCase());
 		disguisedEntityIds.remove(player.getEntityId());
 		dragons.remove(player.getEntityId());
 		if (disguise != null) {
-			clearDisguise(player, sendPlayerPackets);
+			clearDisguise(player, sendPlayerPackets, delaySpawnPacket);
 			disguise.getSpell().undisguise(player);
 		}
 		mounts.remove(player.getEntityId());
@@ -96,12 +100,16 @@ public abstract class DisguiseManager implements Listener {
 	
 	protected abstract void cleanup();
 	
-	private void applyDisguise(Player player, DisguiseSpell.Disguise disguise) {
+	private void applyDisguise(final Player player, final DisguiseSpell.Disguise disguise) {
 		sendDestroyEntityPackets(player);
-		sendDisguisedSpawnPackets(player, disguise);
+		MagicSpells.scheduleDelayedTask(new Runnable() {
+			public void run() {
+				sendDisguisedSpawnPackets(player, disguise);
+			}
+		}, 5);
 	}
 	
-	private void clearDisguise(Player player, boolean sendPlayerPackets) {
+	private void clearDisguise(final Player player, boolean sendPlayerPackets, boolean delaySpawnPacket) {
 		if (sendPlayerPackets) {
 			sendDestroyEntityPackets(player);
 		}
@@ -109,7 +117,15 @@ public abstract class DisguiseManager implements Listener {
 			sendDestroyEntityPackets(player, mounts.remove(player.getEntityId()));
 		}
 		if (sendPlayerPackets && player.isValid()) {
-			sendPlayerSpawnPackets(player);
+			if (delaySpawnPacket) {
+				MagicSpells.scheduleDelayedTask(new Runnable() {
+					public void run() {
+						sendPlayerSpawnPackets(player);
+					}
+				}, 5);
+			} else {
+				sendPlayerSpawnPackets(player);
+			}
 		}
 	}
 	

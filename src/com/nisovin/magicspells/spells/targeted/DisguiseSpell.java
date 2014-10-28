@@ -422,7 +422,7 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 			for (String name : new ArrayList<String>(disguised.keySet())) {
 				Player player = Bukkit.getPlayerExact(name);
 				if (player != null) {
-					manager.removeDisguise(player);
+					manager.removeDisguise(player, false);
 				}
 			}
 			manager.unregisterSpell(this);
