@@ -71,7 +71,7 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 				Spell spell = MagicSpells.getSpellByInternalName(spellName);
 				if (spell != null) {
 					if (spell instanceof TargetedLocationSpell || spell instanceof TargetedEntitySpell || spell instanceof TargetedEntityFromLocationSpell) {
-						spells.add((TargetedSpell)spell);
+						spells.add(spell);
 					} else {
 						MagicSpells.error("AreaEffect spell '" + name + "' attempted to use non-targeted spell '" + spellName + "'");
 					}
