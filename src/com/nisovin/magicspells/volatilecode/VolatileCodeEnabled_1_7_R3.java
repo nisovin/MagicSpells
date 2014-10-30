@@ -519,20 +519,26 @@ public class VolatileCodeEnabled_1_7_R3 implements VolatileCodeHandle {
 	
 	@Override
 	public void updateBossBar(Player player, String title, double percent) {
-		if (percent <= 0) percent = 0.001D;
-		bossBarEntity.setCustomName(ChatColor.translateAlternateColorCodes('&', title));
-		bossBarEntity.getDataWatcher().watch(6, (float)(percent * 200));
+		if (title != null) {
+			if (percent <= 0) percent = 0.001D;
+			bossBarEntity.setCustomName(ChatColor.translateAlternateColorCodes('&', title));
+			bossBarEntity.getDataWatcher().watch(6, (float)(percent * 200));
+		}
 		
 		Location l = player.getLocation();
 		bossBarEntity.setLocation(l.getX(), l.getY() - 300, l.getZ(), 0, 0);
 		
-		PacketPlayOutEntityMetadata packetData = new PacketPlayOutEntityMetadata(bossBarEntity.getId(), bossBarEntity.getDataWatcher(), true);
-		PacketPlayOutEntityTeleport packetTeleport = new PacketPlayOutEntityTeleport(bossBarEntity);
-		PacketPlayOutEntityVelocity packetVelocity = new PacketPlayOutEntityVelocity(bossBarEntity.getId(), 1, 0, 1);
+		if (title != null) {
+			PacketPlayOutEntityMetadata packetData = new PacketPlayOutEntityMetadata(bossBarEntity.getId(), bossBarEntity.getDataWatcher(), true);
+			((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetData);
+		}
 		
-		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetData);
+		PacketPlayOutEntityTeleport packetTeleport = new PacketPlayOutEntityTeleport(bossBarEntity);
 		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetTeleport);
+		
+		PacketPlayOutEntityVelocity packetVelocity = new PacketPlayOutEntityVelocity(bossBarEntity.getId(), 1, 0, 1);
 		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetVelocity);
+		
 	}
 	
 	@Override

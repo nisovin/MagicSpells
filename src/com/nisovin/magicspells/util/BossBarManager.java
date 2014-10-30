@@ -26,19 +26,20 @@ public class BossBarManager implements Listener {
 				for (String name : bossBarTitles.keySet()) {
 					Player player = Bukkit.getPlayerExact(name);
 					if (player != null) {
-						updateBar(player);
+						updateBar(player, null, 0);
 					}
 				}
 			}
-		}, 30 * 20, 30 * 20);
+		}, 20, 20);
 	}
 	
 	public void setPlayerBar(Player player, String title, double percent) {
 		boolean alreadyShowing = bossBarTitles.containsKey(player.getName());
 		bossBarTitles.put(player.getName(), title);
 		bossBarValues.put(player.getName(), percent);
+		
 		if (alreadyShowing) {
-			updateBar(player);
+			updateBar(player, title, percent);
 		} else {
 			showBar(player);
 		}
@@ -48,8 +49,8 @@ public class BossBarManager implements Listener {
 		MagicSpells.getVolatileCodeHandler().setBossBar(player, bossBarTitles.get(player.getName()), bossBarValues.get(player.getName()));
 	}
 	
-	private void updateBar(Player player) {
-		MagicSpells.getVolatileCodeHandler().updateBossBar(player, bossBarTitles.get(player.getName()), bossBarValues.get(player.getName()));
+	private void updateBar(Player player, String title, double val) {
+		MagicSpells.getVolatileCodeHandler().updateBossBar(player, title, val);
 	}
 	
 	@EventHandler

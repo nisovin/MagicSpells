@@ -40,6 +40,7 @@ import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.util.BoundingBox;
 import com.nisovin.magicspells.util.DisguiseManager;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.Util;
 
 public class VolatileCodeEnabled_1_7_Spigot implements VolatileCodeHandle {
 
@@ -105,9 +106,10 @@ public class VolatileCodeEnabled_1_7_Spigot implements VolatileCodeHandle {
 			e.printStackTrace();
 		}
 		
-		bossBarEntity = new EntityEnderDragon(((CraftWorld)Bukkit.getWorlds().get(0)).getHandle());
+		bossBarEntity = new EntityWither(((CraftWorld)Bukkit.getWorlds().get(0)).getHandle());
 		bossBarEntity.setCustomNameVisible(false);
 		bossBarEntity.getDataWatcher().watch(0, (Byte)(byte)0x20);
+		bossBarEntity.getDataWatcher().watch(20, (Integer)0);
 		
 	}
 	
@@ -501,44 +503,54 @@ public class VolatileCodeEnabled_1_7_Spigot implements VolatileCodeHandle {
 	
 	@Override
 	public void setBossBar(Player player, String title, double percent) {
-		if (percent <= 0) percent = 0.001D;
-		bossBarEntity.setCustomName(ChatColor.translateAlternateColorCodes('&', title));
-		bossBarEntity.getDataWatcher().watch(6, (float)(percent * 200));
-		
-		Location l = player.getLocation();
-		bossBarEntity.setLocation(l.getX(), l.getY() - 300, l.getZ(), 0, 0);
+		updateBossBarEntity(player, title, percent);
 		
 		PacketPlayOutEntityDestroy packetDestroy = new PacketPlayOutEntityDestroy(bossBarEntity.getId());
-		PacketPlayOutSpawnEntityLiving packetSpawn = new PacketPlayOutSpawnEntityLiving(bossBarEntity);
-		PacketPlayOutEntityTeleport packetTeleport = new PacketPlayOutEntityTeleport(bossBarEntity);
-		PacketPlayOutEntityVelocity packetVelocity = new PacketPlayOutEntityVelocity(bossBarEntity.getId(), 1, 0, 1);
-		
 		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetDestroy);
+		
+		PacketPlayOutSpawnEntityLiving packetSpawn = new PacketPlayOutSpawnEntityLiving(bossBarEntity);
 		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetSpawn);
+		
+		PacketPlayOutEntityTeleport packetTeleport = new PacketPlayOutEntityTeleport(bossBarEntity);
 		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetTeleport);
-		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetVelocity);
+		
+		//PacketPlayOutEntityVelocity packetVelocity = new PacketPlayOutEntityVelocity(bossBarEntity.getId(), 1, 0, 1);		
+		//((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetVelocity);
 	}
 	
 	@Override
 	public void updateBossBar(Player player, String title, double percent) {
-		if (percent <= 0) percent = 0.001D;
-		bossBarEntity.setCustomName(ChatColor.translateAlternateColorCodes('&', title));
-		bossBarEntity.getDataWatcher().watch(6, (float)(percent * 200));
+		updateBossBarEntity(player, title, percent);
+		
+		if (title != null) {
+			PacketPlayOutEntityMetadata packetData = new PacketPlayOutEntityMetadata(bossBarEntity.getId(), bossBarEntity.getDataWatcher(), true);
+			((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetData);
+		}
+		
+		PacketPlayOutEntityTeleport packetTeleport = new PacketPlayOutEntityTeleport(bossBarEntity);
+		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetTeleport);
+		
+		//PacketPlayOutEntityVelocity packetVelocity = new PacketPlayOutEntityVelocity(bossBarEntity.getId(), 1, 0, 1);
+		//((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetVelocity);
+	}
+	
+	private void updateBossBarEntity(Player player, String title, double percent) {
+		if (title != null) {
+			if (percent <= 0) percent = 0.001D;
+			bossBarEntity.setCustomName(ChatColor.translateAlternateColorCodes('&', title));
+			bossBarEntity.getDataWatcher().watch(6, (float)(percent * 300));
+		}
 		
 		Location l = player.getLocation();
-		bossBarEntity.setLocation(l.getX(), l.getY() - 300, l.getZ(), 0, 0);
-		
-		PacketPlayOutEntityMetadata packetData = new PacketPlayOutEntityMetadata(bossBarEntity.getId(), bossBarEntity.getDataWatcher(), true);
-		PacketPlayOutEntityTeleport packetTeleport = new PacketPlayOutEntityTeleport(bossBarEntity);
-		PacketPlayOutEntityVelocity packetVelocity = new PacketPlayOutEntityVelocity(bossBarEntity.getId(), 1, 0, 1);
-		
-		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetData);
-		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetTeleport);
-		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetVelocity);
+		l.setPitch(l.getPitch() + 30);
+		Vector v = l.getDirection().multiply(30);
+		//Util.rotateVector(v, 45);
+		l.add(v);
+		bossBarEntity.setLocation(l.getX(), l.getY(), l.getZ(), 0, 0);
 	}
 	
 	@Override
-	public void removeBossBar(Player player) {		
+	public void removeBossBar(Player player) {
 		PacketPlayOutEntityDestroy packetDestroy = new PacketPlayOutEntityDestroy(bossBarEntity.getId());
 		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packetDestroy);
 	}
