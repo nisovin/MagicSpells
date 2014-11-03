@@ -63,7 +63,7 @@ public class ReflectionHelper<E> {
 		}
 	}
 	
-	public void getString(E object, String field, String val) {
+	public void setString(E object, String field, String val) {
 		try {
 			fields.get(field).set(object, val);
 		} catch (IllegalAccessException e) {
