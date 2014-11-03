@@ -79,6 +79,9 @@ public abstract class Condition {
 		conditions.put("magicxpbelow", MagicXpBelowCondition.class);
 		conditions.put("pitchabove", PitchAboveCondition.class);
 		conditions.put("pitchbelow", PitchBelowCondition.class);
+		conditions.put("rotationabove", RotationAboveCondition.class);
+		conditions.put("rotationbelow", RotationBelowCondition.class);
+		conditions.put("facing", FacingCondition.class);
 		conditions.put("potioneffect", PotionEffectCondition.class);
 		conditions.put("onfire", OnFireCondition.class);
 		conditions.put("buffactive", BuffActiveCondition.class);
