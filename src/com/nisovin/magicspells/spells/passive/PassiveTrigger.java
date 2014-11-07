@@ -42,6 +42,7 @@ public class PassiveTrigger {
 	public static PassiveTrigger TELEPORT = addTrigger("teleport", TeleportListener.class);
 	public static PassiveTrigger BUFF = addTrigger("buff", BuffListener.class);
 	public static PassiveTrigger TICKS = addTrigger("ticks", TicksListener.class);
+	public static PassiveTrigger RESOURCE_PACK = addTrigger("resourcepack", ResourcePackListener.class);
 		
 	public static PassiveTrigger addTrigger(String name, Class<? extends PassiveListener> listener) {
 		PassiveTrigger trigger = new PassiveTrigger(name, listener);
