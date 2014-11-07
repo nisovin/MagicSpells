@@ -30,7 +30,7 @@ public class BossBarManager implements Listener {
 					}
 				}
 			}
-		}, 20, 20);
+		}, 8, 8);
 	}
 	
 	public void setPlayerBar(Player player, String title, double percent) {
@@ -42,6 +42,13 @@ public class BossBarManager implements Listener {
 			updateBar(player, title, percent);
 		} else {
 			showBar(player);
+		}
+	}
+	
+	public void removePlayerBar(Player player) {
+		if (bossBarTitles.remove(player.getName()) != null) {
+			bossBarValues.remove(player.getName());
+			MagicSpells.getVolatileCodeHandler().removeBossBar(player);
 		}
 	}
 	

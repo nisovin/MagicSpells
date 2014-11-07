@@ -542,9 +542,9 @@ public class VolatileCodeEnabled_1_7_Spigot implements VolatileCodeHandle {
 		}
 		
 		Location l = player.getLocation();
-		l.setPitch(l.getPitch() + 30);
-		Vector v = l.getDirection().multiply(30);
-		//Util.rotateVector(v, 45);
+		l.setPitch(l.getPitch() + 10);
+		Vector v = l.getDirection().multiply(20);
+		//Util.rotateVector(v, 20);
 		l.add(v);
 		bossBarEntity.setLocation(l.getX(), l.getY(), l.getZ(), 0, 0);
 	}
