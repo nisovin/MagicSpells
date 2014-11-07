@@ -1691,7 +1691,6 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	
 	public enum SpellCastState {
 		NORMAL,
-		SUB_SPELL,
 		ON_COOLDOWN,
 		MISSING_REAGENTS,
 		CANT_CAST,

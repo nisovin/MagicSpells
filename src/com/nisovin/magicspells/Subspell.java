@@ -132,11 +132,11 @@ public class Subspell {
 		if ((mode == CastMode.HARD || mode == CastMode.FULL) && player != null) {
 			return spell.cast(player, power * subPower, null).action;
 		} else if (mode == CastMode.PARTIAL) {
-			SpellCastEvent event = new SpellCastEvent(spell, player, SpellCastState.SUB_SPELL, power * subPower, null, 0, null, 0);
+			SpellCastEvent event = new SpellCastEvent(spell, player, SpellCastState.NORMAL, power * subPower, null, 0, null, 0);
 			Bukkit.getPluginManager().callEvent(event);
-			if (!event.isCancelled() && event.getSpellCastState() == SpellCastState.SUB_SPELL) {
+			if (!event.isCancelled() && event.getSpellCastState() == SpellCastState.NORMAL) {
 				PostCastAction act = spell.castSpell(player, SpellCastState.NORMAL, event.getPower(), null);
-				Bukkit.getPluginManager().callEvent(new SpellCastedEvent(spell, player, SpellCastState.SUB_SPELL, event.getPower(), null, 0, null, act));
+				Bukkit.getPluginManager().callEvent(new SpellCastedEvent(spell, player, SpellCastState.NORMAL, event.getPower(), null, 0, null, act));
 				return act;
 			}
 			return PostCastAction.ALREADY_HANDLED;
