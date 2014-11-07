@@ -728,7 +728,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 			return null;
 		} else {
 			if (event.haveReagentsChanged()) {
-				boolean hasReagents = hasReagents(player, reagents);
+				boolean hasReagents = hasReagents(player, event.getReagents());
 				if (!hasReagents && state != SpellCastState.MISSING_REAGENTS) {
 					event.setSpellCastState(SpellCastState.MISSING_REAGENTS);
 					debug(2, "    Spell cast state changed: " + state);
