@@ -6,10 +6,9 @@ import java.util.Set;
 
 import org.bukkit.entity.Player;
 
+import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.ConnectionSide;
-import com.comphenix.protocol.events.ListenerPriority;
 import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketEvent;
 import com.nisovin.magicspells.MagicSpells;
@@ -45,7 +44,7 @@ public class MessageBlocker {
 	class PacketListener extends PacketAdapter {
 		
 		public PacketListener() {
-			super(MagicSpells.plugin, ConnectionSide.SERVER_SIDE, ListenerPriority.NORMAL, 3);
+			super(MagicSpells.plugin, PacketType.Play.Server.CHAT);
 		}
 		
 		@Override

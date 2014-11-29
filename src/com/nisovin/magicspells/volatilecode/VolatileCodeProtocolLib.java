@@ -67,6 +67,7 @@ public class VolatileCodeProtocolLib extends VolatileCodeDisabled {
 			.write(5, spreadHoriz)
 			.write(6, speed);
 		packet.getIntegers().write(0, count);
+		packet.getBooleans().write(0, radius > 200);
 		protocolManager.broadcastServerPacket(packet, location, radius);
 	}
 	

@@ -156,7 +156,7 @@ public class VolatileCodeDisabled implements VolatileCodeHandle {
 	}
 	
 	@Override
-	public void playParticleEffect(Location location, String name, float spreadHoriz, float spreadVert, float speed, int count, int radius, float yOffset) {		
+	public void playParticleEffect(Location location, String name, float spreadHoriz, float spreadVert, float speed, int count, int radius, float yOffset) {
 	}
 	
 	@Override
