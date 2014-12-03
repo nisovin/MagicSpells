@@ -42,6 +42,7 @@ public abstract class Variable {
 	public abstract void set(String player, double amount);
 	
 	public double getValue(Player player) {
+		if (player == null) return getValue("");
 		return getValue(player.getName());
 	}
 	
