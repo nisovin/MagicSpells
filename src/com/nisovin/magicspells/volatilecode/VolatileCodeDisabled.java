@@ -188,6 +188,10 @@ public class VolatileCodeDisabled implements VolatileCodeHandle {
 	}
 
 	@Override
+	public void resetEntityAttributes(LivingEntity entity) {
+	}
+
+	@Override
 	public void addAILookAtPlayer(LivingEntity entity, int range) {
 	}
 	

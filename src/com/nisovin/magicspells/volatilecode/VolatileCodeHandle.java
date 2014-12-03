@@ -64,6 +64,8 @@ public interface VolatileCodeHandle {
 	
 	public void addEntityAttribute(LivingEntity entity, String attribute, double amount, int operation);
 	
+	public void resetEntityAttributes(LivingEntity entity);
+	
 	public void removeAI(LivingEntity entity);
 	
 	public void addAILookAtPlayer(LivingEntity entity, int range);

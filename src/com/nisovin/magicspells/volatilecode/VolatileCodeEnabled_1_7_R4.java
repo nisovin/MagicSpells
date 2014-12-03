@@ -608,4 +608,8 @@ public class VolatileCodeEnabled_1_7_R4 implements VolatileCodeHandle {
 	public void setTabMenuHeaderFooter(Player player, String header, String footer) {
 	}
 
+	@Override
+	public void resetEntityAttributes(LivingEntity entity) {
+	}
+
 }
