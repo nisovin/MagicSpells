@@ -639,4 +639,8 @@ public class VolatileCodeEnabled_1_7_Spigot implements VolatileCodeHandle {
 		}
 	}
 
+	@Override
+	public void resetEntityAttributes(LivingEntity entity) {
+	}
+
 }
