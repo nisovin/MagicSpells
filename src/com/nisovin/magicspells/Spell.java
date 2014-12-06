@@ -1866,7 +1866,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		
 		@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
 		public void onSpellCast(SpellCastEvent event) {
-			if (interruptOnCast && !cancelled && !(event.getSpell() instanceof PassiveSpell) && event.getCaster().equals(player)) {
+			if (interruptOnCast && !cancelled && !(event.getSpell() instanceof PassiveSpell) && event.getCaster() != null && event.getCaster().equals(player)) {
 				cancelled = true;
 				interrupt();
 			}
