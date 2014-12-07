@@ -40,7 +40,6 @@ public class VariableManager implements Listener {
 	
 	public VariableManager(MagicSpells plugin, ConfigurationSection section) {
 		if (section != null) {
-			MagicSpells.debug(1, "Loading variables...");
 			for (String var : section.getKeys(false)) {
 				String type = section.getString(var + ".type", "global");
 				double def = section.getDouble(var + ".default", 0);
@@ -110,6 +109,10 @@ public class VariableManager implements Listener {
 				}
 			}
 		}, 60 * 20, 60 * 20);
+	}
+	
+	public int count() {
+		return variables.size()
 	}
 	
 	public void modify(String variable, Player player, double amount) {

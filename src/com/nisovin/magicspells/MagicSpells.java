@@ -291,6 +291,7 @@ public class MagicSpells extends JavaPlugin {
 		pm.callEvent(new MagicSpellsLoadingEvent(this));
 				
 		// init permissions
+		log("Initializing permissions");
 		boolean opsIgnoreReagents = config.getBoolean("general.ops-ignore-reagents", true);
 		boolean opsIgnoreCooldowns = config.getBoolean("general.ops-ignore-cooldowns", true);
 		boolean opsIgnoreCastTimes = config.getBoolean("general.ops-ignore-cast-times", true);
@@ -305,6 +306,7 @@ public class MagicSpells extends JavaPlugin {
 		HashMap<String, Boolean> permTeachChildren = new HashMap<String,Boolean>();
 		
 		// load predefined items
+		log("Loading predefined items...");
 		Util.predefinedItems.clear();
 		if (config.contains("general.predefined-items")) {
 			Set<String> predefinedItems = config.getKeys("general.predefined-items");
@@ -336,17 +338,21 @@ public class MagicSpells extends JavaPlugin {
 				}
 			}
 		}
+		log("..." + Util.predefinedItems.size() + " predefined items loaded");
 		
 		// load variables
+		log("Loading variables...");
 		ConfigurationSection varSec = null;
 		if (config.contains("general.variables") && config.isSection("general.variables")) {
 			varSec = config.getSection("general.variables");
 		}
 		variableManager = new VariableManager(this, varSec);
+		log("..." + variableManager.count() + " variables loaded");
 		
 		// load spells
+		log("Loading spells...");
 		loadSpells(config, pm, permGrantChildren, permLearnChildren, permCastChildren, permTeachChildren);
-		log("Spells loaded: " + spells.size());
+		log("...spells loaded: " + spells.size());
 		if (spells.size() == 0) {
 			MagicSpells.error("No spells loaded!");
 			return;
@@ -374,6 +380,7 @@ public class MagicSpells extends JavaPlugin {
 		}
 		
 		// load in-game spell names, incantations, and initialize spells
+		log("Initializing spells...");
 		for (Spell spell : spells.values()) {
 			spellNames.put(spell.getName().toLowerCase(), spell);
 			String[] aliases = spell.getAliases();
@@ -392,20 +399,22 @@ public class MagicSpells extends JavaPlugin {
 			}
 			spell.initialize();
 		}
-		log("Spells initialized");
+		log("...done");
 		
 		// load online player spellbooks
+		log("Loading online player spellbooks...");
 		for (Player p : getServer().getOnlinePlayers()) {
 			spellbooks.put(p.getName(), new Spellbook(p, this));
 		}
-		log("Online player spellbooks loaded");
+		log("...done");
 		
 		// initialize passive manager
+		log("Initializing passive manager...");
 		PassiveManager passiveManager = PassiveSpell.getManager();
 		if (passiveManager != null) {
 			passiveManager.initialize();
 		}
-		log("Passive manager initialized");
+		log("...done");
 		
 		// load saved cooldowns
 		if (cooldownsPersistThroughReload) {
@@ -439,6 +448,7 @@ public class MagicSpells extends JavaPlugin {
 		
 		// setup mana
 		if (enableManaBars) {
+			log("Enabling mana bars...");
 			// init
 			mana.initialize();
 			
@@ -466,7 +476,7 @@ public class MagicSpells extends JavaPlugin {
 				}
 				manaPotionCooldowns = new HashMap<Player,Long>();
 			}
-			log("Enabled mana bars");
+			log("...done");
 		}
 		
 		// load no-magic zones
@@ -476,6 +486,7 @@ public class MagicSpells extends JavaPlugin {
 		}
 		
 		// load listeners
+		log("Loading cast listeners...");
 		registerEvents(new MagicPlayerListener(this));
 		registerEvents(new MagicSpellListener(this));
 		registerEvents(new CastListener(this));
@@ -494,7 +505,7 @@ public class MagicSpells extends JavaPlugin {
 			new DanceCastListener(this, config);
 		}
 		ModifierSet.initializeModifierListeners();
-		log("Cast listeners loaded");
+		log("...done");
 		
 		// initialize logger
 		if (config.getBoolean("general.enable-logging", false)) {
@@ -506,7 +517,6 @@ public class MagicSpells extends JavaPlugin {
 		getCommand("magicspellcast").setExecutor(exec);
 		getCommand("magicspellmana").setExecutor(exec);
 		getCommand("magicspellxp").setExecutor(exec);
-		log("Commands registered");
 		
 		// setup profiling
 		if (enableProfiling) {
@@ -516,6 +526,8 @@ public class MagicSpells extends JavaPlugin {
 		
 		// call loaded event
 		pm.callEvent(new MagicSpellsLoadedEvent(this));
+		
+		log("MagicSpells loading complete!");
 	}
 	
 	private void loadSpells(MagicConfig config, PluginManager pm, HashMap<String, Boolean> permGrantChildren, HashMap<String, Boolean> permLearnChildren, HashMap<String, Boolean> permCastChildren, HashMap<String, Boolean> permTeachChildren) {
