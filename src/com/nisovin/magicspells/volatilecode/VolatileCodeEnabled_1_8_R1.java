@@ -593,7 +593,7 @@ public class VolatileCodeEnabled_1_8_R1 implements VolatileCodeHandle {
 		Location l = player.getLocation();
 		l.setPitch(l.getPitch() + 10);
 		Vector v = l.getDirection().multiply(20);
-		//Util.rotateVector(v, 20);
+		Util.rotateVector(v, 15);
 		l.add(v);
 		bossBarEntity.setLocation(l.getX(), l.getY(), l.getZ(), 0, 0);
 	}
@@ -683,7 +683,9 @@ public class VolatileCodeEnabled_1_8_R1 implements VolatileCodeHandle {
 		try {
 			Field field1 = PacketPlayOutPlayerListHeaderFooter.class.getDeclaredField("a");
 			Field field2 = PacketPlayOutPlayerListHeaderFooter.class.getDeclaredField("b");
+			field1.setAccessible(true);
 			field1.set(packet, new ChatComponentText(header));
+			field2.setAccessible(true);
 			field2.set(packet, new ChatComponentText(footer));
 			conn.sendPacket(packet);
 		} catch (Exception e) {
