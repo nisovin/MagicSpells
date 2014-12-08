@@ -585,9 +585,9 @@ public class VolatileCodeEnabled_1_8_R1 implements VolatileCodeHandle {
 	
 	private void updateBossBarEntity(Player player, String title, double percent) {
 		if (title != null) {
-			if (percent <= 0) percent = 0.001D;
+			if (percent <= 0.01) percent = 0.01D;
 			bossBarEntity.setCustomName(ChatColor.translateAlternateColorCodes('&', title));
-			bossBarEntity.getDataWatcher().watch(6, (float)(percent * 300));
+			bossBarEntity.getDataWatcher().watch(6, (float)(percent * 300f));
 		}
 		
 		Location l = player.getLocation();

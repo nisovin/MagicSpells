@@ -972,7 +972,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	public void setCooldown(final Player player, float cooldown, boolean activateSharedCooldowns) {
 		if (cooldown > 0) {
 			if (charges <= 0) {
-				nextCast.put(player.getName(), System.currentTimeMillis() + (int)(cooldown * 1000));
+				nextCast.put(player.getName(), System.currentTimeMillis() + (long)(cooldown * 1000L));
 			} else {
 				final String name = player.getName();
 				chargesConsumed.increment(name);

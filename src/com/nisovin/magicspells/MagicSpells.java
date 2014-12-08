@@ -358,6 +358,7 @@ public class MagicSpells extends JavaPlugin {
 			return;
 		}
 		
+		log("Finalizing perms...");
 		// finalize spell permissions
 		addPermission(pm, "grant.*", PermissionDefault.FALSE, permGrantChildren);
 		addPermission(pm, "learn.*", defaultAllPermsFalse ? PermissionDefault.FALSE : PermissionDefault.TRUE, permLearnChildren);
@@ -373,10 +374,13 @@ public class MagicSpells extends JavaPlugin {
 		advancedPermChildren.put("magicspells.advanced.forget", true);
 		advancedPermChildren.put("magicspells.advanced.scroll", true);
 		addPermission(pm, "advanced.*", defaultAllPermsFalse? PermissionDefault.FALSE : PermissionDefault.OP, advancedPermChildren);
+		log("...done");
 		
 		// load xp system
 		if (config.getBoolean("general.enable-magic-xp", false)) {
+			log("Loading xp system...");
 			magicXpHandler = new MagicXpHandler(this, config);
+			log("...xp system loaded");
 		}
 		
 		// load in-game spell names, incantations, and initialize spells

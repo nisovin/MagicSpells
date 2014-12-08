@@ -64,7 +64,12 @@ public abstract class Condition {
 		conditions.put("wearing", WearingCondition.class);
 		conditions.put("wearinginslot", WearingInSlotCondition.class);
 		conditions.put("holding", HoldingCondition.class);
+		conditions.put("durabilitylessthan", DurabilityLessThanCondition.class);
 		conditions.put("hasitem", HasItemCondition.class);
+		conditions.put("hasitemlessthan", HasItemLessThanCondition.class);
+		conditions.put("hasitemmorethan", HasItemMoreThanCondition.class);
+		conditions.put("openslotslessthan", OpenSlotsLessThanCondition.class);
+		conditions.put("openslotsmorethan", OpenSlotsMoreThanCondition.class);
 		conditions.put("onteam", OnTeamCondition.class);
 		conditions.put("onsameteam", OnSameTeamCondition.class);
 		conditions.put("healthabove", HealthAboveCondition.class);

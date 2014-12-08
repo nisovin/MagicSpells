@@ -112,7 +112,7 @@ public class VariableManager implements Listener {
 	}
 	
 	public int count() {
-		return variables.size()
+		return variables.size();
 	}
 	
 	public void modify(String variable, Player player, double amount) {
