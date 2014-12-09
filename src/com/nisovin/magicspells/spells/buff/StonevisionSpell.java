@@ -59,6 +59,14 @@ public class StonevisionSpell extends BuffSpell {
 			MagicSpells.error("Spell '" + internalName + "' does not define any transparent types");
 		}
 		
+		String s = getConfigString("glass", "");
+		if (!s.isEmpty()) {
+			glass = MagicSpells.getItemNameResolver().resolveBlock(s);
+		}
+		if (glass == null) {
+			glass = new MagicBlockMaterial(new MaterialData(Material.GLASS));
+		}
+		
 		seers = new HashMap<String, TransparentBlockSet>();
 	}
 
