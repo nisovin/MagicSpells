@@ -1,6 +1,7 @@
 package com.nisovin.magicspells.spells.instant;
 
 import java.util.List;
+import java.util.TreeSet;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -13,6 +14,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.events.SpellTargetEvent;
 import com.nisovin.magicspells.materials.MagicMaterial;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
@@ -131,16 +133,32 @@ public class DowseSpell extends InstantSpell {
 					// find nearest entity
 					List<Entity> nearby = player.getNearbyEntities(radius, radius, radius);
 					Location playerLoc = player.getLocation();
+					TreeSet<NearbyEntity> ordered = new TreeSet<NearbyEntity>();
 					for (Entity e : nearby) {
 						if (e.getType() == entityType) {
 							double d = e.getLocation().distanceSquared(playerLoc);
 							if (d < distanceSq) {
-								foundEntity = e;
-								distanceSq = d;
+								ordered.add(new NearbyEntity(e, d));
+							}
+						}
+					}
+					if (ordered.size() > 0) {
+						for (NearbyEntity ne : ordered) {
+							if (ne.entity instanceof LivingEntity) {
+								SpellTargetEvent event = new SpellTargetEvent(this, player, (LivingEntity)ne.entity, power);
+								Bukkit.getPluginManager().callEvent(event);
+								if (!event.isCancelled()) {
+									foundEntity = ne.entity;
+									break;
+								}
+							} else {
+								foundEntity = ne.entity;
+								break;
 							}
 						}
 					}
 				}
+				
 				
 				if (foundEntity == null) {
 					sendMessage(player, strNotFound);
@@ -169,6 +187,29 @@ public class DowseSpell extends InstantSpell {
 		}
 		
 		return PostCastAction.HANDLE_NORMALLY;
+	}
+	
+	class NearbyEntity implements Comparable<NearbyEntity> {
+
+		Entity entity;
+		double distanceSquared;
+		
+		public NearbyEntity(Entity entity, double distanceSquared) {
+			this.entity = entity;
+			this.distanceSquared = distanceSquared;
+		}
+		
+		@Override
+		public int compareTo(NearbyEntity e) {
+			if (e.distanceSquared < this.distanceSquared) {
+				return -1;
+			} else if (e.distanceSquared > this.distanceSquared) {
+				return 1;
+			} else {
+				return 0;
+			}
+		}
+		
 	}
 
 }
