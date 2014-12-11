@@ -252,9 +252,17 @@ public class DisguiseManager_1_8_R1 extends DisguiseManager {
 			
 		} else if (entityType == EntityType.RABBIT) {
 			entity = new EntityRabbit(world);
+			((EntityAgeable)entity).setAge(flag ? -24000 : 0);
+			((EntityRabbit)entity).r(var);
 			
 		} else if (entityType == EntityType.GUARDIAN) {
 			entity = new EntityGuardian(world);
+			if (flag) {
+				((EntityGuardian)entity).a(true);
+			}
+			
+		} else if (entityType == EntityType.ENDERMITE) {
+			entity = new EntityEndermite(world);
 			
 		} else if (entityType == EntityType.WITHER) {
 			entity = new EntityWither(world);
