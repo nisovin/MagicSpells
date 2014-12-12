@@ -15,9 +15,12 @@ import java.util.Set;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
+import org.bukkit.DyeColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.banner.Pattern;
+import org.bukkit.block.banner.PatternType;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
@@ -25,6 +28,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BannerMeta;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -266,6 +270,46 @@ public class Util {
 						pages.set(i, ChatColor.translateAlternateColorCodes('&', pages.get(i)));
 					}
 					((BookMeta)meta).setPages(pages);
+				}
+			}
+			
+			// banner
+			if (meta instanceof BannerMeta) {
+				if (config.contains("color") && config.isString("color")) {
+					String s = config.getString("color").toLowerCase();
+					for (DyeColor c : DyeColor.values()) {
+						if (c != null && c.name().replace("_", "").toLowerCase().equals(s)) {
+							((BannerMeta)meta).setBaseColor(c);
+							break;
+						}
+					}
+				}
+				if (config.contains("patterns") && config.isList("patterns")) {
+					List<String> patterns = config.getStringList("patterns");
+					for (String patternData : patterns) {
+						if (patternData.contains(" ")) {
+							String[] split = patternData.split(" ");
+							DyeColor color = null;
+							for (DyeColor c : DyeColor.values()) {
+								if (c != null && c.name().replace("_", "").toLowerCase().equals(split[0].toLowerCase())) {
+									color = c;
+									break;
+								}
+							}
+							PatternType pattern = PatternType.getByIdentifier(split[1]);
+							if (pattern == null) {
+								for (PatternType p : PatternType.values()) {
+									if (p != null && p.name().equalsIgnoreCase(split[1])) {
+										pattern = p;
+										break;
+									}
+								}
+							}
+							if (color != null && pattern != null) {
+								((BannerMeta)meta).addPattern(new Pattern(color, pattern));
+							}
+						}
+					}
 				}
 			}
 			
