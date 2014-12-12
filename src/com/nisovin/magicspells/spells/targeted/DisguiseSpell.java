@@ -141,6 +141,23 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 				}
 			}
 			type = "sheep";
+		} else if (type.toLowerCase().endsWith(" rabbit")) {
+			String rabbitType = type.toLowerCase().replace(" rabbit", "");
+			var1 = 0;
+			if (rabbitType.equals("white")) {
+				var1 = 1;
+			} else if (rabbitType.equals("black")) {
+				var1 = 2;
+			} else if (rabbitType.equals("blackwhite")) {
+				var1 = 3;
+			} else if (rabbitType.equals("gold")) {
+				var1 = 4;
+			} else if (rabbitType.equals("saltpepper")) {
+				var1 = 5;
+			} else if (rabbitType.equals("killer")) {
+				var1 = 99;
+			}
+			type = "rabbit";
 		} else if (type.toLowerCase().startsWith("wolf ")) {
 			String color = type.toLowerCase().replace("wolf ", "");
 			if (color.matches("[0-9a-fA-F]+")) {
@@ -224,6 +241,9 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 		} else if (type.equalsIgnoreCase("donkey")) {
 			var1 = 1;
 			type = "entityhorse";
+		} else if (type.equalsIgnoreCase("elder guardian")) {
+			flag = true;
+			type = "guardian";
 		}
 		if (type.toLowerCase().matches("ozelot [0-3]")) {
 			var1 = Integer.parseInt(type.split(" ")[1]);
