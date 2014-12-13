@@ -97,6 +97,8 @@ public class ManaBar {
 		if (newAmt == mana) return false;
 		
 		newAmt = callManaChangeEvent(newAmt, reason);
+		if (newAmt > maxMana) newAmt = maxMana;
+		if (newAmt < 0) newAmt = 0;
 		if (newAmt == mana) return false;
 		mana = newAmt;
 		return true;

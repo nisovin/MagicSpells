@@ -125,6 +125,7 @@ public class Modifier {
 		} else if (check == true && type == ModifierType.ADD_POWER) {
 			int newAmt = event.getNewAmount() + (int)modifierVarFloat;
 			if (newAmt > event.getMaxMana()) newAmt = event.getMaxMana();
+			if (newAmt < 0) newAmt = 0;
 			event.setNewAmount(newAmt);
 		} else if (check == true && (type == ModifierType.CAST || type == ModifierType.CAST_INSTEAD)) {
 			Spell spell = MagicSpells.getSpellByInternalName(modifierVar);
