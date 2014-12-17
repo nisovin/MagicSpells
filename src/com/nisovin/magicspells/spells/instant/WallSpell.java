@@ -2,19 +2,23 @@ package com.nisovin.magicspells.spells.instant;
 
 import java.util.ArrayList;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.materials.MagicMaterial;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
+import com.nisovin.magicspells.util.BlockUtils;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.TemporaryBlockSet;
 import com.nisovin.magicspells.util.TemporaryBlockSet.BlockSetRemovalCallback;
@@ -29,6 +33,7 @@ public class WallSpell extends InstantSpell {
 	private int wallDuration;
 	private boolean preventBreaking;
 	private boolean preventDrops;
+	private boolean checkPlugins;
 	private String strNoTarget;
 	
 	private ArrayList<TemporaryBlockSet> blockSets;
@@ -45,6 +50,7 @@ public class WallSpell extends InstantSpell {
 		wallDuration = getConfigInt("wall-duration", 15);
 		preventBreaking = getConfigBoolean("prevent-breaking", false);
 		preventDrops = getConfigBoolean("prevent-drops", true);
+		checkPlugins = getConfigBoolean("check-plugins", true);
 		strNoTarget = getConfigString("str-no-target", "Unable to create a wall.");
 		
 		blockSets = new ArrayList<TemporaryBlockSet>();
@@ -67,6 +73,20 @@ public class WallSpell extends InstantSpell {
 				sendMessage(player, strNoTarget);
 				return PostCastAction.ALREADY_HANDLED;
 			} else {
+				
+				// check plugins
+				if (checkPlugins) {
+					BlockState eventBlockState = target.getState();
+					wallMaterial.setBlock(target, false);
+					BlockPlaceEvent event = new BlockPlaceEvent(target, eventBlockState, target, player.getItemInHand(), player, true);
+					Bukkit.getPluginManager().callEvent(event);
+					BlockUtils.setTypeAndData(target, Material.AIR, (byte)0, false);
+					if (event.isCancelled()) {
+						sendMessage(player, strNoTarget);
+						return PostCastAction.ALREADY_HANDLED;
+					}
+				}
+				
 				TemporaryBlockSet blockSet = new TemporaryBlockSet(Material.AIR, wallMaterial);
 				Location loc = target.getLocation();
 				Vector dir = player.getLocation().getDirection();
