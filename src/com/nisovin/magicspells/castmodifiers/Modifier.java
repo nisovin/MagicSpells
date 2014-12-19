@@ -16,6 +16,7 @@ import com.nisovin.magicspells.util.Util;
 
 public class Modifier {
 
+	boolean negated = false;
 	Condition condition;
 	ModifierType type;
 	String modifierVar;
@@ -29,6 +30,10 @@ public class Modifier {
 		if (data.length < 2) return null;
 				
 		// get condition
+		if (data[0].startsWith("!")) {
+			m.negated = true;
+			data[0] = data[0].substring(1);
+		}
 		m.condition = Condition.getConditionByName(data[0]);
 		if (m.condition == null) return null;
 		
@@ -66,6 +71,7 @@ public class Modifier {
 	public boolean apply(SpellCastEvent event) {
 		Player player = event.getCaster();
 		boolean check = condition.check(player);
+		if (negated) check = !check;
 		if (check == false && type == ModifierType.REQUIRED) {
 			event.setCancelled(true);
 			return false;
@@ -106,6 +112,7 @@ public class Modifier {
 	public boolean apply(ManaChangeEvent event) {
 		Player player = event.getPlayer();
 		boolean check = condition.check(player);
+		if (negated) check = !check;
 		if (check == false && type == ModifierType.REQUIRED) {
 			event.setNewAmount(event.getOldAmount());
 			return false;
@@ -139,6 +146,7 @@ public class Modifier {
 	public boolean apply(SpellTargetEvent event) {
 		Player player = event.getCaster();
 		boolean check = condition.check(player, event.getTarget());
+		if (negated) check = !check;
 		if (check == false && type == ModifierType.REQUIRED) {
 			event.setCancelled(true);
 			return false;
@@ -174,6 +182,7 @@ public class Modifier {
 	public boolean apply(SpellTargetLocationEvent event) {
 		Player player = event.getCaster();
 		boolean check = condition.check(player, event.getTargetLocation());
+		if (negated) check = !check;
 		if (check == false && type == ModifierType.REQUIRED) {
 			event.setCancelled(true);
 			return false;
@@ -198,6 +207,7 @@ public class Modifier {
 	
 	public boolean apply(MagicSpellsGenericPlayerEvent event) {
 		boolean check = condition.check(event.getPlayer());
+		if (negated) check = !check;
 		if (check == false && type == ModifierType.REQUIRED) {
 			event.setCancelled(true);
 			return false;
