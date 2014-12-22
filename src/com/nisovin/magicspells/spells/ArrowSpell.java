@@ -38,6 +38,7 @@ public class ArrowSpell extends Spell {
 	String spellNameOnHitGround;
 	Subspell spellOnHitEntity;
 	Subspell spellOnHitGround;
+	boolean useBowForce;
 	
 	public ArrowSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -45,6 +46,7 @@ public class ArrowSpell extends Spell {
 		bowName = ChatColor.translateAlternateColorCodes('&', getConfigString("bow-name", null));
 		spellNameOnHitEntity = getConfigString("spell-on-hit-entity", null);
 		spellNameOnHitGround = getConfigString("spell-on-hit-ground", null);
+		useBowForce = getConfigBoolean("use-bow-force", true);
 	}
 	
 	@Override
@@ -118,7 +120,7 @@ public class ArrowSpell extends Spell {
 				ArrowSpell spell = spells.get(bowName);
 				if (spell != null && spellbook.hasSpell(spell) && spellbook.canCast(spell)) {
 					SpellReagents reagents = spell.reagents.clone();
-					SpellCastEvent castEvent = new SpellCastEvent(spell, shooter, SpellCastState.NORMAL, 1.0F, null, cooldown, reagents, castTime);
+					SpellCastEvent castEvent = new SpellCastEvent(spell, shooter, SpellCastState.NORMAL, useBowForce ? event.getForce() : 1.0F, null, cooldown, reagents, castTime);
 					Bukkit.getPluginManager().callEvent(castEvent);
 					if (!castEvent.isCancelled()) {
 						event.getProjectile().setMetadata("MSArrowSpell", new FixedMetadataValue(MagicSpells.plugin, new ArrowSpellData(spell, castEvent.getPower(), castEvent.getReagents())));

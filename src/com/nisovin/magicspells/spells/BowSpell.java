@@ -30,6 +30,7 @@ public class BowSpell extends Spell {
 	String bowName;
 	String spellNameOnShoot;
 	Subspell spellOnShoot;
+	boolean useBowForce;
 	
 	public BowSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -37,6 +38,7 @@ public class BowSpell extends Spell {
 		thisSpell = this;
 		bowName = ChatColor.translateAlternateColorCodes('&', getConfigString("bow-name", null));
 		spellNameOnShoot = getConfigString("spell", null);
+		useBowForce = getConfigBoolean("use-bow-force", true);
 	}
 	
 	@Override
@@ -104,13 +106,13 @@ public class BowSpell extends Spell {
 				Spellbook spellbook = MagicSpells.getSpellbook(shooter);
 				BowSpell spell = spells.get(bowName);
 				if (spell != null && spellbook.hasSpell(spell) && spellbook.canCast(spell)) {
-					SpellCastEvent evt1 = new SpellCastEvent(thisSpell, shooter, SpellCastState.NORMAL, event.getForce(), null, thisSpell.cooldown, thisSpell.reagents, 0);
+					SpellCastEvent evt1 = new SpellCastEvent(thisSpell, shooter, SpellCastState.NORMAL, useBowForce ? event.getForce() : 1.0F, null, thisSpell.cooldown, thisSpell.reagents, 0);
 					Bukkit.getPluginManager().callEvent(evt1);
 					if (!evt1.isCancelled()) {
 						event.setCancelled(true);
 						event.getProjectile().remove();
-						spell.spellOnShoot.cast(shooter, event.getForce());
-						SpellCastedEvent evt2 = new SpellCastedEvent(thisSpell, shooter, SpellCastState.NORMAL, event.getForce(), null, thisSpell.cooldown, thisSpell.reagents, PostCastAction.HANDLE_NORMALLY);
+						spell.spellOnShoot.cast(shooter, evt1.getPower());
+						SpellCastedEvent evt2 = new SpellCastedEvent(thisSpell, shooter, SpellCastState.NORMAL, evt1.getPower(), null, thisSpell.cooldown, thisSpell.reagents, PostCastAction.HANDLE_NORMALLY);
 						Bukkit.getPluginManager().callEvent(evt2);
 					}
 				}
