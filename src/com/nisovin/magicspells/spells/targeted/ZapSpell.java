@@ -107,7 +107,7 @@ public class ZapSpell extends TargetedSpell implements TargetedLocationSpell {
 	
 	private boolean zap(Block target, Player player) {
 		// check for protection
-		if (checkPlugins) {
+		if (checkPlugins && player != null) {
 			BlockBreakEvent event = new BlockBreakEvent(target, player);
 			MagicSpells.plugin.getServer().getPluginManager().callEvent(event);
 			if (event.isCancelled()) {
@@ -129,9 +129,13 @@ public class ZapSpell extends TargetedSpell implements TargetedLocationSpell {
 		if (playBreakEffect) {
 			target.getWorld().playEffect(target.getLocation(), Effect.STEP_SOUND, target.getType());
 		}
-		playSpellEffects(EffectPosition.CASTER, player);
+		if (player != null) {
+			playSpellEffects(EffectPosition.CASTER, player);
+		}
 		playSpellEffects(EffectPosition.TARGET, target.getLocation());
-		playSpellEffectsTrail(player.getLocation(), target.getLocation());
+		if (player != null) {
+			playSpellEffectsTrail(player.getLocation(), target.getLocation());
+		}
 		
 		// remove block
 		target.setType(Material.AIR);
@@ -158,6 +162,11 @@ public class ZapSpell extends TargetedSpell implements TargetedLocationSpell {
 
 	@Override
 	public boolean castAtLocation(Location target, float power) {
+		Block block = target.getBlock();
+		if (canZap(block)) {
+			zap(block, null);
+			return true;
+		}
 		return false;
 	}
 	
