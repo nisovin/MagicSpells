@@ -4,13 +4,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.ItemSpawnEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.MagicSpells;
@@ -28,6 +37,8 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 
 	Random rand = new Random();
 	
+	static ExpirationHandler expirationHandler = null;
+	
 	private boolean addToInventory;
 	private boolean addToEnderChest;
 	private boolean dropIfInventoryFull;
@@ -37,6 +48,8 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 	private boolean autoEquip;
 	private boolean stackExisting;
 	private boolean ignoreMaxStackSize;
+	private boolean allowParameters;
+	private long expiration;
 	private int requiredSlot;
 	private int preferredSlot;
 	List<String> itemList;
@@ -58,6 +71,8 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 		autoEquip = getConfigBoolean("auto-equip", false);
 		stackExisting = getConfigBoolean("stack-existing", true);
 		ignoreMaxStackSize = getConfigBoolean("ignore-max-stack-size", false);
+		allowParameters = getConfigBoolean("allow-parameters", true);
+		expiration = getConfigLong("expiration", 0L);
 		requiredSlot = getConfigInt("required-slot", -1);
 		preferredSlot = getConfigInt("preferred-slot", -1);
 		itemList = getConfigStringList("items", null);
@@ -68,6 +83,10 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 	public void initialize() {
 		super.initialize();
 
+		if (expiration > 0 && expirationHandler == null) {
+			expirationHandler = new ExpirationHandler();
+		}
+		
 		if (itemList != null && itemList.size() > 0) {
 			itemTypes = new ItemStack[itemList.size()];
 			itemMinQuantities = new int[itemList.size()];
@@ -227,6 +246,9 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 		if (quant > 0) {
 			ItemStack item = itemTypes[i].clone();
 			item.setAmount(quant);
+			if (expiration > 0) {
+				expirationHandler.addExpiresLine(item, expiration);
+			}
 			items.add(item);
 		}
 	}
@@ -276,6 +298,125 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 		} else {
 			return false;
 		}		
+	}
+	
+	@Override
+	public void turnOff() {
+		expirationHandler = null;
+	}
+	
+	class ExpirationHandler implements Listener {
+		private final String expPrefix =  ChatColor.BLACK.toString() + ChatColor.MAGIC.toString() + "MSExp:";
+		
+		public ExpirationHandler() {
+			MagicSpells.registerEvents(this);
+		}
+		
+		public void addExpiresLine(ItemStack item, long expireHours) {
+			ItemMeta meta = item.getItemMeta();
+			List<String> lore;
+			if (meta.hasLore()) {
+				lore = new ArrayList<String>(meta.getLore());
+			} else {
+				lore = new ArrayList<String>();
+			}
+			long expiresAt = System.currentTimeMillis() + (expireHours * 60 * 60 * 1000L);
+			lore.add(ChatColor.GRAY + getExpiresText(expiresAt));
+			lore.add(expPrefix + expiresAt);
+			meta.setLore(lore);
+			item.setItemMeta(meta);
+		}
+		
+		@EventHandler
+		void onJoin(PlayerJoinEvent event) {
+			processInventory(event.getPlayer().getInventory());
+		}
+		
+		@EventHandler
+		void onInvOpen(InventoryOpenEvent event) {
+			processInventory(event.getInventory());
+		}
+		
+		@EventHandler
+		void onPickup(PlayerDropItemEvent event) {
+			processItemDrop(event.getItemDrop());
+			if (event.getItemDrop().isDead()) {
+				event.setCancelled(true);
+			}
+		}
+		
+		@EventHandler
+		void onDrop(PlayerDropItemEvent event) {
+			processItemDrop(event.getItemDrop());
+		}
+		
+		@EventHandler
+		void onItemSpawn(ItemSpawnEvent event) {
+			processItemDrop(event.getEntity());
+		}
+		
+		private void processInventory(Inventory inv) {
+			ItemStack[] contents = inv.getContents();
+			for (int i = 0; i < contents.length; i++) {
+				ExpirationResult result = updateExpiresLineIfNeeded(contents[i]);
+				if (result == ExpirationResult.EXPIRED) {
+					contents[i] = null;
+				}
+			}
+			inv.setContents(contents);
+		}
+		
+		private void processItemDrop(Item drop) {
+			ItemStack item = drop.getItemStack();
+			ExpirationResult result = updateExpiresLineIfNeeded(item);
+			if (result == ExpirationResult.UPDATE) {
+				drop.setItemStack(item);
+			} else if (result == ExpirationResult.EXPIRED) {
+				drop.remove();
+			}
+		}
+		
+		private ExpirationResult updateExpiresLineIfNeeded(ItemStack item) {
+			if (item == null) return ExpirationResult.NO_UPDATE;
+			if (!item.hasItemMeta()) return ExpirationResult.NO_UPDATE;
+			ItemMeta meta = item.getItemMeta();
+			if (!meta.hasLore()) return ExpirationResult.NO_UPDATE;
+			ArrayList<String> lore = new ArrayList<String>(meta.getLore());
+			if (lore.size() < 2) return ExpirationResult.NO_UPDATE;
+			String lastLine = lore.get(lore.size() - 1);
+			if (!lastLine.startsWith(expPrefix)) return ExpirationResult.NO_UPDATE;
+			long expiresAt = Long.parseLong(lastLine.replace(expPrefix, ""));
+			if (expiresAt < System.currentTimeMillis()) {
+				return ExpirationResult.EXPIRED;
+			} else {
+				lore.set(lore.size() - 2, ChatColor.GRAY + getExpiresText(expiresAt));
+				meta.setLore(lore);
+				item.setItemMeta(meta);
+				return ExpirationResult.UPDATE;
+			}
+		}
+	
+		private String getExpiresText(long expiresAt) {
+			if (expiresAt < System.currentTimeMillis()) {
+				return "Expired";
+			} else {
+				double hours = (expiresAt - System.currentTimeMillis()) / 3600000D;
+				if (hours / 24 >= 15) {
+					return "Expires in " + ((long)hours / 168L) + " weeks";
+				} else if (hours / 24 >= 3) {
+					return "Expires in " + ((long)hours / 24L) + " days";
+				} else if (hours >= 2) {
+					return "Expires in " + (long)hours + " hours";
+				} else {
+					return "Expires in 1 hour";
+				}
+			}
+		}		
+		
+	}
+	
+	private enum ExpirationResult {
+		NO_UPDATE, UPDATE, EXPIRED
 	}
 	
 

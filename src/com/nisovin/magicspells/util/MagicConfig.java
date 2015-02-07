@@ -166,6 +166,10 @@ public class MagicConfig {
 		return mainConfig.getInt(path, def);
 	}
 	
+	public long getLong(String path, long def) {
+		return mainConfig.getLong(path, def);
+	}
+	
 	public double getDouble(String path, double def) {
 		if (mainConfig.contains(path) && mainConfig.isInt(path)) {
 			return mainConfig.getInt(path);

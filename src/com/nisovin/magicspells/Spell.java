@@ -608,6 +608,18 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	}
 	
 	/**
+	 * Access a long config value for this spell.
+	 * 
+	 * @param key The key of the config value
+	 * @param defaultValue The value to return if it does not exist in the config
+	 * 
+	 * @return The config value, or defaultValue if it does not exist
+	 */
+	protected long getConfigLong(String key, long defaultValue) {
+		return config.getLong("spells." + internalName + "." + key, defaultValue);
+	}
+	
+	/**
 	 * Access a boolean config value for this spell.
 	 * 
 	 * @param key The key of the config value
