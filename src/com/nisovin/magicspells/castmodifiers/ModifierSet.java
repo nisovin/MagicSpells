@@ -52,7 +52,7 @@ public class ModifierSet {
 		for (Modifier modifier : modifiers) {
 			boolean cont = modifier.apply(event);
 			if (!cont) {
-				MagicSpells.sendMessage(event.getCaster(), event.getSpell().getStrModifierFailed());
+				MagicSpells.sendMessage(event.getCaster(), modifier.strModifierFailed != null ? modifier.strModifierFailed : event.getSpell().getStrModifierFailed());
 				break;
 			}
 		}
