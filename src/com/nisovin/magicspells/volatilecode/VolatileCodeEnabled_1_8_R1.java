@@ -359,6 +359,18 @@ public class VolatileCodeEnabled_1_8_R1 implements VolatileCodeHandle {
 	public void playParticleEffect(Location location, String name, float spreadHoriz, float spreadVert, float speed, int count, int radius, float yOffset) {
 		PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles();
 		EnumParticle particle = particleMap.get(name);
+		int[] data = null;
+		if (name.contains("_")) {
+			String[] split = name.split("_");
+			name = split[0] + "_";
+			if (split.length > 1) {
+				String[] split2 = split[1].split(":");
+				data = new int[split2.length];
+				for (int i = 0; i < data.length; i++) {
+					data[i] = Integer.parseInt(split2[i]);
+				}
+			}
+		}
 		if (particle == null) {
 			MagicSpells.error("Invalid particle: " + name);
 			return;
@@ -374,7 +386,9 @@ public class VolatileCodeEnabled_1_8_R1 implements VolatileCodeHandle {
 			packet63Fields[7].setFloat(packet, speed);
 			packet63Fields[8].setInt(packet, count);
 			packet63Fields[9].setBoolean(packet, radius >= 200);
-			
+			if (data != null) {
+				packet63Fields[10].set(packet,data);
+			}
 			int rSq = radius * radius;
 			
 			for (Player player : location.getWorld().getPlayers()) {
