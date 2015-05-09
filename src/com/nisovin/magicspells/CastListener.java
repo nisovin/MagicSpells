@@ -169,16 +169,15 @@ public class CastListener implements Listener {
 		}
 	}
 	
-	private void castSpell(Player player) {
-		if (noCastUntil.containsKey(player.getName()) && noCastUntil.get(player.getName()) > System.currentTimeMillis()) return;
-		
+	private void castSpell(Player player) {		
 		ItemStack inHand = player.getItemInHand();
 		if (!plugin.allowCastWithFist && (inHand == null || inHand.getType() == Material.AIR)) return;
 		
 		Spell spell = MagicSpells.getSpellbook(player).getActiveSpell(inHand);
-		if (spell != null && spell.canCastWithItem()) {
+		if (spell != null && spell.canCastWithItem()) {			
 			// first check global cooldown
 			if (plugin.globalCooldown > 0 && !spell.ignoreGlobalCooldown) {
+				if (noCastUntil.containsKey(player.getName()) && noCastUntil.get(player.getName()) > System.currentTimeMillis()) return;
 				noCastUntil.put(player.getName(), System.currentTimeMillis() + plugin.globalCooldown);
 			}
 			// cast spell
