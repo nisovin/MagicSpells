@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import org.bukkit.Bukkit;
@@ -49,6 +50,11 @@ import com.nisovin.magicspells.materials.MagicMaterial;
 public class Util {
 
 	public static Map<String, ItemStack> predefinedItems = new HashMap<String, ItemStack>();
+	
+	private static Random random = new Random();
+	public static int getRandomInt(int bound) {
+		return random.nextInt(bound);
+	}
 	
 	public static ItemStack getItemStackFromString(String string) {
 		try {
