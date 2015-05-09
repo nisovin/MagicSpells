@@ -10,12 +10,17 @@ import org.bukkit.Material;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -48,8 +53,8 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 	private boolean autoEquip;
 	private boolean stackExisting;
 	private boolean ignoreMaxStackSize;
-	private boolean allowParameters;
-	private long expiration;
+	//private boolean allowParameters;
+	private double expiration;
 	private int requiredSlot;
 	private int preferredSlot;
 	List<String> itemList;
@@ -71,8 +76,8 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 		autoEquip = getConfigBoolean("auto-equip", false);
 		stackExisting = getConfigBoolean("stack-existing", true);
 		ignoreMaxStackSize = getConfigBoolean("ignore-max-stack-size", false);
-		allowParameters = getConfigBoolean("allow-parameters", true);
-		expiration = getConfigLong("expiration", 0L);
+		//allowParameters = getConfigBoolean("allow-parameters", true);
+		expiration = getConfigDouble("expiration", 0L);
 		requiredSlot = getConfigInt("required-slot", -1);
 		preferredSlot = getConfigInt("preferred-slot", -1);
 		itemList = getConfigStringList("items", null);
@@ -312,7 +317,7 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 			MagicSpells.registerEvents(this);
 		}
 		
-		public void addExpiresLine(ItemStack item, long expireHours) {
+		public void addExpiresLine(ItemStack item, double expireHours) {
 			ItemMeta meta = item.getItemMeta();
 			List<String> lore;
 			if (meta.hasLore()) {
@@ -320,60 +325,83 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 			} else {
 				lore = new ArrayList<String>();
 			}
-			long expiresAt = System.currentTimeMillis() + (expireHours * 60 * 60 * 1000L);
-			lore.add(ChatColor.GRAY + getExpiresText(expiresAt));
+			long expiresAt = System.currentTimeMillis() + (long)(expireHours * 60L * 60L * 1000L);
+			lore.add(getExpiresText(expiresAt));
 			lore.add(expPrefix + expiresAt);
 			meta.setLore(lore);
 			item.setItemMeta(meta);
 		}
 		
-		@EventHandler
+		@EventHandler(priority = EventPriority.LOWEST)
 		void onJoin(PlayerJoinEvent event) {
-			processInventory(event.getPlayer().getInventory());
+			PlayerInventory inv = event.getPlayer().getInventory();
+			processInventory(inv);
+			ItemStack[] armor = inv.getArmorContents();
+			processInventoryContents(armor);
+			inv.setArmorContents(armor);
 		}
 		
-		@EventHandler
+		@EventHandler(priority = EventPriority.LOWEST)
 		void onInvOpen(InventoryOpenEvent event) {
 			processInventory(event.getInventory());
 		}
 		
-		@EventHandler
-		void onPickup(PlayerDropItemEvent event) {
-			processItemDrop(event.getItemDrop());
-			if (event.getItemDrop().isDead()) {
+		@EventHandler(priority = EventPriority.LOWEST)
+		void onRightClick(PlayerInteractEvent event) {
+			if (event.hasItem()) {
+				ItemStack item = event.getPlayer().getItemInHand();
+				ExpirationResult result = updateExpiresLineIfNeeded(item);
+				if (result == ExpirationResult.EXPIRED) {
+					
+					event.getPlayer().setItemInHand(null);
+					event.setCancelled(true);
+				}
+			}
+		}
+		
+		@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+		void onPickup(PlayerPickupItemEvent event) {
+			processItemDrop(event.getItem());
+			if (event.getItem().isDead()) {
 				event.setCancelled(true);
 			}
 		}
 		
-		@EventHandler
+		@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 		void onDrop(PlayerDropItemEvent event) {
 			processItemDrop(event.getItemDrop());
 		}
 		
-		@EventHandler
+		@EventHandler(priority = EventPriority.LOWEST)
 		void onItemSpawn(ItemSpawnEvent event) {
 			processItemDrop(event.getEntity());
 		}
 		
 		private void processInventory(Inventory inv) {
 			ItemStack[] contents = inv.getContents();
+			processInventoryContents(contents);
+			inv.setContents(contents);
+		}
+		
+		private void processInventoryContents(ItemStack[] contents) {
 			for (int i = 0; i < contents.length; i++) {
 				ExpirationResult result = updateExpiresLineIfNeeded(contents[i]);
 				if (result == ExpirationResult.EXPIRED) {
 					contents[i] = null;
 				}
 			}
-			inv.setContents(contents);
 		}
 		
-		private void processItemDrop(Item drop) {
+		private boolean processItemDrop(Item drop) {
 			ItemStack item = drop.getItemStack();
 			ExpirationResult result = updateExpiresLineIfNeeded(item);
 			if (result == ExpirationResult.UPDATE) {
 				drop.setItemStack(item);
 			} else if (result == ExpirationResult.EXPIRED) {
 				drop.remove();
+				return true;
 			}
+			return false;
 		}
 		
 		private ExpirationResult updateExpiresLineIfNeeded(ItemStack item) {
@@ -389,7 +417,7 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 			if (expiresAt < System.currentTimeMillis()) {
 				return ExpirationResult.EXPIRED;
 			} else {
-				lore.set(lore.size() - 2, ChatColor.GRAY + getExpiresText(expiresAt));
+				lore.set(lore.size() - 2, getExpiresText(expiresAt));
 				meta.setLore(lore);
 				item.setItemMeta(meta);
 				return ExpirationResult.UPDATE;
@@ -398,17 +426,17 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 	
 		private String getExpiresText(long expiresAt) {
 			if (expiresAt < System.currentTimeMillis()) {
-				return "Expired";
+				return ChatColor.GRAY + "Expired";
 			} else {
 				double hours = (expiresAt - System.currentTimeMillis()) / 3600000D;
 				if (hours / 24 >= 15) {
-					return "Expires in " + ((long)hours / 168L) + " weeks";
+					return ChatColor.GRAY + "Expires in " + ChatColor.WHITE + ((long)hours / 168L) + ChatColor.GRAY + " weeks";
 				} else if (hours / 24 >= 3) {
-					return "Expires in " + ((long)hours / 24L) + " days";
+					return ChatColor.GRAY + "Expires in " + ChatColor.WHITE + ((long)hours / 24L) + ChatColor.GRAY + " days";
 				} else if (hours >= 2) {
-					return "Expires in " + (long)hours + " hours";
+					return ChatColor.GRAY + "Expires in " + ChatColor.WHITE + (long)hours + ChatColor.GRAY + " hours";
 				} else {
-					return "Expires in 1 hour";
+					return ChatColor.GRAY + "Expires in " + ChatColor.WHITE + "1" + ChatColor.GRAY + " hour";
 				}
 			}
 		}		
