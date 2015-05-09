@@ -30,7 +30,7 @@ public class HasItemLessThanCondition extends Condition {
 	public boolean check(Player player) {
 		int c = 0;
 		for (ItemStack i : player.getInventory().getContents()) {
-			if (i.isSimilar(item)) {
+			if (i != null && i.isSimilar(item)) {
 				c += i.getAmount();
 			}
 		}

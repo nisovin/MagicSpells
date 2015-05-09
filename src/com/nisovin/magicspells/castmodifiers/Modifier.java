@@ -27,7 +27,7 @@ public class Modifier {
 	
 	public static Modifier factory(String s) {
 		Modifier m = new Modifier();
-		String[] s1 = s.split("$$");
+		String[] s1 = s.split("\\$\\$");
 		String[] data = Util.splitParams(s1[0].trim());
 		if (data.length < 2) return null;
 				

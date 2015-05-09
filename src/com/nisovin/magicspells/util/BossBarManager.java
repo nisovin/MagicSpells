@@ -53,7 +53,13 @@ public class BossBarManager implements Listener {
 	}
 	
 	private void showBar(Player player) {
-		MagicSpells.getVolatileCodeHandler().setBossBar(player, bossBarTitles.get(player.getName()), bossBarValues.get(player.getName()));
+		try {
+			if (player != null && player.isValid()) {
+				MagicSpells.getVolatileCodeHandler().setBossBar(player, bossBarTitles.get(player.getName()), bossBarValues.get(player.getName()));
+			}
+		} catch (Exception e) {
+			System.out.println("BOSS BAR EXCEPTION: " + e.getMessage());
+		}
 	}
 	
 	private void updateBar(Player player, String title, double val) {

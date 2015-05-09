@@ -493,9 +493,11 @@ public class DisguiseManager_1_8_R1 extends DisguiseManager {
 				}
 			} else if (packet instanceof PacketPlayOutEntityMetadata) {
 				int entId = refPacketEntityMetadata.getInt(packet, "a");
-				DisguiseSpell.Disguise disguise = disguisedEntityIds.get(entId);
-				if (disguise != null && disguise.getEntityType() != EntityType.PLAYER) {
-					event.setCancelled(true);
+				if (event.getPlayer().getEntityId() != entId) {
+					DisguiseSpell.Disguise disguise = disguisedEntityIds.get(entId);
+					if (disguise != null && disguise.getEntityType() != EntityType.PLAYER) {
+						event.setCancelled(true);
+					}
 				}
 			} else if (packet instanceof PacketPlayOutRelEntityMoveLook) {
 				int entId = refPacketRelEntityMove.getInt(packet, "a");
@@ -622,6 +624,8 @@ public class DisguiseManager_1_8_R1 extends DisguiseManager {
 						broadcastPacket(disguised, PacketType.Play.Server.NAMED_ENTITY_SPAWN, packet);
 					} else if (packet instanceof PacketPlayOutPlayerInfo) {
 						broadcastPacket(disguised, PacketType.Play.Server.PLAYER_INFO, packet);
+					} else if (packet instanceof PacketPlayOutSpawnEntityLiving) {
+						broadcastPacket(disguised, PacketType.Play.Server.SPAWN_ENTITY_LIVING, packet);
 					} else {
 						tracker.a(((CraftPlayer)disguised).getHandle(), packet);
 					}

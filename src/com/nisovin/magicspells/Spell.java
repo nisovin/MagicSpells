@@ -655,6 +655,18 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		return (float)config.getDouble("spells." + internalName + "." + key, defaultValue);
 	}
 	
+	/**
+	 * Access a double config value for this spell.
+	 * 
+	 * @param key The key of the config value
+	 * @param defaultValue The value to return if it does not exist in the config
+	 * 
+	 * @return The config value, or defaultValue if it does not exist
+	 */
+	protected double getConfigDouble(String key, double defaultValue) {
+		return config.getDouble("spells." + internalName + "." + key, defaultValue);
+	}
+	
 	protected List<Integer> getConfigIntList(String key, List<Integer> defaultValue) {
 		return config.getIntList("spells." + internalName + "." + key, defaultValue);
 	}
