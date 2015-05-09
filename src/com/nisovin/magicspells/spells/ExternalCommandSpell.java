@@ -141,7 +141,7 @@ public class ExternalCommandSpell extends TargetedSpell implements TargetedEntit
 
 				Conversation convo = null;
 				if (sender != null && sender instanceof Player) {
-					if (messageBlocker != null) {
+					if (blockChatOutput && messageBlocker != null) {
 						messageBlocker.addPlayer((Player)sender);
 					} else if (convoFac != null) {
 						convo = convoFac.buildConversation((Player)sender);
@@ -164,7 +164,7 @@ public class ExternalCommandSpell extends TargetedSpell implements TargetedEntit
 						Bukkit.dispatchCommand(actualSender, comm);
 					}
 				}
-				if (messageBlocker != null && sender != null && sender instanceof Player) {
+				if (blockChatOutput && messageBlocker != null && sender != null && sender instanceof Player) {
 					messageBlocker.removePlayer((Player)sender);
 				} else if (convo != null) {
 					convo.abandon();
@@ -308,7 +308,7 @@ public class ExternalCommandSpell extends TargetedSpell implements TargetedEntit
 			try {
 				Conversation convo = null;
 				if (sender != null && sender instanceof Player) {
-					if (messageBlocker != null) {
+					if (blockChatOutput && messageBlocker != null) {
 						messageBlocker.addPlayer((Player)sender);
 					} else if (convoFac != null) {
 						convo = convoFac.buildConversation((Player)sender);
@@ -326,7 +326,7 @@ public class ExternalCommandSpell extends TargetedSpell implements TargetedEntit
 						Bukkit.dispatchCommand(actualSender, comm);
 					}
 				}
-				if (messageBlocker != null && sender != null && sender instanceof Player) {
+				if (blockChatOutput && messageBlocker != null && sender != null && sender instanceof Player) {
 					messageBlocker.removePlayer((Player)sender);
 				} else if (convo != null) {
 					convo.abandon();
