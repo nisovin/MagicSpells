@@ -6,6 +6,8 @@ import java.util.Map;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -18,17 +20,19 @@ import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
 import com.nisovin.magicspells.util.MagicConfig;
+import com.nisovin.magicspells.util.Util;
 
 public class FlightPathSpell extends InstantSpell {
+
+	static FlightHandler flightHandler;
 
 	float targetX;
 	float targetY;
 	float targetZ;
 	int cruisingAltitude;
 	float speed;
+	EntityType mount;
 	
-	static FlightHandler flightHandler;
-
 	public FlightPathSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
@@ -37,6 +41,7 @@ public class FlightPathSpell extends InstantSpell {
 		targetZ = getConfigFloat("z", 0);
 		cruisingAltitude = getConfigInt("cruising-altitude", 150);
 		speed = getConfigFloat("speed", 1.5f);
+		mount = Util.getEntityType(getConfigString("mount", ""));
 		
 		if (flightHandler == null) {
 			flightHandler = new FlightHandler();
@@ -52,7 +57,7 @@ public class FlightPathSpell extends InstantSpell {
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
-			ActiveFlight flight = new ActiveFlight(player, this);
+			ActiveFlight flight = new ActiveFlight(player, mount, this);
 			flightHandler.addFlight(flight);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
@@ -139,6 +144,9 @@ public class FlightPathSpell extends InstantSpell {
 	
 	class ActiveFlight {
 		Player player;
+		EntityType mountType;
+		Entity mount;
+		Entity entityToPush;
 		FlightPathSpell spell;
 		FlightState state;
 		boolean wasFlyingAllowed;
@@ -147,8 +155,9 @@ public class FlightPathSpell extends InstantSpell {
 		Location lastLocation;
 		int sameLocCount = 0;
 		
-		public ActiveFlight(Player player, FlightPathSpell spell) {
+		public ActiveFlight(Player player, EntityType mountType, FlightPathSpell spell) {
 			this.player = player;
+			this.mountType = mountType;
 			this.spell = spell;
 			this.state = FlightState.TAKE_OFF;
 			this.wasFlyingAllowed = player.getAllowFlight();
@@ -158,8 +167,17 @@ public class FlightPathSpell extends InstantSpell {
 		
 		void start() {
 			player.setAllowFlight(true);
-			player.setFlying(true);
 			spell.playSpellEffects(EffectPosition.CASTER, player);
+			if (mountType == null) {
+				entityToPush = player;
+			} else {
+				mount = player.getWorld().spawnEntity(player.getLocation(), mountType);
+				entityToPush = mount;
+				if (player.getVehicle() != null) {
+					player.getVehicle().eject();
+				}
+				mount.setPassenger(player);
+			}
 		}
 		
 		void fly() {
@@ -179,35 +197,35 @@ public class FlightPathSpell extends InstantSpell {
 			// do flight
 			if (state == FlightState.TAKE_OFF) {
 				player.setFlying(false);
-				double y = player.getLocation().getY();
+				double y = entityToPush.getLocation().getY();
 				if (y >= cruisingAltitude) {
-					player.setVelocity(new Vector(0, 0, 0));
+					entityToPush.setVelocity(new Vector(0, 0, 0));
 					state = FlightState.CRUISING;
 				} else {
-					player.setVelocity(new Vector(0, 2, 0));
+					entityToPush.setVelocity(new Vector(0, 2, 0));
 				}
 			} else if (state == FlightState.CRUISING) {
 				player.setFlying(true);
-				double x = player.getLocation().getX();
-				double z = player.getLocation().getZ();
+				double x = entityToPush.getLocation().getX();
+				double z = entityToPush.getLocation().getZ();
 				if ((targetX - 1 <= x && x <= targetX + 1) && (targetZ - 1 <= z && z <= targetZ + 1)) {
-					player.setVelocity(new Vector(0, 0, 0));
+					entityToPush.setVelocity(new Vector(0, 0, 0));
 					state = FlightState.LANDING;
 				} else {
 					Vector t = new Vector(targetX, cruisingAltitude, targetZ);
-					Vector v = t.subtract(player.getLocation().toVector());
+					Vector v = t.subtract(entityToPush.getLocation().toVector());
 					double len = v.lengthSquared();
 					v.normalize().multiply(len > 25 ? speed : 0.3);
-					player.setVelocity(v);
+					entityToPush.setVelocity(v);
 				}
 			} else if (state == FlightState.LANDING) {
 				player.setFlying(false);
-				Location l = player.getLocation();
+				Location l = entityToPush.getLocation();
 				if (l.getBlock().getType() != Material.AIR || l.subtract(0, 1, 0).getBlock().getType() != Material.AIR || l.subtract(0, 2, 0).getBlock().getType() != Material.AIR) {
 					player.setFallDistance(0f);
 					cancel();
 				} else {
-					player.setVelocity(new Vector(0, -1, 0));
+					entityToPush.setVelocity(new Vector(0, -1, 0));
 					player.setFallDistance(0f);
 				}
 			}
@@ -220,7 +238,16 @@ public class FlightPathSpell extends InstantSpell {
 				state = FlightState.DONE;
 				player.setFlying(wasFlying);
 				player.setAllowFlight(wasFlyingAllowed);
+				if (mount != null) {
+					mount.eject();
+					mount.remove();
+				}
 				spell.playSpellEffects(EffectPosition.DELAYED, player);
+				
+				player = null;
+				mount = null;
+				entityToPush = null;
+				spell = null;
 			}
 		}
 		
