@@ -38,10 +38,13 @@ public class VinesSpell extends TargetedSpell {
 			if (target == null || target.size() != 2) {
 				return noTarget(player);
 			}
-			if (target.get(0).getType() != Material.AIR || !target.get(0).getType().isSolid()) {
+			if (target.get(0).getType() != Material.AIR || !target.get(1).getType().isSolid()) {
 				return noTarget(player);
 			}
-			growVines(player, target.get(0), target.get(1));
+			boolean success = growVines(player, target.get(0), target.get(1));
+			if (!success) {
+				return noTarget(player);
+			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}
@@ -57,12 +60,12 @@ public class VinesSpell extends TargetedSpell {
 		} else {
 			return false;
 		}
-		TreeSet<VineBlock> blocks = new TreeSet<VineBlock>();		
-				
+		TreeSet<VineBlock> blocks = new TreeSet<VineBlock>();
+
 		blocks.add(new VineBlock(air, air));
 		growVinesVert(blocks, air, solid, air);
 		if (width > 1) {
-			for (int i = 1; i < width / 2; i++) {
+			for (int i = 1; i <= width / 2; i++) {
 				Block a = air.getRelative(x * i, 0, z * i);
 				Block s = solid.getRelative(x * i, 0, z * i);
 				if (a.getType() == Material.AIR && s.getType().isSolid()) {
@@ -72,7 +75,7 @@ public class VinesSpell extends TargetedSpell {
 					break;
 				}
 			}
-			for (int i = 1; i < width / 2; i++) {
+			for (int i = 1; i <= width / 2; i++) {
 				Block a = air.getRelative(x * -i, 0, z * -i);
 				Block s = solid.getRelative(x * -i, 0, z * -i);
 				if (a.getType() == Material.AIR && s.getType().isSolid()) {
@@ -82,6 +85,10 @@ public class VinesSpell extends TargetedSpell {
 					break;
 				}
 			}
+		}
+		
+		if (blocks.size() == 0) {
+			return false;
 		}
 		
 		if (animateInterval <= 0) {
@@ -95,19 +102,21 @@ public class VinesSpell extends TargetedSpell {
 	}
 	
 	private void setBlockToVine(Block block, BlockFace face) {
-		BlockState state = block.getState();
-		state.setType(Material.VINE);
-		if (state.getData() instanceof Vine) {
-			Vine data = (Vine)state.getData();
-			data.putOnFace(face);
-			state.setData(data);
+		if (block.getType() == Material.AIR) {
+			BlockState state = block.getState();
+			state.setType(Material.VINE);
+			if (state.getData() instanceof Vine) {
+				Vine data = (Vine)state.getData();
+				data.putOnFace(face);
+				state.setData(data);
+			}
+			state.update(true, false);
 		}
-		state.update(true, false);		
 	}
 	
 	private void growVinesVert(Set<VineBlock> blocks, Block air, Block solid, Block center) {
 		Block b;
-		for (int i = 0; i < up; i++) {
+		for (int i = 1; i <= up; i++) {
 			b = air.getRelative(0, i, 0);
 			if (b.getType() == Material.AIR && solid.getRelative(0, i, 0).getType().isSolid()) {
 				blocks.add(new VineBlock(b, center));
@@ -115,8 +124,8 @@ public class VinesSpell extends TargetedSpell {
 				break;
 			}
 		}
-		for (int i = 0; i < down; i++) {
-			b = air.getRelative(0, i, 0);
+		for (int i = 1; i <= down; i++) {
+			b = air.getRelative(0, -i, 0);
 			if (b.getType() == Material.AIR && solid.getRelative(0, -i, 0).getType().isSolid()) {
 				blocks.add(new VineBlock(b, center));
 			} else {
@@ -137,13 +146,14 @@ public class VinesSpell extends TargetedSpell {
 		@Override
 		public int compareTo(VineBlock o) {
 			if (o.distanceSquared < this.distanceSquared) {
-				return -1;
-			} else if (o.distanceSquared > this.distanceSquared) {
 				return 1;
+			} else if (o.distanceSquared > this.distanceSquared) {
+				return -1;
 			} else {
-				return 0;
+				return o.block.getLocation().toString().compareTo(this.block.getLocation().toString());
 			}
 		}
+		
 	}
 	
 	class VineAnimation extends SpellAnimation {
@@ -166,6 +176,7 @@ public class VinesSpell extends TargetedSpell {
 				this.stop();
 			}
 		}
+		
 	}
 	
 }
