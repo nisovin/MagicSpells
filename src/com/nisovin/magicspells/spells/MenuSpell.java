@@ -15,6 +15,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
@@ -228,7 +229,7 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 	
 	@EventHandler
 	public void onInvClick(InventoryClickEvent event) {
-		if (event.getInventory().getTitle().equals(title)) {
+		if (event.getInventory().getTitle().equals(title) && event.getClick() == ClickType.LEFT) {
 			event.setCancelled(true);
 			final Player player = (Player)event.getWhoClicked();
 			
