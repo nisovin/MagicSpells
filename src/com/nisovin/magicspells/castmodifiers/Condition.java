@@ -37,6 +37,7 @@ public abstract class Condition {
 	}
 	
 	static {
+		conditions.put("disguised", DisguisedCondition.class);
 		conditions.put("day", DayCondition.class);
 		conditions.put("night", NightCondition.class);
 		conditions.put("time", TimeCondition.class);
