@@ -192,13 +192,23 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 				}
 				if (!added && addToInventory) {
 					if (requiredSlot >= 0) {
+						ItemStack old = inv.getItem(requiredSlot);
+						if (old != null && old.isSimilar(item)) {
+							item.setAmount(item.getAmount() + old.getAmount());
+						}
 						inv.setItem(requiredSlot, item);
 						added = true;
+						updateInv = true;
 					} else if (preferredSlot >= 0 && inv.getItem(preferredSlot) == null) {
 						inv.setItem(preferredSlot, item);
 						added = true;
 						updateInv = true;
-					} else {
+					} else if (preferredSlot >= 0 && inv.getItem(preferredSlot).isSimilar(item) && inv.getItem(preferredSlot).getAmount() + item.getAmount() < item.getType().getMaxStackSize()) {
+						item.setAmount(item.getAmount() + inv.getItem(preferredSlot).getAmount());
+						inv.setItem(preferredSlot, item);
+						added = true;
+						updateInv = true;
+					} else if (!added) {
 						added = Util.addToInventory(inv, item, stackExisting, ignoreMaxStackSize);
 						if (added) updateInv = true;
 					}

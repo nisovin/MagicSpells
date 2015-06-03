@@ -5,6 +5,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Horse;
@@ -12,6 +13,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.ItemStack;
 import org.spigotmc.event.entity.EntityDismountEvent;
 
 import com.nisovin.magicspells.spelleffects.EffectPosition;
@@ -30,6 +32,8 @@ public class SteedSpell extends InstantSpell {
 	Horse.Style style = null;
 	Horse.Variant variant = null;
 	
+	ItemStack armor;
+	
 	String strAlreadyMounted;
 	
 	public SteedSpell(MagicConfig config, String spellName) {
@@ -40,6 +44,7 @@ public class SteedSpell extends InstantSpell {
 			String c = getConfigString("color", null);
 			String s = getConfigString("style", null);
 			String v = getConfigString("variant", null);
+			String a = getConfigString("armor", null);
 			if (c != null) {
 				for (Horse.Color h : Horse.Color.values()) {
 					if (h.name().equalsIgnoreCase(c)) {
@@ -47,18 +52,25 @@ public class SteedSpell extends InstantSpell {
 						break;
 					}
 				}
+			}
+			if (s != null) {
 				for (Horse.Style h : Horse.Style.values()) {
 					if (h.name().equalsIgnoreCase(s)) {
 						style = h;
 						break;
 					}
 				}
+			}
+			if (v != null) {
 				for (Horse.Variant h : Horse.Variant.values()) {
 					if (h.name().equalsIgnoreCase(v)) {
 						variant = h;
 						break;
 					}
 				}
+			}
+			if (a != null) {
+				armor = Util.getItemStackFromString(a);
 			}
 		}
 		
@@ -74,6 +86,9 @@ public class SteedSpell extends InstantSpell {
 			}
 			Entity entity = player.getWorld().spawnEntity(player.getLocation(), type);
 			if (type == EntityType.HORSE) {
+				((Horse)entity).setTamed(true);
+				((Horse)entity).setOwner(player);
+				((Horse)entity).setJumpStrength(2d);
 				if (color != null) {
 					((Horse)entity).setColor(color);
 				} else {
@@ -89,9 +104,16 @@ public class SteedSpell extends InstantSpell {
 				} else {
 					((Horse)entity).setVariant(Horse.Variant.values()[random.nextInt(Horse.Variant.values().length)]);
 				}
+				((Horse)entity).setTamed(true);
+				((Horse)entity).setOwner(player);
+				((Horse)entity).getInventory().setSaddle(new ItemStack(Material.SADDLE));
+				if (armor != null) {
+					((Horse)entity).getInventory().setArmor(armor);
+				}
 			}
 			entity.setPassenger(player);
 			playSpellEffects(EffectPosition.CASTER, player);
+			mounted.add(player.getName());
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}

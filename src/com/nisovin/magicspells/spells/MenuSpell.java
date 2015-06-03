@@ -229,49 +229,50 @@ public class MenuSpell extends TargetedSpell implements TargetedEntitySpell, Tar
 	
 	@EventHandler
 	public void onInvClick(InventoryClickEvent event) {
-		if (event.getInventory().getTitle().equals(title) && event.getClick() == ClickType.LEFT) {
-			event.setCancelled(true);
-			final Player player = (Player)event.getWhoClicked();
-			
-			boolean close = true;
-			
-			ItemStack item = event.getCurrentItem();
-			if (item != null) {
-				String key = uniqueNames ? getOptionKey(item) : Util.getLoreData(item);
-				if (key != null && !key.isEmpty() && options.containsKey(key)) {
-					MenuOption option = options.get(key);
-					Subspell spell = option.spell;
-					if (spell != null) {
-						float power = option.power;
-						if (castPower.containsKey(player.getName())) {
-							power *= castPower.get(player.getName()).floatValue();
+		if (event.getInventory().getTitle().equals(title)) {
+			event.setCancelled(true);		
+			if (event.getClick() == ClickType.LEFT) {
+				final Player player = (Player)event.getWhoClicked();
+				boolean close = true;
+				
+				ItemStack item = event.getCurrentItem();
+				if (item != null) {
+					String key = uniqueNames ? getOptionKey(item) : Util.getLoreData(item);
+					if (key != null && !key.isEmpty() && options.containsKey(key)) {
+						MenuOption option = options.get(key);
+						Subspell spell = option.spell;
+						if (spell != null) {
+							float power = option.power;
+							if (castPower.containsKey(player.getName())) {
+								power *= castPower.get(player.getName()).floatValue();
+							}
+							if (spell.isTargetedEntitySpell() && castEntityTarget.containsKey(player.getName())) {
+								spell.castAtEntity(player, castEntityTarget.get(player.getName()), power);
+							} else if (spell.isTargetedLocationSpell() && castLocTarget.containsKey(player.getName())) {
+								spell.castAtLocation(player, castLocTarget.get(player.getName()), power);
+							} else if (bypassNormalCast) {
+								spell.cast(player, power);
+							} else {
+								spell.getSpell().cast(player, power, null);
+							}
 						}
-						if (spell.isTargetedEntitySpell() && castEntityTarget.containsKey(player.getName())) {
-							spell.castAtEntity(player, castEntityTarget.get(player.getName()), power);
-						} else if (spell.isTargetedLocationSpell() && castLocTarget.containsKey(player.getName())) {
-							spell.castAtLocation(player, castLocTarget.get(player.getName()), power);
-						} else if (bypassNormalCast) {
-							spell.cast(player, power);
-						} else {
-							spell.getSpell().cast(player, power, null);
-						}
+						if (option.stayOpen) close = false;
 					}
-					if (option.stayOpen) close = false;
 				}
-			}
-			
-			castPower.remove(player.getName());
-			castEntityTarget.remove(player.getName());
-			castLocTarget.remove(player.getName());
-			
-			if (close) {
-				MagicSpells.scheduleDelayedTask(new Runnable() {
-					public void run() {
-						player.closeInventory();
-					}
-				}, 0);
-			} else {
-				applyOptionsToInventory(player, event.getView().getTopInventory());
+				
+				castPower.remove(player.getName());
+				castEntityTarget.remove(player.getName());
+				castLocTarget.remove(player.getName());
+				
+				if (close) {
+					MagicSpells.scheduleDelayedTask(new Runnable() {
+						public void run() {
+							player.closeInventory();
+						}
+					}, 0);
+				} else {
+					applyOptionsToInventory(player, event.getView().getTopInventory());
+				}
 			}
 		}
 	}
