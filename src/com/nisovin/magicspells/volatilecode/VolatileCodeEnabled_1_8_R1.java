@@ -363,6 +363,7 @@ public class VolatileCodeEnabled_1_8_R1 implements VolatileCodeHandle {
 		if (name.contains("_")) {
 			String[] split = name.split("_");
 			name = split[0] + "_";
+			particle = particleMap.get(name);
 			if (split.length > 1) {
 				String[] split2 = split[1].split(":");
 				data = new int[split2.length];
