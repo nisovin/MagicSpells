@@ -78,12 +78,14 @@ public class VolatileCodeEnabled_1_8_R1 implements VolatileCodeHandle {
 			nmsItem = CraftItemStack.asNMSCopy(craftItem);
 		}
 		
-		nmsItem.setTag(tag);
-		try {
-			Field field = CraftItemStack.class.getDeclaredField("handle");
-			field.setAccessible(true);
-			field.set(craftItem, nmsItem);
-		} catch (Exception e) {
+		if (nmsItem != null) {
+			nmsItem.setTag(tag);
+			try {
+				Field field = CraftItemStack.class.getDeclaredField("handle");
+				field.setAccessible(true);
+				field.set(craftItem, nmsItem);
+			} catch (Exception e) {
+			}
 		}
 		
 		return craftItem;
@@ -470,6 +472,20 @@ public class VolatileCodeEnabled_1_8_R1 implements VolatileCodeHandle {
 		
 		tag.set("AttributeModifiers", list);
 		
+		setTag(item, tag);
+		return item;
+	}
+	
+	@Override
+	public ItemStack hideTooltipCrap(ItemStack item) {
+		if (!(item instanceof CraftItemStack)) {
+			item = CraftItemStack.asCraftCopy(item);
+		}
+		NBTTagCompound tag = getTag(item);
+		if (tag == null) {
+			tag = new NBTTagCompound();
+		}
+		tag.setInt("HideFlags", 63);
 		setTag(item, tag);
 		return item;
 	}

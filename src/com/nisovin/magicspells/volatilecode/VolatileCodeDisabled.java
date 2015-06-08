@@ -231,4 +231,9 @@ public class VolatileCodeDisabled implements VolatileCodeHandle {
 	@Override
 	public void setTabMenuHeaderFooter(Player player, String header, String footer) {
 	}
+	
+	@Override
+	public ItemStack hideTooltipCrap(ItemStack item) {
+		return item;
+	}
 }

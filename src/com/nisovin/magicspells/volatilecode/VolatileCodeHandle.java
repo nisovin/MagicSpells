@@ -62,6 +62,8 @@ public interface VolatileCodeHandle {
 	
 	public ItemStack addAttributes(ItemStack item, String[] names, String[] types, double[] amounts, int[] operations);
 	
+	public ItemStack hideTooltipCrap(ItemStack item);
+	
 	public void addEntityAttribute(LivingEntity entity, String attribute, double amount, int operation);
 	
 	public void resetEntityAttributes(LivingEntity entity);
