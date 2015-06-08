@@ -20,6 +20,7 @@ import org.bukkit.DyeColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.banner.Pattern;
 import org.bukkit.block.banner.PatternType;
 import org.bukkit.command.CommandSender;
@@ -30,6 +31,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BannerMeta;
+import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -37,6 +39,8 @@ import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.inventory.meta.Repairable;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.material.FlowerPot;
+import org.bukkit.material.MaterialData;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
@@ -255,6 +259,18 @@ public class Util {
 			// skull owner
 			if (config.contains("skullowner") && config.isString("skullowner") && meta instanceof SkullMeta) {
 				((SkullMeta)meta).setOwner(config.getString("skullowner"));
+			}
+			
+			// flower pot
+			if (config.contains("flower") && item.getType() == Material.FLOWER_POT && meta instanceof BlockStateMeta) {
+				MagicMaterial flower = MagicSpells.getItemNameResolver().resolveBlock(config.getString("flower"));
+				BlockState state = ((BlockStateMeta)meta).getBlockState();
+				MaterialData data = state.getData();
+				if (data instanceof FlowerPot) {
+					((FlowerPot)data).setContents(new MaterialData(flower.getMaterial()));
+				}
+				state.setData(data);
+				((BlockStateMeta)meta).setBlockState(state);
 			}
 			
 			// repair cost
