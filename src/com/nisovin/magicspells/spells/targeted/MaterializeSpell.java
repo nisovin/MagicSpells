@@ -127,7 +127,15 @@ public class MaterializeSpell extends TargetedSpell implements TargetedLocationS
 		if (block.equals(against)) {
 			against = block.getRelative(BlockFace.DOWN);
 		}
-		return materialize(caster, block, against);
+		if (block.getType() == Material.AIR) {
+			return materialize(caster, block, against);
+		} else {
+			Block block2 = block.getRelative(BlockFace.UP);
+			if (block2.getType() == Material.AIR) {
+				return materialize(null, block2, block);
+			}
+		}
+		return false;
 	}
 
 	@Override

@@ -187,12 +187,12 @@ public class ProjectileSpell extends InstantSpell {
 	
 	public boolean projectileHitEntity(Entity projectile, LivingEntity target, ProjectileInfo info) {
 		if (!info.done && (maxDistanceSquared == 0 || projectile.getLocation().distanceSquared(info.start) <= maxDistanceSquared)) { 
-			
 			if (aoeRadius == 0) {
 				float power = info.power;
-				
+								
 				// check player
 				if (!targetPlayers && target instanceof Player) return false;
+				
 				
 				// call target event
 				SpellTargetEvent evt = new SpellTargetEvent(this, info.player, target, power);

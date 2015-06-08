@@ -18,6 +18,7 @@ public class ForcetossSpell extends TargetedSpell implements TargetedEntitySpell
 	private float hForce;
 	private float vForce;
 	private boolean checkPlugins;
+	private boolean powerAffectsForce;
 	
 	public ForcetossSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -26,6 +27,7 @@ public class ForcetossSpell extends TargetedSpell implements TargetedEntitySpell
 		hForce = getConfigInt("horizontal-force", 20) / 10.0F;
 		vForce = getConfigInt("vertical-force", 10) / 10.0F;
 		checkPlugins = getConfigBoolean("check-plugins", true);
+		powerAffectsForce = getConfigBoolean("power-affects-force", true);
 	}
 
 	@Override
@@ -63,6 +65,7 @@ public class ForcetossSpell extends TargetedSpell implements TargetedEntitySpell
 	}
 	
 	private void toss(Player player, LivingEntity target, float power) {
+		if (!powerAffectsForce) power = 1f;
 		Vector v = target.getLocation().toVector().subtract(player.getLocation().toVector())
 				.setY(0)
 				.normalize()

@@ -303,7 +303,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		this.targetDamageAmount = config.getDouble(section + "." + spellName + ".target-damage-amount", 0);
 		this.losTransparentBlocks = MagicSpells.getTransparentBlocks();
 		if (config.contains(section + "." + spellName + ".los-transparent-blocks")) {
-			this.losTransparentBlocks = new HashSet<Byte>(config.getByteList(section + "." + spellName + ".target-damage-amount", null));
+			this.losTransparentBlocks = new HashSet<Byte>(config.getByteList(section + "." + spellName + ".los-transparent-blocks", null));
 			this.losTransparentBlocks.add((byte)0);
 		}
 		
