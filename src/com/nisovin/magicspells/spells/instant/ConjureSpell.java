@@ -53,6 +53,7 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 	private boolean autoEquip;
 	private boolean stackExisting;
 	private boolean ignoreMaxStackSize;
+	private boolean forceUpdateInventory;
 	//private boolean allowParameters;
 	private double expiration;
 	private int requiredSlot;
@@ -76,6 +77,7 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 		autoEquip = getConfigBoolean("auto-equip", false);
 		stackExisting = getConfigBoolean("stack-existing", true);
 		ignoreMaxStackSize = getConfigBoolean("ignore-max-stack-size", false);
+		forceUpdateInventory = getConfigBoolean("force-update-inventory", true);
 		//allowParameters = getConfigBoolean("allow-parameters", true);
 		expiration = getConfigDouble("expiration", 0L);
 		requiredSlot = getConfigInt("required-slot", -1);
@@ -220,7 +222,7 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 				updateInv = true;
 			}
 		}
-		if (updateInv) {
+		if (updateInv && forceUpdateInventory) {
 			player.updateInventory();
 		}
 		
