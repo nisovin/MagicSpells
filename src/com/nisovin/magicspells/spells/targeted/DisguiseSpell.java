@@ -384,14 +384,14 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 	@EventHandler
 	public void onDeath(PlayerDeathEvent event) {
 		if (undisguiseOnDeath && disguised.containsKey(event.getEntity().getName().toLowerCase())) {
-			manager.removeDisguise(event.getEntity(), false);
+			manager.removeDisguise(event.getEntity(), entityType == EntityType.PLAYER);
 		}
 	}
 	
 	@EventHandler
 	public void onQuit(PlayerQuitEvent event) {
 		if (undisguiseOnLogout && disguised.containsKey(event.getPlayer().getName().toLowerCase())) {
-			manager.removeDisguise(event.getPlayer(), false);
+			manager.removeDisguise(event.getPlayer(), entityType == EntityType.PLAYER);
 		}
 	}
 	
