@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -339,7 +340,7 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 	private void disguise(Player player) {
 		String nameplate = nameplateText;
 		if (showPlayerName) nameplate = player.getDisplayName();
-		PlayerDisguiseData playerDisguiseData = (entityType == EntityType.PLAYER ? new PlayerDisguiseData(uuid, skin, skinSig) : null);
+		PlayerDisguiseData playerDisguiseData = entityType == EntityType.PLAYER ? new PlayerDisguiseData((uuid.isEmpty() ? UUID.randomUUID().toString() : uuid), skin, skinSig) : null;
 		Disguise disguise = new Disguise(player, entityType, nameplate, playerDisguiseData, alwaysShowNameplate, ridingBoat, flag, var1, var2, var3, duration, this);
 		manager.addDisguise(player, disguise);
 		disguised.put(player.getName().toLowerCase(), disguise);
@@ -383,14 +384,14 @@ public class DisguiseSpell extends TargetedSpell implements TargetedEntitySpell 
 	@EventHandler
 	public void onDeath(PlayerDeathEvent event) {
 		if (undisguiseOnDeath && disguised.containsKey(event.getEntity().getName().toLowerCase())) {
-			manager.removeDisguise(event.getEntity(), false);
+			manager.removeDisguise(event.getEntity(), entityType == EntityType.PLAYER);
 		}
 	}
 	
 	@EventHandler
 	public void onQuit(PlayerQuitEvent event) {
 		if (undisguiseOnLogout && disguised.containsKey(event.getPlayer().getName().toLowerCase())) {
-			manager.removeDisguise(event.getPlayer(), false);
+			manager.removeDisguise(event.getPlayer(), entityType == EntityType.PLAYER);
 		}
 	}
 	

@@ -69,12 +69,13 @@ public abstract class DisguiseManager implements Listener {
 	}
 	
 	public void removeDisguise(Player player, boolean sendPlayerPackets, boolean delaySpawnPacket) {
-		DisguiseSpell.Disguise disguise = disguises.remove(player.getName().toLowerCase());
+		DisguiseSpell.Disguise disguise = disguises.get(player.getName().toLowerCase());
 		disguisedEntityIds.remove(player.getEntityId());
 		dragons.remove(player.getEntityId());
 		if (disguise != null) {
 			clearDisguise(player, sendPlayerPackets, delaySpawnPacket);
 			disguise.getSpell().undisguise(player);
+			disguises.remove(player.getName().toLowerCase());
 		}
 		mounts.remove(player.getEntityId());
 	}
