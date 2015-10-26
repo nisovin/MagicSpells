@@ -564,6 +564,18 @@ public class DisguiseManager_1_8_R1 extends DisguiseManager {
 	
 	@Override
 	protected void sendDestroyEntityPackets(Player disguised, int entityId) {
+		DisguiseSpell.Disguise disguise = getDisguise(disguised);
+		if (disguise != null && disguise.getEntityType() == EntityType.PLAYER) {
+			Entity entity = getEntity(disguised, disguise);
+			if (Bukkit.getPlayer(entity.getUniqueID()) == null) {
+				PacketPlayOutPlayerInfo packetinfo = new PacketPlayOutPlayerInfo();
+				refPacketPlayerInfo.set(packetinfo, "a", EnumPlayerInfoAction.REMOVE_PLAYER);
+				List<PlayerInfoData> list = new ArrayList<PlayerInfoData>();
+				list.add(new PlayerInfoData(packetinfo, ((EntityHuman)entity).getProfile(), 0, EnumGamemode.SURVIVAL, new ChatComponentText(((EntityHuman)entity).getName())));
+				refPacketPlayerInfo.set(packetinfo, "b", list);
+				broadcastPacket(disguised, PacketType.Play.Server.PLAYER_INFO, packetinfo);
+			}
+		}
 		PacketPlayOutEntityDestroy packet29 = new PacketPlayOutEntityDestroy(entityId);
 		final EntityTracker tracker = ((CraftWorld)disguised.getWorld()).getHandle().tracker;
 		tracker.a(((CraftPlayer)disguised).getHandle(), packet29);
