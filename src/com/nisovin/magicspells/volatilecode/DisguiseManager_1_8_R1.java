@@ -78,9 +78,6 @@ public class DisguiseManager_1_8_R1 extends DisguiseManager {
 				}
 			} catch (Exception e) {
 			}
-			if (uuid == null) {
-				uuid = UUID.randomUUID();
-			}
 			
 			GameProfile profile = new GameProfile(uuid, name);
 			
