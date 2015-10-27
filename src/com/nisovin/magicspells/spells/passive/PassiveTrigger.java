@@ -11,6 +11,7 @@ public class PassiveTrigger {
 	
 	public static PassiveTrigger TAKE_DAMAGE = addTrigger("takedamage", TakeDamageListener.class);
 	public static PassiveTrigger GIVE_DAMAGE = addTrigger("givedamage", GiveDamageListener.class);
+	public static PassiveTrigger FATAL_DAMAGE = addTrigger("fataldamage", FatalDamageListener.class);
 	public static PassiveTrigger KILL = addTrigger("kill", KillListener.class);
 	public static PassiveTrigger DEATH = addTrigger("death", DeathListener.class);
 	public static PassiveTrigger RESPAWN = addTrigger("respawn", RespawnListener.class);
