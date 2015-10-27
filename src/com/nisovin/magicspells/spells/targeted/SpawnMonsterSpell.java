@@ -49,6 +49,7 @@ public class SpawnMonsterSpell extends TargetedSpell implements TargetedLocation
 	private float leggingsDropChance;
 	private float bootsDropChance;
 	private List<PotionEffect> potionEffects;
+	private int fireTicks;
 	private int duration;
 	private String nameplateText;
 	private boolean useCasterName;
@@ -116,6 +117,7 @@ public class SpawnMonsterSpell extends TargetedSpell implements TargetedLocation
 			}
 		}
 		
+		fireTicks = getConfigInt("fire-ticks", 0);
 		duration = getConfigInt("duration", 0);
 		nameplateText = getConfigString("nameplate-text", "");
 		removeAI = getConfigBoolean("remove-ai", false);
@@ -269,6 +271,10 @@ public class SpawnMonsterSpell extends TargetedSpell implements TargetedLocation
 			// add potion effects
 			if (potionEffects != null) {
 				((LivingEntity)entity).addPotionEffects(potionEffects);
+			}
+			// set on fire
+			if (fireTicks > 0) {
+				((LivingEntity)entity).setFireTicks(fireTicks);
 			}
 			// add attributes
 			if (attributeTypes != null && attributeTypes.length > 0) {
