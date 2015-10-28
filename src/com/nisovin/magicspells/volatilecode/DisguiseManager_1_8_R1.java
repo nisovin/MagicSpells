@@ -597,12 +597,10 @@ public class DisguiseManager_1_8_R1 extends DisguiseManager {
 	private void broadcastPacketGlobal(PacketType packetId, Packet packet) {
 		PacketContainer con = new PacketContainer(packetId, packet);
 		for (Player player : Bukkit.getOnlinePlayers()) {
-			if (player.isValid()) {
-				try {
-					protocolManager.sendServerPacket(player, con, false);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+			try {
+				protocolManager.sendServerPacket(player, con, false);
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
 	}
