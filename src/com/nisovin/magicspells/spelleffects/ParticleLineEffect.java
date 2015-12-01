@@ -19,10 +19,11 @@ public class ParticleLineEffect extends ParticlesEffect {
 				name = data[1];
 			}
 			if (data.length >= 3) {
-				horizSpread = Float.parseFloat(data[2]);
+				xSpread = Float.parseFloat(data[2]);
+				zSpread = xSpread;
 			}
 			if (data.length >= 4) {
-				vertSpread = Float.parseFloat(data[3]);
+				ySpread = Float.parseFloat(data[3]);
 			}
 			if (data.length >= 5) {
 				speed = Float.parseFloat(data[4]);
@@ -46,7 +47,7 @@ public class ParticleLineEffect extends ParticlesEffect {
 		
 		for (int i = 0; i < c; i++) {
 			l.add(v);
-			MagicSpells.getVolatileCodeHandler().playParticleEffect(l, name, horizSpread, vertSpread, speed, count, 15, yOffset);
+			MagicSpells.getVolatileCodeHandler().playParticleEffect(l, name, xSpread, ySpread, zSpread, speed, count, 15, yOffset);
 		}
 	}
 

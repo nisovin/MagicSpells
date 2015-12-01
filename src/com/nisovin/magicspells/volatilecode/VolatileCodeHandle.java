@@ -54,6 +54,8 @@ public interface VolatileCodeHandle {
 	
 	public void playParticleEffect(Location location, String name, float spreadHoriz, float spreadVert, float speed, int count, int radius, float yOffset);
 	
+	public void playParticleEffect(Location location, String name, float spreadX, float spreadY, float spreadZ, float speed, int count, int radius, float yOffset);
+	
 	public void setKiller(LivingEntity entity, Player killer);
 	
 	public DisguiseManager getDisguiseManager(MagicConfig config);

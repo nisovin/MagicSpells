@@ -30,6 +30,7 @@ import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Fireball;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityTargetEvent.TargetReason;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
@@ -233,7 +234,7 @@ public class VolatileCodeEnabled_1_8_R1 implements VolatileCodeHandle {
 		if (entity instanceof Creature) {
 			((Creature)entity).setTarget(target);
 		}
-		((EntityInsentient)((CraftLivingEntity)entity).getHandle()).setGoalTarget(((CraftLivingEntity)target).getHandle());
+		((EntityInsentient)((CraftLivingEntity)entity).getHandle()).setGoalTarget(((CraftLivingEntity)target).getHandle(), TargetReason.CUSTOM, true);
 	}
 
 	@Override
@@ -359,6 +360,10 @@ public class VolatileCodeEnabled_1_8_R1 implements VolatileCodeHandle {
 	Map<String, EnumParticle> particleMap = new HashMap<String, EnumParticle>();
 	@Override
 	public void playParticleEffect(Location location, String name, float spreadHoriz, float spreadVert, float speed, int count, int radius, float yOffset) {
+		playParticleEffect(location, name, spreadHoriz, spreadVert, spreadHoriz, speed, count, radius, yOffset);
+	}
+	@Override
+	public void playParticleEffect(Location location, String name, float spreadX, float spreadY, float spreadZ, float speed, int count, int radius, float yOffset) {
 		PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles();
 		EnumParticle particle = particleMap.get(name);
 		int[] data = null;
@@ -383,12 +388,12 @@ public class VolatileCodeEnabled_1_8_R1 implements VolatileCodeHandle {
 			packet63Fields[1].setFloat(packet, (float)location.getX());
 			packet63Fields[2].setFloat(packet, (float)location.getY() + yOffset);
 			packet63Fields[3].setFloat(packet, (float)location.getZ());
-			packet63Fields[4].setFloat(packet, spreadHoriz);
-			packet63Fields[5].setFloat(packet, spreadVert);
-			packet63Fields[6].setFloat(packet, spreadHoriz);
+			packet63Fields[4].setFloat(packet, spreadX);
+			packet63Fields[5].setFloat(packet, spreadY);
+			packet63Fields[6].setFloat(packet, spreadZ);
 			packet63Fields[7].setFloat(packet, speed);
 			packet63Fields[8].setInt(packet, count);
-			packet63Fields[9].setBoolean(packet, radius >= 200);
+			packet63Fields[9].setBoolean(packet, radius >= 30);
 			if (data != null) {
 				packet63Fields[10].set(packet,data);
 			}
@@ -493,7 +498,7 @@ public class VolatileCodeEnabled_1_8_R1 implements VolatileCodeHandle {
 
 	@Override
 	public void addEntityAttribute(LivingEntity entity, String attribute, double amount, int operation) {
-		EntityInsentient nmsEnt = (EntityInsentient) ((CraftLivingEntity)entity).getHandle();
+		EntityLiving nmsEnt = ((CraftLivingEntity)entity).getHandle();
 		IAttribute attr = null;
 		if (attribute.equals("generic.maxHealth")) {
 			attr = GenericAttributes.maxHealth;
@@ -502,7 +507,7 @@ public class VolatileCodeEnabled_1_8_R1 implements VolatileCodeHandle {
 		} else if (attribute.equals("generic.knockbackResistance")) {
 			attr = GenericAttributes.c;
 		} else if (attribute.equals("generic.movementSpeed")) {
-			attr = GenericAttributes.e;
+			attr = GenericAttributes.d;
 		} else if (attribute.equals("generic.attackDamage")) {
 			attr = GenericAttributes.e;
 		}
