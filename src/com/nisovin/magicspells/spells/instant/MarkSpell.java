@@ -71,6 +71,13 @@ public class MarkSpell extends InstantSpell {
 		return marks;
 	}
 	
+	public void setMarks(HashMap<String,MagicLocation> marks) {
+		this.marks = marks;
+		if (permanentMarks) {
+			saveMarks();
+		}
+	}
+	
 	private void loadMarks() {
 		try {
 			Scanner scanner = new Scanner(new File(MagicSpells.plugin.getDataFolder(), "marks-" + internalName + ".txt"));
