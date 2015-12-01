@@ -18,15 +18,23 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Skeleton;
 import org.bukkit.entity.Tameable;
 import org.bukkit.entity.Zombie;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.Subspell;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.BlockUtils;
+import com.nisovin.magicspells.util.TargetInfo;
 import com.nisovin.magicspells.util.Util;
 import com.nisovin.magicspells.util.MagicConfig;
 
@@ -59,6 +67,8 @@ public class SpawnMonsterSpell extends TargetedSpell implements TargetedLocation
 	private String[] attributeTypes;
 	private double[] attributeValues;
 	private int[] attributeOperations;
+	
+	private Subspell attackSpell;
 	
 	private Random random = new Random();
 	
@@ -151,18 +161,42 @@ public class SpawnMonsterSpell extends TargetedSpell implements TargetedLocation
 			}
 		}
 		
+		String attackSpellName = getConfigString("attack-spell", null);
+		if (attackSpellName != null && !attackSpellName.isEmpty()) {
+			attackSpell = new Subspell(attackSpellName);
+		}
+		
 		if (entityType == null || !entityType.isAlive()) {
 			MagicSpells.error("SpawnMonster spell '" + spellName + "' has an invalid entity-type!");
 		}
 		
+	}
+	
+	@Override
+	public void initialize() {
+		super.initialize();
+		if (attackSpell != null) {
+			if (!attackSpell.process()) {
+				MagicSpells.error("SpawnMonsterSpell '" + internalName + "' has invalid attack-spell");
+			}
+		}
 	}
 
 	@Override
 	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
 		if (state == SpellCastState.NORMAL) {
 			Location loc = null;
+			LivingEntity target = null;
 			
-			if (location.equalsIgnoreCase("target")) {
+			if (location.equalsIgnoreCase("focus")) {
+				loc = getRandomLocationFrom(player.getLocation(), 3);
+				TargetInfo<LivingEntity> targetInfo = getTargetedEntity(player, power);
+				target = targetInfo.getTarget();
+				power = targetInfo.getPower();
+				if (target == null) {
+					return noTarget(player);
+				}
+			} else if (location.equalsIgnoreCase("target")) {
 				Block block = getTargetedBlock(player, power);
 				if (block != null && block.getType() != Material.AIR) { 
 					if (BlockUtils.isPathable(block)) {
@@ -173,15 +207,20 @@ public class SpawnMonsterSpell extends TargetedSpell implements TargetedLocation
 				}
 			} else if (location.equalsIgnoreCase("caster")) {
 				loc = player.getLocation();
-			} else if (location.equalsIgnoreCase("random")) {				
-				loc = getRandomLocationFrom(player.getLocation(), getRange(power));				
+			} else if (location.equalsIgnoreCase("random")) {
+				loc = getRandomLocationFrom(player.getLocation(), getRange(power));
+			} else if (location.startsWith("casteroffset:")) {
+				String[] split = location.split(":");
+				float y = Float.parseFloat(split[1]);
+				loc = player.getLocation().add(0, y, 0);
+				loc.setPitch(0);
 			}
 			
 			if (loc == null) {
 				return noTarget(player);
 			}
 			
-			spawnMob(player, player.getLocation(), loc);
+			spawnMob(player, player.getLocation(), loc, target, power);
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 	}
@@ -220,54 +259,13 @@ public class SpawnMonsterSpell extends TargetedSpell implements TargetedLocation
 		return null;
 	}
 	
-	private void spawnMob(Player player, Location source, Location loc) {
+	private void spawnMob(final Player player, Location source, Location loc, LivingEntity target, float power) {
 		if (entityType != null) {
 			// spawn it
 			loc.setYaw((float) (Math.random() * 360));
 			final Entity entity = loc.getWorld().spawnEntity(loc.add(.5, .1, .5), entityType);
-			// set as baby
-			if (baby) {
-				if (entity instanceof Ageable) {
-					((Ageable)entity).setBaby();
-				} else if (entity instanceof Zombie) {
-					((Zombie)entity).setBaby(true);
-				}
-			}
-			// set as tamed
-			if (tamed && entity instanceof Tameable && player != null) {
-				((Tameable)entity).setTamed(true);
-				((Tameable)entity).setOwner(player);
-			}
-			// set held item
-			if (holding != null && holding.getType() != Material.AIR) {
-				if (entity instanceof Enderman) {
-					((Enderman)entity).setCarriedMaterial(holding.getData());
-				} else if (entity instanceof Skeleton || entity instanceof Zombie) {
-					EntityEquipment equip = ((LivingEntity)entity).getEquipment();
-					equip.setItemInHand(holding.clone());
-					equip.setItemInHandDropChance(holdingDropChance);
-				}
-			}
-			// set armor
-			EntityEquipment equip = ((LivingEntity)entity).getEquipment();
-			equip.setHelmet(helmet);
-			equip.setChestplate(chestplate);
-			equip.setLeggings(leggings);
-			equip.setBoots(boots);
-			equip.setHelmetDropChance(helmetDropChance);
-			equip.setChestplateDropChance(chestplateDropChance);
-			equip.setLeggingsDropChance(leggingsDropChance);
-			equip.setBootsDropChance(bootsDropChance);
-			// set nameplate text
-			if (entity instanceof LivingEntity) {
-				if (useCasterName && player != null) {
-					((LivingEntity)entity).setCustomName(player.getDisplayName());
-					((LivingEntity)entity).setCustomNameVisible(true);
-				} else if (nameplateText != null && !nameplateText.isEmpty()) {
-					((LivingEntity)entity).setCustomName(nameplateText);
-					((LivingEntity)entity).setCustomNameVisible(true);
-				}
-			}
+			// prep
+			prepMob(player, entity);
 			// add potion effects
 			if (potionEffects != null) {
 				((LivingEntity)entity).addPotionEffects(potionEffects);
@@ -292,6 +290,19 @@ public class SpawnMonsterSpell extends TargetedSpell implements TargetedLocation
 					MagicSpells.getVolatileCodeHandler().addAILookAtPlayer((LivingEntity)entity, 10);
 				}
 			}
+			//set target
+			if (target != null) {
+				MagicSpells.getVolatileCodeHandler().setTarget((LivingEntity)entity, target);
+			}
+			if (attackSpell != null) {
+				final AttackMonitor monitor = new AttackMonitor(player, (LivingEntity)entity, power);
+				MagicSpells.registerEvents(monitor);
+				MagicSpells.scheduleDelayedTask(new Runnable() {
+					public void run() {
+						HandlerList.unregisterAll(monitor);
+					}
+				}, duration > 0 ? duration : 12000);
+			}
 			// play effects
 			if (player != null) {
 				playSpellEffects(player, entity);
@@ -309,17 +320,70 @@ public class SpawnMonsterSpell extends TargetedSpell implements TargetedLocation
 		}
 	}
 	
+	void prepMob(Player player, Entity entity) {
+		// set as tamed
+		if (tamed && entity instanceof Tameable && player != null) {
+			((Tameable)entity).setTamed(true);
+			((Tameable)entity).setOwner(player);
+		}
+		// set as baby
+		if (baby) {
+			if (entity instanceof Ageable) {
+				((Ageable)entity).setBaby();
+			}
+		}
+		if (entity instanceof Zombie) {
+			((Zombie)entity).setBaby(baby);
+		}
+		// set held item
+		if (holding != null && holding.getType() != Material.AIR) {
+			if (entity instanceof Enderman) {
+				((Enderman)entity).setCarriedMaterial(holding.getData());
+			} else if (entity instanceof Skeleton || entity instanceof Zombie) {
+				final EntityEquipment equip = ((LivingEntity)entity).getEquipment();
+				equip.setItemInHand(holding.clone());
+				equip.setItemInHandDropChance(holdingDropChance);
+			}
+		}
+		// set armor
+		final EntityEquipment equip = ((LivingEntity)entity).getEquipment();
+		equip.setHelmet(helmet);
+		equip.setChestplate(chestplate);
+		equip.setLeggings(leggings);
+		equip.setBoots(boots);
+		equip.setHelmetDropChance(helmetDropChance);
+		equip.setChestplateDropChance(chestplateDropChance);
+		equip.setLeggingsDropChance(leggingsDropChance);
+		equip.setBootsDropChance(bootsDropChance);
+		// set nameplate text
+		if (entity instanceof LivingEntity) {
+			if (useCasterName && player != null) {
+				((LivingEntity)entity).setCustomName(player.getDisplayName());
+				((LivingEntity)entity).setCustomNameVisible(true);
+			} else if (nameplateText != null && !nameplateText.isEmpty()) {
+				((LivingEntity)entity).setCustomName(nameplateText);
+				((LivingEntity)entity).setCustomNameVisible(true);
+			}
+		}
+	}
+	
 	@Override
 	public boolean castAtLocation(Player caster, Location target, float power) {
 		if (location.equalsIgnoreCase("target")) {
-			spawnMob(caster, caster.getLocation(), target);
+			spawnMob(caster, caster.getLocation(), target, null, power);
 		} else if (location.equalsIgnoreCase("caster")) {
-			spawnMob(caster, caster.getLocation(), caster.getLocation());
+			spawnMob(caster, caster.getLocation(), caster.getLocation(), null, power);
 		} else if (location.equalsIgnoreCase("random")) {
 			Location loc = getRandomLocationFrom(target, getRange(power));
 			if (loc != null) {
-				spawnMob(caster, caster.getLocation(), loc);
+				spawnMob(caster, caster.getLocation(), loc, null, power);
 			}
+		} else if (location.startsWith("offset:")) {
+			String[] split = location.split(":");
+			float y = Float.parseFloat(split[1]);
+			Location loc = target.clone().add(0, y, 0);
+			loc.setPitch(0);
+			spawnMob(caster, caster.getLocation(), loc, null, power);
 		}
 		return true;
 	}
@@ -327,16 +391,49 @@ public class SpawnMonsterSpell extends TargetedSpell implements TargetedLocation
 	@Override
 	public boolean castAtLocation(Location target, float power) {
 		if (location.equalsIgnoreCase("target")) {
-			spawnMob(null, target, target);
+			spawnMob(null, target, target, null, power);
 		} else if (location.equalsIgnoreCase("caster")) {
-			spawnMob(null, target, target);
+			spawnMob(null, target, target, null, power);
 		} else if (location.equalsIgnoreCase("random")) {
 			Location loc = getRandomLocationFrom(target, getRange(power));
 			if (loc != null) {
-				spawnMob(null, target, loc);
+				spawnMob(null, target, loc, null, power);
 			}
+		} else if (location.startsWith("offset:")) {
+			String[] split = location.split(":");
+			float y = Float.parseFloat(split[1]);
+			Location loc = target.clone().add(0, y, 0);
+			loc.setPitch(0);
+			spawnMob(null, target, loc, null, power);
 		}
 		return true;
+	}
+	
+	class AttackMonitor implements Listener {
+		
+		Player caster;
+		LivingEntity monster;
+		float power;
+		
+		public AttackMonitor(Player caster, LivingEntity monster, float power) {
+			this.caster = caster;
+			this.monster = monster;
+			this.power = power;
+		}
+		
+		@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+		void onDamage(EntityDamageByEntityEvent event) {
+			if (event.getEntity() instanceof LivingEntity && event.getDamager() == monster) {
+				attackSpell.castAtEntity(caster, (LivingEntity)event.getEntity(), power);
+			}
+		}
+		
+		@EventHandler
+		void onTarget(EntityTargetEvent event) {
+			if (event.getEntity() == monster && event.getTarget() == caster) {
+				event.setCancelled(true);
+			}
+		}
 	}
 	
 }
