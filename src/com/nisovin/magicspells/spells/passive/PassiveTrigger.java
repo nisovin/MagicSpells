@@ -22,6 +22,8 @@ public class PassiveTrigger {
 	public static PassiveTrigger RIGHT_CLICK = addTrigger("rightclick", RightClickItemListener.class);
 	public static PassiveTrigger RIGHT_CLICK_BLOCK_TYPE = addTrigger("rightclickblocktype", RightClickBlockTypeListener.class);
 	public static PassiveTrigger RIGHT_CLICK_BLOCK_COORD = addTrigger("rightclickblockcoord", RightClickBlockCoordListener.class);
+	public static PassiveTrigger LEFT_CLICK_BLOCK_TYPE = addTrigger("leftclickblocktype", LeftClickBlockTypeListener.class);
+	public static PassiveTrigger LEFT_CLICK_BLOCK_COORD = addTrigger("leftclickblockcoord", LeftClickBlockCoordListener.class);
 	public static PassiveTrigger RIGHT_CLICK_ENTITY = addTrigger("rightclickentity", RightClickEntityListener.class);
 	public static PassiveTrigger SPELL_CAST = addTrigger("spellcast", SpellCastListener.class);
 	public static PassiveTrigger SPELL_CASTED = addTrigger("spellcasted", SpellCastedListener.class);
