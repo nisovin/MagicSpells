@@ -11,6 +11,7 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
@@ -30,6 +31,7 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 	private int radius;
 	private int verticalRadius;
 	private boolean pointBlank;
+	private int cone;
 	private boolean failIfNoTargets;
 	private int maxTargets;
 	private List<String> spellNames;
@@ -45,6 +47,7 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 		radius = getConfigInt("horizontal-radius", 10);
 		verticalRadius = getConfigInt("vertical-radius", 5);
 		pointBlank = getConfigBoolean("point-blank", true);
+		cone = getConfigInt("cone", 0);
 		failIfNoTargets = getConfigBoolean("fail-if-no-targets", true);
 		maxTargets = getConfigInt("max-targets", 0);
 		spellSourceInCenter = getConfigBoolean("spell-source-in-center", false);
@@ -138,11 +141,20 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 	private boolean doAoe(Player player, Location location, float basePower) {
 		int count = 0;
 		
+		Vector facing = player.getLocation().getDirection();
+		Vector vLoc = player.getLocation().toVector();
+		
 		BoundingBox box = new BoundingBox(location, radius, verticalRadius);
 		List<Entity> entities = new ArrayList<Entity>(location.getWorld().getEntitiesByClasses(LivingEntity.class));
 		Collections.shuffle(entities);
 		for (Entity e : entities) {
 			if (e instanceof LivingEntity && box.contains(e)) {
+				if (pointBlank && cone > 0) {
+					Vector dir = e.getLocation().toVector().subtract(vLoc);
+					if (Math.abs(dir.angle(facing)) > cone) {
+						continue;
+					}
+				}
 				LivingEntity target = (LivingEntity)e;
 				float power = basePower;
 				if (!target.isDead() && ((player == null && validTargetList.canTarget(target)) || validTargetList.canTarget(player, target))) {
