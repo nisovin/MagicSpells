@@ -104,6 +104,9 @@ public class MagicSpells extends JavaPlugin {
 	String strManaPotionOnCooldown;
 	HashMap<ItemStack, Integer> manaPotions;
 	
+	String soundFailOnCooldown;
+	String soundFailMissingReagents;
+	
 	// strings
 	String strCastUsage;
 	String strUnknownSpell;
@@ -247,6 +250,9 @@ public class MagicSpells extends JavaPlugin {
 				}
 			}
 		}
+
+		soundFailOnCooldown = config.getString("general.sound-on-cooldown", null);
+		soundFailMissingReagents = config.getString("general.sound-missing-reagents", null);
 		
 		strCastUsage = config.getString("general.str-cast-usage", "Usage: /cast <spell>. Use /cast list to see a list of spells.");
 		strUnknownSpell = config.getString("general.str-unknown-spell", "You do not know a spell with that name.");
@@ -682,7 +688,7 @@ public class MagicSpells extends JavaPlugin {
 	 * Gets a list of blocks that are considered transparent
 	 * @return list of block types
 	 */
-	protected static HashSet<Byte> getTransparentBlocks() {
+	public static HashSet<Byte> getTransparentBlocks() {
 		return plugin.losTransparentBlocks;
 	}
 	
