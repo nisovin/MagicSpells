@@ -11,6 +11,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.events.SpellApplyDamageEvent;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
@@ -68,6 +69,7 @@ public class CombustSpell extends TargetedSpell implements TargetedEntitySpell {
 		}
 		int duration = Math.round(fireTicks*power);
 		combusting.put(target.getEntityId(), new CombustData(power));
+		Bukkit.getPluginManager().callEvent(new SpellApplyDamageEvent(this, player, target, fireTickDamage, DamageCause.FIRE_TICK));
 		target.setFireTicks(duration);
 		if (player != null) {
 			playSpellEffects(player, target);
