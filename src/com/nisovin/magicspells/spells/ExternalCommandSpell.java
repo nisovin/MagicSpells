@@ -148,6 +148,8 @@ public class ExternalCommandSpell extends TargetedSpell implements TargetedEntit
 						convo.begin();
 					}
 				}
+				
+				int delay = 0;				
 				for (String comm : commandToExecute) {
 					if (comm != null && !comm.isEmpty()) {
 						if (args != null && args.length > 0) {
@@ -161,7 +163,20 @@ public class ExternalCommandSpell extends TargetedSpell implements TargetedEntit
 						if (target != null) {
 							comm = comm.replace("%t", target.getName());
 						}
-						Bukkit.dispatchCommand(actualSender, comm);
+						if (comm.startsWith("DELAY ")) {
+							String[] split = comm.split(" ");
+							delay += Integer.parseInt(split[1]);
+						} else if (delay > 0) {
+							final CommandSender s = actualSender;
+							final String c = comm;
+							MagicSpells.scheduleDelayedTask(new Runnable() {
+								public void run() {
+									Bukkit.dispatchCommand(s, c);
+								}
+							}, delay);
+						} else {
+							Bukkit.dispatchCommand(actualSender, comm);
+						}
 					}
 				}
 				if (blockChatOutput && messageBlocker != null && sender != null && sender instanceof Player) {

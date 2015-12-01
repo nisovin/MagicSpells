@@ -20,7 +20,11 @@ public class BlockUtils {
 	
 	public static Block getTargetBlock(Spell spell, LivingEntity entity, int range) {
 		try {
-			return entity.getTargetBlock(spell.getLosTransparentBlocks(), range);
+			if (spell != null) {
+				return entity.getTargetBlock(spell.getLosTransparentBlocks(), range);
+			} else {
+				return entity.getTargetBlock(MagicSpells.getTransparentBlocks(), range);				
+			}
 		} catch (IllegalStateException e) {
 			return null;
 		}

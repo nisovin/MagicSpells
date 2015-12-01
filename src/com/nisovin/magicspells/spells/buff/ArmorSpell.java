@@ -140,15 +140,19 @@ public class ArmorSpell extends BuffSpell {
 	
 	private void setArmor(PlayerInventory inv) {
 		if (helmet != null) {
+			if (replace) inv.setHelmet(null);
 			inv.setHelmet(helmet.clone());
 		}
 		if (chestplate != null) {
+			if (replace) inv.setChestplate(null);
 			inv.setChestplate(chestplate.clone());
 		}
 		if (leggings != null) {
+			if (replace) inv.setLeggings(null);
 			inv.setLeggings(leggings.clone());
 		}
 		if (boots != null) {
+			if (replace) inv.setBoots(null);
 			inv.setBoots(boots.clone());
 		}
 	}

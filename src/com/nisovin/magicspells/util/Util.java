@@ -30,17 +30,8 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.BannerMeta;
-import org.bukkit.inventory.meta.BlockStateMeta;
-import org.bukkit.inventory.meta.BookMeta;
-import org.bukkit.inventory.meta.EnchantmentStorageMeta;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.LeatherArmorMeta;
-import org.bukkit.inventory.meta.PotionMeta;
-import org.bukkit.inventory.meta.Repairable;
-import org.bukkit.inventory.meta.SkullMeta;
-import org.bukkit.material.FlowerPot;
-import org.bukkit.material.MaterialData;
+import org.bukkit.inventory.meta.*;
+import org.bukkit.material.*;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
@@ -262,7 +253,7 @@ public class Util {
 			}
 			
 			// flower pot
-			if (config.contains("flower") && item.getType() == Material.FLOWER_POT && meta instanceof BlockStateMeta) {
+			/*if (config.contains("flower") && item.getType() == Material.FLOWER_POT && meta instanceof BlockStateMeta) {
 				MagicMaterial flower = MagicSpells.getItemNameResolver().resolveBlock(config.getString("flower"));
 				BlockState state = ((BlockStateMeta)meta).getBlockState();
 				MaterialData data = state.getData();
@@ -271,7 +262,7 @@ public class Util {
 				}
 				state.setData(data);
 				((BlockStateMeta)meta).setBlockState(state);
-			}
+			}*/
 			
 			// repair cost
 			if (config.contains("repaircost") && config.isInt("repaircost") && meta instanceof Repairable) {
