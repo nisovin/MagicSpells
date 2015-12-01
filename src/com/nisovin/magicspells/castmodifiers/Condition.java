@@ -109,6 +109,7 @@ public abstract class Condition {
 		conditions.put("lastlifelongerthan", LastLifeLongerThan.class);
 		conditions.put("lastlifeshorterthan", LastLifeShorterThan.class);
 		conditions.put("testforblock", TestForBlockCondition.class);
+		conditions.put("lookingatblock", LookingAtBlockCondition.class);
 		conditions.put("oncooldown", OnCooldownCondition.class);
 	}
 	

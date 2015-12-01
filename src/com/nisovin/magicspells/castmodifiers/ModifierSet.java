@@ -72,6 +72,9 @@ public class ModifierSet {
 		for (Modifier modifier : modifiers) {
 			boolean cont = modifier.apply(event);
 			if (!cont) {
+				if (modifier.strModifierFailed != null) {
+					MagicSpells.sendMessage(event.getCaster(), modifier.strModifierFailed);
+				}
 				break;
 			}
 		}
