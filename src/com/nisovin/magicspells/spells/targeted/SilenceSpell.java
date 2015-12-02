@@ -33,6 +33,8 @@ public class SilenceSpell extends TargetedSpell implements TargetedEntitySpell {
 	private int duration;
 	private List<String> allowedSpellNames;
 	private Set<Spell> allowedSpells;
+	private List<String> disallowedSpellNames;
+	private Set<Spell> disallowedSpells;
 	private String strSilenced;
 	
 	private Map<String,Unsilencer> silenced;
@@ -45,6 +47,7 @@ public class SilenceSpell extends TargetedSpell implements TargetedEntitySpell {
 		preventCommands = getConfigBoolean("prevent-commands", false);
 		duration = getConfigInt("duration", 200);
 		allowedSpellNames = getConfigStringList("allowed-spells", null);
+		disallowedSpellNames = getConfigStringList("disallowed-spells", null);
 		strSilenced = getConfigString("str-silenced", "You are silenced!");
 		
 		if (preventChat) {
@@ -73,6 +76,20 @@ public class SilenceSpell extends TargetedSpell implements TargetedEntitySpell {
 			allowedSpellNames.clear();
 		}
 		allowedSpellNames = null;
+
+		if (disallowedSpellNames != null && disallowedSpellNames.size() > 0) {
+			disallowedSpells = new HashSet<Spell>();
+			for (String spellName : disallowedSpellNames) {
+				Spell spell = MagicSpells.getSpellByInternalName(spellName);
+				if (spell != null) {
+					disallowedSpells.add(spell);
+				} else {
+					MagicSpells.error("Invalid disallowed spell specified on silence spell '" + this.internalName + "': '" + spellName + "'");
+				}
+			}
+			disallowedSpellNames.clear();
+		}
+		disallowedSpellNames = null;
 		
 		if (preventCast) {
 			registerEvents(new CastListener());
@@ -138,7 +155,12 @@ public class SilenceSpell extends TargetedSpell implements TargetedEntitySpell {
 	public class CastListener implements Listener {
 		@EventHandler(ignoreCancelled=true)
 		public void onSpellCast(final SpellCastEvent event) {
-			if (event.getCaster() != null && silenced.containsKey(event.getCaster().getName()) && (allowedSpells == null || !allowedSpells.contains(event.getSpell()))) {
+			if (
+					event.getCaster() != null && 
+					silenced.containsKey(event.getCaster().getName()) && 
+					(allowedSpells == null || !allowedSpells.contains(event.getSpell())) && 
+					(disallowedSpells == null || disallowedSpells.contains(event.getSpell()))
+					) {
 				event.setCancelled(true);
 				Bukkit.getScheduler().scheduleSyncDelayedTask(MagicSpells.plugin, new Runnable() {
 					public void run() {

@@ -93,6 +93,7 @@ public class SteedSpell extends InstantSpell {
 				((Horse)entity).setTamed(true);
 				((Horse)entity).setOwner(player);
 				((Horse)entity).setJumpStrength(2d);
+				((Horse)entity).setAdult();
 				if (color != null) {
 					((Horse)entity).setColor(color);
 				} else {
