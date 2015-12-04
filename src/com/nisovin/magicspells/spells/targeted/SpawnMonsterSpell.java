@@ -295,7 +295,7 @@ public class SpawnMonsterSpell extends TargetedSpell implements TargetedLocation
 				MagicSpells.getVolatileCodeHandler().setTarget((LivingEntity)entity, target);
 			}
 			if (attackSpell != null) {
-				final AttackMonitor monitor = new AttackMonitor(player, (LivingEntity)entity, power);
+				final AttackMonitor monitor = new AttackMonitor(player, (LivingEntity)entity, target, power);
 				MagicSpells.registerEvents(monitor);
 				MagicSpells.scheduleDelayedTask(new Runnable() {
 					public void run() {
@@ -415,16 +415,23 @@ public class SpawnMonsterSpell extends TargetedSpell implements TargetedLocation
 		LivingEntity monster;
 		float power;
 		
-		public AttackMonitor(Player caster, LivingEntity monster, float power) {
+		public AttackMonitor(Player caster, LivingEntity monster, LivingEntity target, float power) {
 			this.caster = caster;
 			this.monster = monster;
 			this.power = power;
 		}
 		
-		@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+		@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 		void onDamage(EntityDamageByEntityEvent event) {
 			if (event.getEntity() instanceof LivingEntity && event.getDamager() == monster) {
-				attackSpell.castAtEntity(caster, (LivingEntity)event.getEntity(), power);
+				if (attackSpell.isTargetedEntitySpell()) {
+					attackSpell.castAtEntity(caster, (LivingEntity)event.getEntity(), power);
+				} else if (attackSpell.isTargetedLocationSpell()) {
+					attackSpell.castAtLocation(caster, monster.getLocation(), power);
+				} else {
+					attackSpell.cast(caster, power);
+				}
+				event.setCancelled(true);
 			}
 		}
 		

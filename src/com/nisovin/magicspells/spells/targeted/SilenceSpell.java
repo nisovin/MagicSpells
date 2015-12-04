@@ -109,7 +109,7 @@ public class SilenceSpell extends TargetedSpell implements TargetedEntitySpell {
 			if (target == null) {
 				return noTarget(player);
 			}
-						
+			
 			// silence player
 			silence(target.getTarget(), target.getPower());
 			playSpellEffects(player, target.getTarget());
