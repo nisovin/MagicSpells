@@ -82,7 +82,9 @@ public class PainSpell extends TargetedSpell implements TargetedEntitySpell, Spe
 			dam = event.getDamage();
 			target.setLastDamageCause(event);
 		}
-		Bukkit.getPluginManager().callEvent(new SpellApplyDamageEvent(this, player, target, dam, DamageCause.MAGIC));
+		SpellApplyDamageEvent event = new SpellApplyDamageEvent(this, player, target, dam, damageType, spellDamageType);
+		Bukkit.getPluginManager().callEvent(event);
+		dam = event.getFinalDamage();
 		if (ignoreArmor) {
 			double health = target.getHealth();
 			if (health > target.getMaxHealth()) health = target.getMaxHealth();

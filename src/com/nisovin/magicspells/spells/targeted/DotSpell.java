@@ -13,18 +13,20 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.events.SpellApplyDamageEvent;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
+import com.nisovin.magicspells.spells.SpellDamageSpell;
 import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.TargetInfo;
 
-public class DotSpell extends TargetedSpell implements TargetedEntitySpell {
+public class DotSpell extends TargetedSpell implements TargetedEntitySpell, SpellDamageSpell {
 
 	int delay;
 	int interval;
 	int duration;
 	float damage;
 	boolean preventKnockback;
+	String spellDamageType;
 	
 	Map<Integer, Dot> activeDots = new HashMap<Integer, Dot>();
 	
@@ -36,6 +38,7 @@ public class DotSpell extends TargetedSpell implements TargetedEntitySpell {
 		duration = getConfigInt("duration", 200);
 		damage = getConfigFloat("damage", 2);
 		preventKnockback = getConfigBoolean("prevent-knockback", false);
+		spellDamageType = getConfigString("spell-damage-type", "");
 	}
 
 	@Override
@@ -113,7 +116,9 @@ public class DotSpell extends TargetedSpell implements TargetedEntitySpell {
 				return;
 			}
 			double dam = damage * power;
-			Bukkit.getPluginManager().callEvent(new SpellApplyDamageEvent(DotSpell.this, caster, target, dam, DamageCause.MAGIC));
+			SpellApplyDamageEvent event = new SpellApplyDamageEvent(DotSpell.this, caster, target, dam, DamageCause.MAGIC, spellDamageType);
+			Bukkit.getPluginManager().callEvent(event);
+			dam = event.getFinalDamage();
 			if (preventKnockback) {
 				target.damage(dam);
 			} else {
@@ -127,6 +132,11 @@ public class DotSpell extends TargetedSpell implements TargetedEntitySpell {
 			MagicSpells.cancelTask(taskId);
 			activeDots.remove(target.getEntityId());
 		}
+	}
+
+	@Override
+	public String getSpellDamageType() {
+		return spellDamageType;
 	}
 
 }

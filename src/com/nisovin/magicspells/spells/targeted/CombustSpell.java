@@ -69,7 +69,7 @@ public class CombustSpell extends TargetedSpell implements TargetedEntitySpell {
 		}
 		int duration = Math.round(fireTicks*power);
 		combusting.put(target.getEntityId(), new CombustData(power));
-		Bukkit.getPluginManager().callEvent(new SpellApplyDamageEvent(this, player, target, fireTickDamage, DamageCause.FIRE_TICK));
+		Bukkit.getPluginManager().callEvent(new SpellApplyDamageEvent(this, player, target, fireTickDamage, DamageCause.FIRE_TICK, ""));
 		target.setFireTicks(duration);
 		if (player != null) {
 			playSpellEffects(player, target);

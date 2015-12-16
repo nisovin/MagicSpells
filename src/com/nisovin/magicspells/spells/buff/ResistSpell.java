@@ -10,6 +10,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 
+import com.nisovin.magicspells.events.SpellApplyDamageEvent;
 import com.nisovin.magicspells.events.SpellTargetEvent;
 import com.nisovin.magicspells.spells.BuffSpell;
 import com.nisovin.magicspells.spells.SpellDamageSpell;
@@ -50,8 +51,8 @@ public class ResistSpell extends BuffSpell {
 		return true;
 	}
 	
-	@EventHandler(ignoreCancelled = true)
-	public void onSpellTarget(SpellTargetEvent event) {
+	@EventHandler
+	public void onSpellDamage(SpellApplyDamageEvent event) {
 		if (spellDamageTypes != null && event.getSpell() instanceof SpellDamageSpell && event.getTarget() instanceof Player && isActive((Player)event.getTarget())) {
 			SpellDamageSpell spell = (SpellDamageSpell)event.getSpell();
 			if (spell.getSpellDamageType() != null && spellDamageTypes.contains(spell.getSpellDamageType())) {
@@ -62,7 +63,7 @@ public class ResistSpell extends BuffSpell {
 				} else if (multiplier > 1) {
 					power *= buffed.get(player.getName());
 				}
-				event.increasePower(power);
+				event.applyDamageModifier(power);
 				addUseAndChargeCost(player);
 			}
 		}
