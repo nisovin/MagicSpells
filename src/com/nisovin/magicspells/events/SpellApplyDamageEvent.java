@@ -14,15 +14,23 @@ public class SpellApplyDamageEvent extends SpellEvent {
     LivingEntity target;
     double damage;
     DamageCause cause;
+    String spellDamageType;
     long timestamp;
+    float modifier;
     
-    public SpellApplyDamageEvent(Spell spell, Player caster, LivingEntity target, double damage, DamageCause cause) {
+    public SpellApplyDamageEvent(Spell spell, Player caster, LivingEntity target, double damage, DamageCause cause, String spellDamageType) {
 		super(spell, caster);
     	this.target = target;
 		this.damage = damage;
 		this.cause = cause;
+		this.spellDamageType = spellDamageType;
 		this.timestamp = System.currentTimeMillis();
+		this.modifier = 1.0f;
 	}
+    
+    public void applyDamageModifier(float modifier) {
+    	this.modifier *= modifier;
+    }
     
     public LivingEntity getTarget() {
     	return target;
@@ -38,6 +46,14 @@ public class SpellApplyDamageEvent extends SpellEvent {
     
     public long getTimestamp() {
     	return timestamp;
+    }
+    
+    public float getDamageModifier() {
+    	return modifier;
+    }
+    
+    public double getFinalDamage() {
+    	return damage * modifier;
     }
     
     @Override

@@ -91,7 +91,7 @@ public class PotionEffectSpell extends TargetedSpell implements TargetedEntitySp
 			cause = DamageCause.WITHER;
 		}
 		if (cause != null) {
-			Bukkit.getPluginManager().callEvent(new SpellApplyDamageEvent(this, caster, target, effect.getAmplifier(), cause));
+			Bukkit.getPluginManager().callEvent(new SpellApplyDamageEvent(this, caster, target, effect.getAmplifier(), cause, ""));
 		}
 		target.addPotionEffect(effect, true);
 	}

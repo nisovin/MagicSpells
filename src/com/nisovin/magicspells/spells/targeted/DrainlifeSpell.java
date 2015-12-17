@@ -91,7 +91,9 @@ public class DrainlifeSpell extends TargetedSpell implements TargetedEntitySpell
 				take = event.getDamage();
 				player.setLastDamageCause(event);
 			}
-			Bukkit.getPluginManager().callEvent(new SpellApplyDamageEvent(this, player, target, take, DamageCause.MAGIC));
+			SpellApplyDamageEvent event = new SpellApplyDamageEvent(this, player, target, take, DamageCause.MAGIC, spellDamageType);
+			Bukkit.getPluginManager().callEvent(event);
+			take = event.getFinalDamage();
 			if (ignoreArmor) {
 				double health = target.getHealth();
 				if (health > target.getMaxHealth()) health = target.getMaxHealth();
