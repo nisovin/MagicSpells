@@ -7,6 +7,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 
@@ -115,7 +116,13 @@ public class DotSpell extends TargetedSpell implements TargetedEntitySpell {
 			double dam = damage * power;
 			Bukkit.getPluginManager().callEvent(new SpellApplyDamageEvent(DotSpell.this, caster, target, dam, DamageCause.MAGIC));
 			if (preventKnockback) {
-				target.damage(dam);
+				// bukkit doesn't call a damage event here, so we'll do it ourselves
+				@SuppressWarnings("deprecation")
+				EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(caster, target, DamageCause.ENTITY_ATTACK, damage);
+				Bukkit.getPluginManager().callEvent(event);
+				if (!event.isCancelled()) {
+					target.damage(event.getDamage());
+				}
 			} else {
 				target.damage(dam, caster);
 			}
