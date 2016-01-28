@@ -162,7 +162,7 @@ public class CastListener implements Listener {
 		}
 	}
 	
-	@EventHandler(priority=EventPriority.MONITOR)
+	@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerAnimation(PlayerAnimationEvent event) {		
 		if (plugin.castOnAnimate) {
 			castSpell(event.getPlayer());

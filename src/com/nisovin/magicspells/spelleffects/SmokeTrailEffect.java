@@ -6,6 +6,7 @@ import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
 
 import com.nisovin.magicspells.MagicSpells;
 
@@ -29,7 +30,7 @@ class SmokeTrailEffect extends SpellEffect {
 	}
 
 	@Override
-	public void playEffect(Location location1, Location location2) {		
+	protected void playEffectLine(Location location1, Location location2) {		
 		SmokeStreamEffect effect = new SmokeStreamEffect(location1, location2);
 		if (interval > 0) {
 			effect.start(interval);

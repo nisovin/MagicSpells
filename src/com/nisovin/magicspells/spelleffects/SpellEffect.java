@@ -1,13 +1,16 @@
 package com.nisovin.magicspells.spelleffects;
 
 import java.util.HashMap;
+import java.util.List;
 
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.MagicSpells;
+import com.nisovin.magicspells.castmodifiers.ModifierSet;
 
 /**
  * 
@@ -37,6 +40,8 @@ public abstract class SpellEffect {
 	int ticksPerRevolution;
 	float orbitYOffset = 0;
 	
+	ModifierSet modifiers = null;
+	
 	int taskId = -1;
 	
 	public abstract void loadFromString(String string);
@@ -58,6 +63,11 @@ public abstract class SpellEffect {
 		distancePerTick = 6.28F / (ticksPerSecond * secondsPerRevolution);
 		ticksPerRevolution = Math.round(ticksPerSecond * secondsPerRevolution);
 		orbitYOffset = (float)config.getDouble("orbit-y-offset", orbitYOffset);
+		
+		List<String> list = config.getStringList("modifiers");
+		if (list != null) {
+			modifiers = new ModifierSet(list);
+		}
 		
 		loadFromConfig(config);
 	}
@@ -127,7 +137,19 @@ public abstract class SpellEffect {
 	 * @param location2 the ending location
 	 * @param param the parameter specified in the spell config (can be ignored)
 	 */
-	public void playEffect(Location location1, Location location2) {
+	public final void playEffect(final Location location1, final Location location2) {
+		if (delay <= 0) {
+			playEffectLine(location1, location2);
+		} else {
+			MagicSpells.scheduleDelayedTask(new Runnable() {
+				public void run() {
+					playEffectLine(location1, location2);
+				}
+			}, delay);
+		}
+	}
+	
+	protected void playEffectLine(Location location1, Location location2) {
 		int c = (int)Math.ceil(location1.distance(location2) / distanceBetween) - 1;
 		if (c <= 0) return;
 		Vector v = location2.toVector().subtract(location1.toVector()).normalize().multiply(distanceBetween);

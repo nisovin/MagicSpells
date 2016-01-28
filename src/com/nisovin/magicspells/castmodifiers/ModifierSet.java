@@ -3,6 +3,8 @@ package com.nisovin.magicspells.castmodifiers;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bukkit.entity.Player;
+
 import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.Spell;
 import com.nisovin.magicspells.events.*;
@@ -96,6 +98,14 @@ public class ModifierSet {
 				break;
 			}
 		}
+	}
+	
+	public boolean check(Player player) {
+		for (Modifier modifier : modifiers) {
+			boolean pass = modifier.check(player);
+			if (!pass) return false;
+		}
+		return true;
 	}
 	
 }

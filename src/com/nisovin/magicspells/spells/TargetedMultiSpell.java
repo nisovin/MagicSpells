@@ -56,11 +56,7 @@ public final class TargetedMultiSpell extends TargetedSpell implements TargetedE
 				} else {
 					Subspell spell = new Subspell(s);
 					if (spell.process()) {
-						if (spell.isTargetedEntitySpell() || spell.isTargetedLocationSpell()) {
-							actions.add(new Action(spell));
-						} else {
-							MagicSpells.error("Invalid spell '" + s + "' for multi-spell '" + internalName + "'");
-						}
+						actions.add(new Action(spell));
 					} else {
 						MagicSpells.error("No such spell '" + s + "' for multi-spell '" + internalName + "'");
 					}
@@ -216,6 +212,8 @@ public final class TargetedMultiSpell extends TargetedSpell implements TargetedE
 			} else if (locTarget != null) {
 				success = spell.castAtLocation(caster, locTarget, power);
 			}
+		} else {
+			success = spell.cast(caster, power) == PostCastAction.HANDLE_NORMALLY;
 		}
 		return success;
 	}

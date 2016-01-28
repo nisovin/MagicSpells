@@ -570,6 +570,12 @@ public class VolatileCodeEnabled_1_8_R3 implements VolatileCodeHandle {
             e.printStackTrace();
         }
 	}
+	
+	@Override
+	public void setNoAIFlag(LivingEntity entity) {
+		((CraftLivingEntity)entity).getHandle().getDataWatcher().watch(15, Byte.valueOf((byte)1));
+		((CraftLivingEntity)entity).getHandle().getDataWatcher().watch(4, Byte.valueOf((byte)1));
+	}
 
 	@Override
 	public void addAILookAtPlayer(LivingEntity entity, int range) {
@@ -727,6 +733,16 @@ public class VolatileCodeEnabled_1_8_R3 implements VolatileCodeHandle {
 		} catch (Exception e) {
 			MagicSpells.handleException(e);
 		}
+	}
+	
+	@Override
+	public void setClientVelocity(Player player, Vector velocity) {
+		((CraftPlayer)player).getHandle().playerConnection.sendPacket(new PacketPlayOutEntityVelocity(player.getEntityId(), velocity.getX(), velocity.getY(), velocity.getZ()));
+	}
+	
+	@Override
+	public double getAbsorptionHearts(LivingEntity entity) {
+		return ((CraftLivingEntity)entity).getHandle().getAbsorptionHearts();
 	}
 
 }

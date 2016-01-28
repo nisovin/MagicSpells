@@ -8,6 +8,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.util.Vector;
 
+import com.nisovin.magicspells.MagicSpells;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
 import com.nisovin.magicspells.spells.InstantSpell;
 import com.nisovin.magicspells.util.MagicConfig;
@@ -17,15 +18,17 @@ public class LeapSpell extends InstantSpell {
 	private double forwardVelocity;
 	private double upwardVelocity;
 	private boolean cancelDamage;
+	private boolean clientOnly;
 	
 	private HashSet<Player> jumping;
-
+	
 	public LeapSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
 		
 		forwardVelocity = getConfigInt("forward-velocity", 40) / 10D;
 		upwardVelocity = getConfigInt("upward-velocity", 15) / 10D;
 		cancelDamage = getConfigBoolean("cancel-damage", true);
+		clientOnly = getConfigBoolean("client-only", true);
 		
 		if (cancelDamage) {
 			jumping = new HashSet<Player>();
@@ -37,7 +40,11 @@ public class LeapSpell extends InstantSpell {
 		if (state == SpellCastState.NORMAL) {
 			Vector v = player.getLocation().getDirection();
 			v.setY(0).normalize().multiply(forwardVelocity*power).setY(upwardVelocity*power);
-			player.setVelocity(v);
+			if (clientOnly) {
+				MagicSpells.getVolatileCodeHandler().setClientVelocity(player, v);
+			} else {
+				player.setVelocity(v);
+			}
 			if (cancelDamage) {
 				jumping.add(player);
 			}

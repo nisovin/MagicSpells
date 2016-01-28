@@ -23,6 +23,7 @@ import org.bukkit.material.Button;
 import org.bukkit.material.Lever;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.util.DisguiseManager;
 import com.nisovin.magicspells.util.MagicConfig;
@@ -186,6 +187,10 @@ public class VolatileCodeDisabled implements VolatileCodeHandle {
 	@Override
 	public void removeAI(LivingEntity entity) {
 	}
+	
+	@Override
+	public void setNoAIFlag(LivingEntity entity) {
+	}
 
 	@Override
 	public void addEntityAttribute(LivingEntity entity, String attribute, double amount, int operation) {
@@ -239,5 +244,15 @@ public class VolatileCodeDisabled implements VolatileCodeHandle {
 	@Override
 	public ItemStack hideTooltipCrap(ItemStack item) {
 		return item;
+	}
+	
+	@Override
+	public void setClientVelocity(Player player, Vector velocity) {
+		player.setVelocity(velocity);
+	}
+	
+	@Override
+	public double getAbsorptionHearts(LivingEntity entity) {
+		return 0;
 	}
 }

@@ -1,6 +1,7 @@
 package com.nisovin.magicspells.spelleffects;
 
 import org.bukkit.Location;
+import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.MagicSpells;
@@ -38,7 +39,7 @@ public class ParticleLineEffect extends ParticlesEffect {
 	}
 	
 	@Override
-	public void playEffect(Location location1, Location location2) {
+	protected void playEffectLine(Location location1, Location location2) {
 		
 		int c = (int)Math.ceil(location1.distance(location2) / distanceBetween) - 1;
 		if (c <= 0) return;

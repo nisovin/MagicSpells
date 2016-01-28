@@ -93,15 +93,24 @@ public final class MultiSpell extends InstantSpell {
 				}
 			} else {
 				// random spell
-				Action action = actions.get(random.nextInt(actions.size()));
-				if (action.isSpell()) {
-					// first check cooldown
-					if (checkIndividualCooldowns && action.getSpell().getSpell().onCooldown(player)) {
-						sendMessage(player, strOnCooldown);
-						return PostCastAction.ALREADY_HANDLED;
+				List<Action> list;
+				if (checkIndividualCooldowns) {
+					list = new ArrayList<Action>();
+					for (Action a : actions) {
+						if (a.isSpell() && !a.getSpell().getSpell().onCooldown(player)) {
+							list.add(a);
+						}
 					}
-					// cast the spell
-					action.getSpell().cast(player, power);
+				} else {
+					list = actions;
+				}
+				if (list.size() > 0) {
+					Action action = list.get(random.nextInt(list.size()));
+					if (action.isSpell()) {
+						action.getSpell().cast(player, power);
+					}
+				} else {
+					return PostCastAction.ALREADY_HANDLED;
 				}
 			}
 			playSpellEffects(EffectPosition.CASTER, player);

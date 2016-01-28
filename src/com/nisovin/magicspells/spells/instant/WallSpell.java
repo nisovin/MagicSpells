@@ -29,11 +29,14 @@ public class WallSpell extends InstantSpell {
 	private int wallWidth;
 	private int wallHeight;
 	private int wallDepth;
+	private int yOffset;
 	private MagicMaterial wallMaterial;
 	private int wallDuration;
+	private boolean alwaysOnGround;
 	private boolean preventBreaking;
 	private boolean preventDrops;
 	private boolean checkPlugins;
+	private boolean checkPluginsPerBlock;
 	private String strNoTarget;
 	
 	private ArrayList<TemporaryBlockSet> blockSets;
@@ -45,12 +48,15 @@ public class WallSpell extends InstantSpell {
 		wallWidth = getConfigInt("wall-width", 5);
 		wallHeight = getConfigInt("wall-height", 3);
 		wallDepth = getConfigInt("wall-depth", 1);
+		yOffset = getConfigInt("y-offset", -1);
 		String type = getConfigString("wall-type", "stone");
 		wallMaterial = MagicSpells.getItemNameResolver().resolveBlock(type);
 		wallDuration = getConfigInt("wall-duration", 15);
+		alwaysOnGround = getConfigBoolean("always-on-ground", false);
 		preventBreaking = getConfigBoolean("prevent-breaking", false);
 		preventDrops = getConfigBoolean("prevent-drops", true);
 		checkPlugins = getConfigBoolean("check-plugins", true);
+		checkPluginsPerBlock = getConfigBoolean("check-plugins-per-block", checkPlugins);
 		strNoTarget = getConfigString("str-no-target", "Unable to create a wall.");
 		
 		blockSets = new ArrayList<TemporaryBlockSet>();
@@ -87,7 +93,16 @@ public class WallSpell extends InstantSpell {
 					}
 				}
 				
-				TemporaryBlockSet blockSet = new TemporaryBlockSet(Material.AIR, wallMaterial);
+				if (alwaysOnGround) {
+					yOffset = 0;
+					Block b = target.getRelative(0, -1, 0);
+					while (b.getType() == Material.AIR && yOffset > -5) {
+						yOffset--;
+						b = b.getRelative(0, -1, 0);
+					}
+				}
+				
+				TemporaryBlockSet blockSet = new TemporaryBlockSet(Material.AIR, wallMaterial, checkPluginsPerBlock, player);
 				Location loc = target.getLocation();
 				Vector dir = player.getLocation().getDirection();
 				int wallWidth = Math.round(this.wallWidth*power);
@@ -95,7 +110,7 @@ public class WallSpell extends InstantSpell {
 				if (Math.abs(dir.getX()) > Math.abs(dir.getZ())) {
 					int depthDir = dir.getX() > 0 ? 1 : -1;
 					for (int z = loc.getBlockZ() - (wallWidth/2); z <= loc.getBlockZ() + (wallWidth/2); z++) {
-						for (int y = loc.getBlockY() - 1; y < loc.getBlockY() + wallHeight - 1; y++) {
+						for (int y = loc.getBlockY() + yOffset; y < loc.getBlockY() + wallHeight + yOffset; y++) {
 							for (int x = target.getX(); x < target.getX() + wallDepth && x > target.getX() - wallDepth; x += depthDir) {
 								blockSet.add(player.getWorld().getBlockAt(x, y, z));
 							}
@@ -104,7 +119,7 @@ public class WallSpell extends InstantSpell {
 				} else {
 					int depthDir = dir.getZ() > 0 ? 1 : -1;
 					for (int x = loc.getBlockX() - (wallWidth/2); x <= loc.getBlockX() + (wallWidth/2); x++) {
-						for (int y = loc.getBlockY() - 1; y < loc.getBlockY() + wallHeight - 1; y++) {
+						for (int y = loc.getBlockY() + yOffset; y < loc.getBlockY() + wallHeight + yOffset; y++) {
 							for (int z = target.getZ(); z < target.getZ() + wallDepth && z > target.getZ() - wallDepth; z += depthDir) {
 								blockSet.add(player.getWorld().getBlockAt(x, y, z));
 							}

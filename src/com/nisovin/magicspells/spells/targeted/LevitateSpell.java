@@ -26,6 +26,8 @@ public class LevitateSpell extends TargetedSpell implements TargetedEntitySpell 
 
 	private int tickRate;
 	private int duration;
+	private float distanceChange;
+	private float minDistance;
 	private boolean cancelOnItemSwitch;
 	private boolean cancelOnSpellCast;
 	private boolean cancelOnTakeDamage;
@@ -37,6 +39,8 @@ public class LevitateSpell extends TargetedSpell implements TargetedEntitySpell 
 		
 		tickRate = getConfigInt("tick-rate", 5);
 		duration = getConfigInt("duration", 10);
+		distanceChange = getConfigFloat("distance-change", 0);
+		minDistance = getConfigFloat("min-distance", 1);
 		cancelOnItemSwitch = getConfigBoolean("cancel-on-item-switch", true);
 		cancelOnSpellCast = getConfigBoolean("cancel-on-spell-cast", false);
 		cancelOnTakeDamage = getConfigBoolean("cancel-on-take-damage", true);
@@ -161,6 +165,11 @@ public class LevitateSpell extends TargetedSpell implements TargetedEntitySpell 
 				if (caster.isDead() || !caster.isOnline()) {
 					stop();
 				} else {
+					if (distanceChange != 0 && distance > minDistance) {
+						distance -= distanceChange;
+						if (distance < minDistance)
+							distance = minDistance;
+					}
 					target.setFallDistance(0);
 					Vector casterLocation = caster.getEyeLocation().toVector();
 					Vector targetLocation = target.getLocation().toVector();

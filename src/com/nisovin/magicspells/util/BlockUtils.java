@@ -98,7 +98,8 @@ public class BlockUtils {
 				material == Material.SUGAR_CANE_BLOCK ||
 				material == Material.VINE ||
 				material == Material.WATER_LILY ||
-				material == Material.NETHER_STALK;
+				material == Material.NETHER_STALK ||
+				material == Material.CARPET;
 	}
 	
 	public static boolean isSafeToStand(Location location) {

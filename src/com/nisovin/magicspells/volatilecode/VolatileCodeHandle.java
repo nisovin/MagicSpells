@@ -8,6 +8,7 @@ import org.bukkit.entity.Fireball;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.util.DisguiseManager;
 import com.nisovin.magicspells.util.MagicConfig;
@@ -72,6 +73,8 @@ public interface VolatileCodeHandle {
 	
 	public void removeAI(LivingEntity entity);
 	
+	public void setNoAIFlag(LivingEntity entity);
+	
 	public void addAILookAtPlayer(LivingEntity entity, int range);
 	
 	public void setBossBar(Player player, String title, double percent);
@@ -91,5 +94,9 @@ public interface VolatileCodeHandle {
 	public void sendActionBarMessage(Player player, String message);
 	
 	public void setTabMenuHeaderFooter(Player player, String header, String footer);
+	
+	public void setClientVelocity(Player player, Vector velocity);
+	
+	public double getAbsorptionHearts(LivingEntity entity);
 	
 }

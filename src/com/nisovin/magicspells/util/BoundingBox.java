@@ -9,6 +9,8 @@ public class BoundingBox {
 
 	World world;
 	double lowX, lowY, lowZ, highX, highY, highZ;
+	double horizRadius;
+	double vertRadius;
 	
 	public BoundingBox(Block center, double radius) {
 		this(center.getLocation().add(0.5, 0, 0.5), radius, radius);
@@ -23,13 +25,9 @@ public class BoundingBox {
 	}
 	
 	public BoundingBox(Location center, double horizRadius, double vertRadius) {
-		world = center.getWorld();
-		lowX = center.getX() - horizRadius;
-		lowY = center.getY() - vertRadius;
-		lowZ = center.getZ() - horizRadius;
-		highX = center.getX() + horizRadius;
-		highY = center.getY() + vertRadius;
-		highZ = center.getZ() + horizRadius;
+		this.horizRadius = horizRadius;
+		this.vertRadius = vertRadius;
+		setCenter(center);
 	}
 	
 	public BoundingBox(Location corner1, Location corner2) {
@@ -40,6 +38,16 @@ public class BoundingBox {
 		highY = max(corner1.getY(), corner2.getY());
 		lowZ = min(corner1.getZ(), corner2.getZ());
 		highZ = max(corner1.getZ(), corner2.getZ());
+	}
+	
+	public void setCenter(Location center) {
+		world = center.getWorld();
+		lowX = center.getX() - horizRadius;
+		lowY = center.getY() - vertRadius;
+		lowZ = center.getZ() - horizRadius;
+		highX = center.getX() + horizRadius;
+		highY = center.getY() + vertRadius;
+		highZ = center.getZ() + horizRadius;
 	}
 	
 	public void expand(double amount) {

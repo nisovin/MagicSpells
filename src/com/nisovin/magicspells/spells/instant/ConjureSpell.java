@@ -64,6 +64,7 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 	private int[] itemMaxQuantities;
 	private double[] itemChances;
 	private float randomVelocity;
+	private int delay;
 	
 	public ConjureSpell(MagicConfig config, String spellName) {
 		super(config, spellName);
@@ -84,6 +85,7 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 		preferredSlot = getConfigInt("preferred-slot", -1);
 		itemList = getConfigStringList("items", null);
 		randomVelocity = getConfigFloat("random-velocity", 0);
+		delay = getConfigInt("delay", -1);
 	}
 	
 	@Override
@@ -148,10 +150,18 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 	}
 
 	@Override
-	public PostCastAction castSpell(Player player, SpellCastState state, float power, String[] args) {
+	public PostCastAction castSpell(final Player player, SpellCastState state, final float power, String[] args) {
 		if (itemTypes == null) return PostCastAction.ALREADY_HANDLED;
 		if (state == SpellCastState.NORMAL) {
-			conjureItems(player, power);
+			if (delay >= 0) {
+				MagicSpells.scheduleDelayedTask(new Runnable() {
+					public void run() {
+						conjureItems(player, power);
+					}
+				}, delay);
+			} else {
+				conjureItems(player, power);
+			}
 		}
 		return PostCastAction.HANDLE_NORMALLY;
 		

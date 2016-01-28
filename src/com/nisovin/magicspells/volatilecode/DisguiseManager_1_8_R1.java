@@ -319,8 +319,8 @@ public class DisguiseManager_1_8_R1 extends DisguiseManager {
 				((CraftWorld)p.getWorld()).getHandle().broadcastEntityEffect(((CraftEntity)p).getHandle(), (byte) 4);
 			} else if (entityType == EntityType.WITCH) {
 				((CraftWorld)p.getWorld()).getHandle().broadcastEntityEffect(((CraftEntity)p).getHandle(), (byte) 15);
-			} else if (entityType == EntityType.VILLAGER) {
-				((CraftWorld)p.getWorld()).getHandle().broadcastEntityEffect(((CraftEntity)p).getHandle(), (byte) 13);
+			//} else if (entityType == EntityType.VILLAGER) {
+			//	((CraftWorld)p.getWorld()).getHandle().broadcastEntityEffect(((CraftEntity)p).getHandle(), (byte) 13);
 			} else if (entityType == EntityType.BLAZE || entityType == EntityType.SPIDER || entityType == EntityType.GHAST) {
 				final DataWatcher dw = new DataWatcher(entityPlayer);
 				dw.a(0, Byte.valueOf((byte) 0));
@@ -333,7 +333,7 @@ public class DisguiseManager_1_8_R1 extends DisguiseManager {
 						broadcastPacketDisguised(p, PacketType.Play.Server.ENTITY_METADATA, new PacketPlayOutEntityMetadata(entityId, dw, true));
 					}
 				}, 10);
-			} else if (entityType == EntityType.WITCH) {
+			/*} else if (entityType == EntityType.WITCH) {
 				final DataWatcher dw = new DataWatcher(entityPlayer);
 				dw.a(0, Byte.valueOf((byte) 0));
 				dw.a(1, Short.valueOf((short) 300));
@@ -345,7 +345,7 @@ public class DisguiseManager_1_8_R1 extends DisguiseManager {
 						broadcastPacketDisguised(p, PacketType.Play.Server.ENTITY_METADATA, new PacketPlayOutEntityMetadata(entityId, dw, true));
 					}
 				}, 10);
-			/*} else if (entityType == EntityType.CREEPER && !disguise.getFlag()) {
+			} else if (entityType == EntityType.CREEPER && !disguise.getFlag()) {
 				final DataWatcher dw = new DataWatcher(entityPlayer);
 				dw.a(0, Byte.valueOf((byte) 0));
 				dw.a(1, Short.valueOf((short) 300));
@@ -356,7 +356,7 @@ public class DisguiseManager_1_8_R1 extends DisguiseManager {
 						dw.watch(17, Byte.valueOf((byte)0));
 						broadcastPacketDisguised(p, PacketType.Play.Server.ENTITY_METADATA, new PacketPlayOutEntityMetadata(entityId, dw, true));
 					}
-				}, 10);*/
+				}, 10);
 			} else if (entityType == EntityType.WOLF) {
 				final DataWatcher dw = new DataWatcher(entityPlayer);
 				dw.a(0, Byte.valueOf((byte) 0));
@@ -380,7 +380,7 @@ public class DisguiseManager_1_8_R1 extends DisguiseManager {
 						dw.watch(16, Byte.valueOf((byte)(p.isSneaking() ? 1 : 2)));
 						broadcastPacketDisguised(p, PacketType.Play.Server.ENTITY_METADATA, new PacketPlayOutEntityMetadata(entityId, dw, true));
 					}
-				}, 10);
+				}, 10);*/
 			}
 		}
 	}

@@ -104,6 +104,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	protected SpellReagents reagents;
 	
 	protected float cooldown;
+	protected float serverCooldown;
 	protected List<String> rawSharedCooldowns;
 	protected HashMap<Spell, Float> sharedCooldowns;
 	protected boolean ignoreGlobalCooldown;
@@ -145,6 +146,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	
 	private HashMap<String, Long> nextCast;
 	private IntMap<String> chargesConsumed;
+	private long nextCastServer;
 	
 	public Spell(MagicConfig config, String spellName) {
 		this.config = config;
@@ -362,12 +364,14 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		
 		// cooldowns
 		this.cooldown = (float)config.getDouble(section + "." + spellName + ".cooldown", 0);
+		this.serverCooldown = (float)config.getDouble(section + "." + spellName + ".server-cooldown", 0);
 		this.rawSharedCooldowns = config.getStringList(section + "." + spellName + ".shared-cooldowns", null);
 		this.ignoreGlobalCooldown = config.getBoolean(section + "." + spellName + ".ignore-global-cooldown", false);
 		this.charges = config.getInt(section + "." + spellName + ".charges", 0);
 		this.rechargeSound = config.getString(section + "." + spellName + ".recharge-sound", "");
 		this.nextCast = new HashMap<String, Long>();
 		this.chargesConsumed = new IntMap<String>();
+		this.nextCastServer = 0;
 
 		// modifiers
 		this.modifierStrings = config.getStringList(section + "." + spellName + ".modifiers", null);
@@ -973,6 +977,10 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 			return chargesConsumed.get(player.getName()) >= charges;
 		}
 		
+		if (serverCooldown > 0 && nextCastServer > System.currentTimeMillis()) {
+			return true;
+		}
+		
 		Long next = nextCast.get(player.getName());
 		if (next != null) {
 			if (next > System.currentTimeMillis()) {
@@ -993,13 +1001,21 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 	 */
 	public float getCooldown(Player player) {
 		if (charges > 0) return -1;
+		
+		float cd = 0;
+		
 		Long next = nextCast.get(player.getName());
 		if (next != null) {
 			float c = (next - System.currentTimeMillis()) / 1000F;
-			return c > 0 ? c : 0;
-		} else {
-			return 0;
+			cd =  c > 0 ? c : 0;
 		}
+		
+		if (serverCooldown > 0 && nextCastServer > System.currentTimeMillis()) {
+			float c = (nextCastServer - System.currentTimeMillis()) / 1000F;
+			if (c > cd) cd = c;
+		}
+		
+		return cd;
 	}
 	
 	/**
@@ -1036,6 +1052,9 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 			} else {
 				chargesConsumed.remove(player.getName());
 			}
+		}
+		if (serverCooldown > 0) {
+			nextCastServer = System.currentTimeMillis() + (long)(serverCooldown * 1000L);
 		}
 		if (activateSharedCooldowns && sharedCooldowns != null) {
 			for (Map.Entry<Spell, Float> scd : sharedCooldowns.entrySet()) {
@@ -1478,6 +1497,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 			List<SpellEffect> effectsList = effects.get(EffectPosition.TRAIL);
 			if (effectsList != null) {
 				for (SpellEffect effect : effectsList) {
+					System.out.println("yes?");
 					effect.playEffect(loc1, loc2);
 				}
 			}

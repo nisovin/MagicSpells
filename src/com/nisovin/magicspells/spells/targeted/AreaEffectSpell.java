@@ -14,13 +14,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import com.nisovin.magicspells.MagicSpells;
-import com.nisovin.magicspells.Spell;
+import com.nisovin.magicspells.Subspell;
 import com.nisovin.magicspells.castmodifiers.ModifierSet;
 import com.nisovin.magicspells.events.SpellTargetEvent;
 import com.nisovin.magicspells.events.SpellTargetLocationEvent;
 import com.nisovin.magicspells.spelleffects.EffectPosition;
-import com.nisovin.magicspells.spells.TargetedEntityFromLocationSpell;
-import com.nisovin.magicspells.spells.TargetedEntitySpell;
 import com.nisovin.magicspells.spells.TargetedLocationSpell;
 import com.nisovin.magicspells.spells.TargetedSpell;
 import com.nisovin.magicspells.util.BoundingBox;
@@ -36,7 +34,7 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 	private int maxTargets;
 	private List<String> spellNames;
 	private boolean spellSourceInCenter;
-	private List<Spell> spells;
+	private List<Subspell> spells;
 	
 	private ModifierSet locationTargetModifiers;
 	private ModifierSet entityTargetModifiers;
@@ -67,19 +65,19 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 	public void initialize() {
 		super.initialize();
 		
-		spells = new ArrayList<Spell>();
+		spells = new ArrayList<Subspell>();
 		
 		if (spellNames != null && spellNames.size() > 0) {
 			for (String spellName : spellNames) {
-				Spell spell = MagicSpells.getSpellByInternalName(spellName);
-				if (spell != null) {
-					if (spell instanceof TargetedLocationSpell || spell instanceof TargetedEntitySpell || spell instanceof TargetedEntityFromLocationSpell) {
+				Subspell spell = new Subspell(spellName);
+				if (spell.process()) {
+					if (spell.isTargetedEntityFromLocationSpell() || spell.isTargetedEntitySpell() || spell.isTargetedLocationSpell()) {
 						spells.add(spell);
 					} else {
 						MagicSpells.error("AreaEffect spell '" + name + "' attempted to use non-targeted spell '" + spellName + "'");
 					}
 				} else {
-					MagicSpells.error("AreaEffect spell '" + name + "' attempted to use non-existant spell '" + spellName + "'");
+					MagicSpells.error("AreaEffect spell '" + name + "' attempted to use invalid spell '" + spellName + "'");
 				}
 			}
 			spellNames.clear();
@@ -171,22 +169,22 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 							power = event.getPower();
 						}
 					}
-					for (Spell spell : spells) {
+					for (Subspell spell : spells) {
 						if (player != null) {
-							if (spellSourceInCenter && spell instanceof TargetedEntityFromLocationSpell) {
-								((TargetedEntityFromLocationSpell)spell).castAtEntityFromLocation(player, location, target, power);
-							} else if (spell instanceof TargetedEntitySpell) {
-								((TargetedEntitySpell)spell).castAtEntity(player, target, power);
-							} else if (spell instanceof TargetedLocationSpell) {
-								((TargetedLocationSpell)spell).castAtLocation(player, target.getLocation(), power);
+							if (spellSourceInCenter && spell.isTargetedEntityFromLocationSpell()) {
+								spell.castAtEntityFromLocation(player, location, target, power);
+							} else if (spell.isTargetedEntitySpell()) {
+								spell.castAtEntity(player, target, power);
+							} else if (spell.isTargetedLocationSpell()) {
+								spell.castAtLocation(player, target.getLocation(), power);
 							}
 						} else {
-							if (spell instanceof TargetedEntityFromLocationSpell) {
-								((TargetedEntityFromLocationSpell)spell).castAtEntityFromLocation(location, target, power);
-							} else if (spell instanceof TargetedEntitySpell) {
-								((TargetedEntitySpell)spell).castAtEntity(target, power);
-							} else if (spell instanceof TargetedLocationSpell) {
-								((TargetedLocationSpell)spell).castAtLocation(target.getLocation(), power);
+							if (spell.isTargetedEntityFromLocationSpell()) {
+								spell.castAtEntityFromLocation(null, location, target, power);
+							} else if (spell.isTargetedEntitySpell()) {
+								spell.castAtEntity(null, target, power);
+							} else if (spell.isTargetedLocationSpell()) {
+								spell.castAtLocation(null, target.getLocation(), power);
 							}
 						}
 					}

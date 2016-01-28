@@ -239,6 +239,17 @@ public class Modifier {
 		return true;
 	}
 	
+	public boolean check(Player player) {
+		boolean check = condition.check(player);
+		if (negated) check = !check;
+		if (check == false && type == ModifierType.REQUIRED) {
+			return false;
+		} else if (check == true && type == ModifierType.DENIED) {
+			return false;
+		}
+		return true;
+	}
+	
 	private static ModifierType getTypeByName(String name) {
 		if (name.equalsIgnoreCase("required") || name.equalsIgnoreCase("require")) {
 			return ModifierType.REQUIRED;
