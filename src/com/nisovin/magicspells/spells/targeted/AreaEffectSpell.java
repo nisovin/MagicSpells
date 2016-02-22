@@ -139,8 +139,8 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 	private boolean doAoe(Player player, Location location, float basePower) {
 		int count = 0;
 		
-		Vector facing = player.getLocation().getDirection();
-		Vector vLoc = player.getLocation().toVector();
+		Vector facing = player != null ? player.getLocation().getDirection() : location.getDirection();
+		Vector vLoc = player != null ? player.getLocation().toVector() : location.toVector();
 		
 		BoundingBox box = new BoundingBox(location, radius, verticalRadius);
 		List<Entity> entities = new ArrayList<Entity>(location.getWorld().getEntitiesByClasses(LivingEntity.class));
@@ -167,6 +167,12 @@ public class AreaEffectSpell extends TargetedSpell implements TargetedLocationSp
 						} else {
 							target = event.getTarget();
 							power = event.getPower();
+						}
+					} else if (entityTargetModifiers != null) {
+						SpellTargetEvent event = new SpellTargetEvent(this, player, target, power);
+						entityTargetModifiers.apply(event);
+						if (event.isCancelled()) {
+							continue;
 						}
 					}
 					for (Subspell spell : spells) {

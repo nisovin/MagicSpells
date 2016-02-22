@@ -1,6 +1,8 @@
 package com.nisovin.magicspells.spells.targeted;
 
 import org.bukkit.Location;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 
@@ -53,6 +55,13 @@ public class DummySpell extends TargetedSpell implements TargetedEntitySpell, Ta
 	@Override
 	public boolean castAtLocation(Location target, float power) {
 		playSpellEffects(EffectPosition.TARGET, target);
+		return true;
+	}
+	
+	@Override
+	public boolean castFromConsole(CommandSender sender, String[] args) {
+		playSpellEffects(EffectPosition.CASTER, (Entity)null);
+		playSpellEffects(EffectPosition.TARGET, (Entity)null);
 		return true;
 	}
 

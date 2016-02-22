@@ -39,7 +39,7 @@ public class TitleEffect extends SpellEffect {
 			for (Player player : Bukkit.getOnlinePlayers()) {
 				MagicSpells.getVolatileCodeHandler().sendTitleToPlayer(player, title, subtitle, fadeIn, stay, fadeOut);
 			}
-		} else if (entity instanceof Player) {
+		} else if (entity != null && entity instanceof Player) {
 			MagicSpells.getVolatileCodeHandler().sendTitleToPlayer((Player)entity, title, subtitle, fadeIn, stay, fadeOut);
 		}
 	}

@@ -56,7 +56,7 @@ public class EmpowerSpell extends BuffSpell {
 	@EventHandler(priority=EventPriority.HIGHEST)
 	public void onSpellCast(SpellCastEvent event) {
 		Player player = event.getCaster();
-		if (empowered.containsKey(player.getName()) && (spells == null || spells.contains(event.getSpell().getInternalName()))) {
+		if (player != null && empowered.containsKey(player.getName()) && (spells == null || spells.contains(event.getSpell().getInternalName()))) {
 			event.increasePower(empowered.get(player.getName()));
 			addUseAndChargeCost(player);
 		}

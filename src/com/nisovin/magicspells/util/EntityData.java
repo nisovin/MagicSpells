@@ -188,6 +188,14 @@ public class EntityData {
 			var1 = -1;
 			type = "ozelot";
 		}
+		if (type.equals("slime") || type.equals("lavaslime")) {
+			var1 = 1;
+		} else if (type.startsWith("slime") || type.startsWith("magmacube") || type.startsWith("lavaslime")) {
+			String[] data = type.split(" ");
+			type = data[0];
+			if (type.equals("magmacube")) type = "lavaslime";
+			var1 = Integer.parseInt(data[1]);
+		}
 		if (type.equals("player")) {
 			entityType = EntityType.PLAYER;
 		} else {

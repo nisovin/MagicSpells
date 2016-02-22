@@ -92,7 +92,7 @@ public abstract class SpellEffect {
 	}
 	
 	protected void playEffectEntity(Entity entity) {
-		playEffectLocationReal(entity.getLocation());
+		playEffectLocationReal(entity == null ? null : entity.getLocation());
 	}
 	
 	/**
@@ -113,7 +113,9 @@ public abstract class SpellEffect {
 	}
 	
 	private void playEffectLocationReal(Location location) {
-		if (heightOffset != 0 || forwardOffset != 0) {
+		if (location == null) {
+			playEffectLocation(null);
+		} else if (heightOffset != 0 || forwardOffset != 0) {
 			Location loc = location.clone();
 			if (heightOffset != 0) {
 				loc.setY(loc.getY() + heightOffset);

@@ -30,7 +30,7 @@ public class ActionBarTextEffect extends SpellEffect {
 			for (Player player : Bukkit.getOnlinePlayers()) {
 				MagicSpells.getVolatileCodeHandler().sendActionBarMessage(player, message);
 			}
-		} else if (entity instanceof Player) {
+		} else if (entity != null && entity instanceof Player) {
 			MagicSpells.getVolatileCodeHandler().sendActionBarMessage((Player)entity, message);
 		}
 	}
