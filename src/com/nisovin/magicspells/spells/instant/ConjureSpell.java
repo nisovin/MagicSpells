@@ -58,6 +58,7 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 	private double expiration;
 	private int requiredSlot;
 	private int preferredSlot;
+	private boolean offhand;
 	List<String> itemList;
 	private ItemStack[] itemTypes;
 	private int[] itemMinQuantities;
@@ -83,6 +84,7 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 		expiration = getConfigDouble("expiration", 0L);
 		requiredSlot = getConfigInt("required-slot", -1);
 		preferredSlot = getConfigInt("preferred-slot", -1);
+		offhand = getConfigBoolean("offhand", false);
 		itemList = getConfigStringList("items", null);
 		randomVelocity = getConfigFloat("random-velocity", 0);
 		delay = getConfigInt("delay", -1);
@@ -203,7 +205,9 @@ public class ConjureSpell extends InstantSpell implements TargetedEntitySpell, T
 					added = Util.addToInventory(player.getEnderChest(), item, stackExisting, ignoreMaxStackSize);
 				}
 				if (!added && addToInventory) {
-					if (requiredSlot >= 0) {
+					if (offhand) {
+						MagicSpells.getVolatileCodeHandler().setOffhand(player, item);
+					} else if (requiredSlot >= 0) {
 						ItemStack old = inv.getItem(requiredSlot);
 						if (old != null && old.isSimilar(item)) {
 							item.setAmount(item.getAmount() + old.getAmount());

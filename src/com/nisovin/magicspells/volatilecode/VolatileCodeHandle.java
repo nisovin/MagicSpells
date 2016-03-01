@@ -99,4 +99,6 @@ public interface VolatileCodeHandle {
 	
 	public double getAbsorptionHearts(LivingEntity entity);
 	
+	public void setOffhand(Player player, ItemStack item);
+	
 }

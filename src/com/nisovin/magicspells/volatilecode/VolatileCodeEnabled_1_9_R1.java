@@ -729,4 +729,23 @@ public class VolatileCodeEnabled_1_9_R1 implements VolatileCodeHandle {
 		}
 	}
 
+	@Override
+	public void setNoAIFlag(LivingEntity entity) {
+	}
+
+	@Override
+	public void setClientVelocity(Player player, Vector velocity) {
+		((CraftPlayer)player).getHandle().playerConnection.sendPacket(new PacketPlayOutEntityVelocity(player.getEntityId(), velocity.getX(), velocity.getY(), velocity.getZ()));
+	}
+
+	@Override
+	public double getAbsorptionHearts(LivingEntity entity) {
+		return ((CraftLivingEntity)entity).getHandle().getAbsorptionHearts();
+	}
+
+	@Override
+	public void setOffhand(Player player, ItemStack item) {
+		player.getInventory().setItemInOffHand(item);
+	}
+
 }
