@@ -258,7 +258,11 @@ public class VolatileCodeDisabled implements VolatileCodeHandle {
 
 	@Override
 	public void setOffhand(Player player, ItemStack item) {
+	}
+
+	@Override
+	public ItemStack getOffhand(Player player) {
 		// TODO Auto-generated method stub
-		
+		return null;
 	}
 }

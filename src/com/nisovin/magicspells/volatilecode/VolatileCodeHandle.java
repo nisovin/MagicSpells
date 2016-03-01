@@ -101,4 +101,6 @@ public interface VolatileCodeHandle {
 	
 	public void setOffhand(Player player, ItemStack item);
 	
+	public ItemStack getOffhand(Player player);
+	
 }

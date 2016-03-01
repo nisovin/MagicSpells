@@ -748,4 +748,9 @@ public class VolatileCodeEnabled_1_9_R1 implements VolatileCodeHandle {
 		player.getInventory().setItemInOffHand(item);
 	}
 
+	@Override
+	public ItemStack getOffhand(Player player) {
+		return player.getInventory().getItemInOffHand();
+	}
+
 }

@@ -751,4 +751,10 @@ public class VolatileCodeEnabled_1_8_R3 implements VolatileCodeHandle {
 		
 	}
 
+	@Override
+	public ItemStack getOffhand(Player player) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }
