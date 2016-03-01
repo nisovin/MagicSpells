@@ -55,7 +55,7 @@ public class DisguiseManager_1_9_R1 extends DisguiseManager {
 	ReflectionHelper<Packet> refPacketEntityLook = new ReflectionHelper<Packet>(PacketPlayOutEntity.class, "a", "e", "f");
 	ReflectionHelper<Packet> refPacketEntityHeadRot = new ReflectionHelper<Packet>(PacketPlayOutEntityHeadRotation.class, "a", "b");
 	ReflectionHelper<Packet> refPacketEntityMetadata = new ReflectionHelper<Packet>(PacketPlayOutEntityMetadata.class, "a");
-	ReflectionHelper<Packet> refPacketAttachEntity = new ReflectionHelper<Packet>(PacketPlayOutAttachEntity.class, "b", "c");
+	ReflectionHelper<Packet> refPacketAttachEntity = new ReflectionHelper<Packet>(PacketPlayOutAttachEntity.class, "a", "b");
 	ReflectionHelper<Entity> refEntity = new ReflectionHelper<Entity>(Entity.class, "id");
 	
 	protected ProtocolManager protocolManager;
@@ -748,22 +748,22 @@ public class DisguiseManager_1_9_R1 extends DisguiseManager {
 			PacketPlayOutSpawnEntity packet23 = new PacketPlayOutSpawnEntity(boat, 1);
 			packets.add(packet23);
 			PacketPlayOutAttachEntity packet39 = new PacketPlayOutAttachEntity();
-			refPacketAttachEntity.setInt(packet39, "b", disguised.getEntityId());
-			refPacketAttachEntity.setInt(packet39, "c", boatEntId);
+			refPacketAttachEntity.setInt(packet39, "a", disguised.getEntityId());
+			refPacketAttachEntity.setInt(packet39, "b", boatEntId);
 			packets.add(packet39);
 		}
 		
 		// handle passengers and vehicles
 		if (disguised.getPassenger() != null) {
 			PacketPlayOutAttachEntity packet39 = new PacketPlayOutAttachEntity();
-			refPacketAttachEntity.setInt(packet39, "b", disguised.getPassenger().getEntityId());
-			refPacketAttachEntity.setInt(packet39, "c", disguised.getEntityId());
+			refPacketAttachEntity.setInt(packet39, "a", disguised.getPassenger().getEntityId());
+			refPacketAttachEntity.setInt(packet39, "b", disguised.getEntityId());
 			packets.add(packet39);
 		}
 		if (disguised.getVehicle() != null) {
 			PacketPlayOutAttachEntity packet39 = new PacketPlayOutAttachEntity();
-			refPacketAttachEntity.setInt(packet39, "b", disguised.getEntityId());
-			refPacketAttachEntity.setInt(packet39, "c", disguised.getVehicle().getEntityId());
+			refPacketAttachEntity.setInt(packet39, "a", disguised.getEntityId());
+			refPacketAttachEntity.setInt(packet39, "b", disguised.getVehicle().getEntityId());
 			packets.add(packet39);
 		}
 		

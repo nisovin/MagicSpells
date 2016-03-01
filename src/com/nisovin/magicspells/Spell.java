@@ -1181,7 +1181,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		if (reagents != null) {
 			for (ItemStack item : reagents) {
 				if (item != null) {
-					removeFromInventory(player.getInventory(), item);
+					Util.removeFromInventory(player.getInventory(), item);
 				}
 			}
 		}
@@ -1255,7 +1255,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 		return false;
 	}
 	
-	private void removeFromInventory(Inventory inventory, ItemStack item) {
+	/*private void removeFromInventory(Inventory inventory, ItemStack item) {
 		int amt = item.getAmount();
 		ItemStack[] items = inventory.getContents();
 		for (int i = 0; i < items.length; i++) {
@@ -1273,7 +1273,7 @@ public abstract class Spell implements Comparable<Spell>, Listener {
 			}
 		}
 		inventory.setContents(items);
-	}
+	}*/
 	
 	protected int getRange(float power) {
 		return spellPowerAffectsRange ? Math.round(range * power) : range;

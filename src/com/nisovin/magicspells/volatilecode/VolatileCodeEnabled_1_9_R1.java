@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import net.minecraft.server.v1_9_R1.*;
@@ -234,13 +235,18 @@ public class VolatileCodeEnabled_1_9_R1 implements VolatileCodeHandle {
 	@Override
 	public void playSound(Location location, String sound, float volume, float pitch) {
 		for (Player player : location.getWorld().getPlayers()) {
-			player.playSound(location, sound, volume, pitch);
+			playSound(player, location, sound, volume, pitch);
 		}
 	}
 
 	@Override
 	public void playSound(Player player, String sound, float volume, float pitch) {
-		player.playSound(player.getLocation(), sound, volume, pitch);
+		playSound(player, player.getLocation(), sound, volume, pitch);
+	}
+	
+	private void playSound(Player player, Location loc, String sound, float volume, float pitch) {
+		PacketPlayOutCustomSoundEffect packet = new PacketPlayOutCustomSoundEffect(sound, SoundCategory.MASTER, loc.getX(), loc.getY(), loc.getZ(), volume, pitch);
+		((CraftPlayer)player).getHandle().playerConnection.sendPacket(packet);
 	}
 
 	@Override
@@ -564,11 +570,11 @@ public class VolatileCodeEnabled_1_9_R1 implements VolatileCodeHandle {
            
             Field listField = PathfinderGoalSelector.class.getDeclaredField("b");
             listField.setAccessible(true);
-            List list = (List)listField.get(goals);
+            Set list = (Set)listField.get(goals);
             list.clear();
             listField = PathfinderGoalSelector.class.getDeclaredField("c");
             listField.setAccessible(true);
-            list = (List)listField.get(goals);
+            list = (Set)listField.get(goals);
             list.clear();
 
             goals.a(0, new PathfinderGoalFloat(ev));
