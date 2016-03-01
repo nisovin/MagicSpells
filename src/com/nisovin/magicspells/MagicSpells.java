@@ -50,6 +50,8 @@ import com.nisovin.magicspells.materials.MagicItemNameResolver;
 import com.nisovin.magicspells.spells.PassiveSpell;
 import com.nisovin.magicspells.spells.passive.PassiveManager;
 import com.nisovin.magicspells.util.BossBarManager;
+import com.nisovin.magicspells.util.BossBarManager_V1_8;
+import com.nisovin.magicspells.util.BossBarManager_V1_9;
 import com.nisovin.magicspells.util.ExperienceBarManager;
 import com.nisovin.magicspells.util.MagicConfig;
 import com.nisovin.magicspells.util.MoneyHandler;
@@ -179,10 +181,12 @@ public class MagicSpells extends JavaPlugin {
 			return;
 		}
 		
+		boolean v1_9 = false;
 		if (config.getBoolean("general.enable-volatile-features", true)) {
 			try {
 				Class.forName("net.minecraft.server.v1_9_R1.MinecraftServer");
 				volatileCodeHandle = new VolatileCodeEnabled_1_9_R1();
+				v1_9 = true;
 			} catch (ClassNotFoundException e_1_9_r1) {
 				try {
 					Class.forName("net.minecraft.server.v1_8_R3.MinecraftServer");
@@ -280,7 +284,11 @@ public class MagicSpells extends JavaPlugin {
 		noMagicZones = new NoMagicZoneManager();
 		buffManager = new BuffManager(config.getInt("general.buff-check-interval", 0));
 		expBarManager = new ExperienceBarManager();
-		bossBarManager = new BossBarManager();
+		if (v1_9) {
+			bossBarManager = new BossBarManager_V1_9();
+		} else {
+			bossBarManager = new BossBarManager_V1_8();
+		}
 		itemNameResolver = new MagicItemNameResolver();
 		if (getServer().getPluginManager().isPluginEnabled("Vault")) {
 			moneyHandler = new MoneyHandler();
