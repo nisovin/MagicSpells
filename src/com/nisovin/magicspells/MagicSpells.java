@@ -181,21 +181,26 @@ public class MagicSpells extends JavaPlugin {
 		
 		if (config.getBoolean("general.enable-volatile-features", true)) {
 			try {
-				Class.forName("net.minecraft.server.v1_8_R3.MinecraftServer");
-				volatileCodeHandle = new VolatileCodeEnabled_1_8_R3();
-			} catch (ClassNotFoundException e_1_8_r3) {
+				Class.forName("net.minecraft.server.v1_9_R1.MinecraftServer");
+				volatileCodeHandle = new VolatileCodeEnabled_1_9_R1();
+			} catch (ClassNotFoundException e_1_9_r1) {
 				try {
-					Class.forName("net.minecraft.server.v1_8_R1.MinecraftServer");
-					volatileCodeHandle = new VolatileCodeEnabled_1_8_R1();
-				} catch (ClassNotFoundException e_1_8_r1) {
-					error("This MagicSpells version is not fully compatible with this server version.");
-					error("Some features have been disabled.");
-					error("See http://nisovin.com/magicspells/volatilefeatures for more information.");
-					if (getServer().getPluginManager().isPluginEnabled("ProtocolLib")) {
-						error("ProtocolLib found: some compatibility re-enabled");
-						volatileCodeHandle = new VolatileCodeProtocolLib();
-					} else {
-						volatileCodeHandle = new VolatileCodeDisabled();
+					Class.forName("net.minecraft.server.v1_8_R3.MinecraftServer");
+					volatileCodeHandle = new VolatileCodeEnabled_1_8_R3();
+				} catch (ClassNotFoundException e_1_8_r3) {
+					try {
+						Class.forName("net.minecraft.server.v1_8_R1.MinecraftServer");
+						volatileCodeHandle = new VolatileCodeEnabled_1_8_R1();
+					} catch (ClassNotFoundException e_1_8_r1) {
+						error("This MagicSpells version is not fully compatible with this server version.");
+						error("Some features have been disabled.");
+						error("See http://nisovin.com/magicspells/volatilefeatures for more information.");
+						if (getServer().getPluginManager().isPluginEnabled("ProtocolLib")) {
+							error("ProtocolLib found: some compatibility re-enabled");
+							volatileCodeHandle = new VolatileCodeProtocolLib();
+						} else {
+							volatileCodeHandle = new VolatileCodeDisabled();
+						}
 					}
 				}
 			}
