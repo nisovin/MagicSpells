@@ -284,10 +284,12 @@ public abstract class SpellEffect {
 		effects.put("fireworks", FireworksEffect.class);
 		effects.put("greensparkle", GreenSparkleEffect.class);
 		effects.put("hearts", HeartsEffect.class);
+		effects.put("itemcooldown", ItemCooldownEffect.class);
 		effects.put("itemspray", ItemSprayEffect.class);
 		effects.put("lightning", LightningEffect.class);
 		effects.put("nova", NovaEffect.class);
 		effects.put("particles", ParticlesEffect.class);
+		effects.put("particlecloud", ParticleCloudEffect.class);
 		effects.put("particleline", ParticleLineEffect.class);
 		effects.put("potion", PotionEffect.class);
 		effects.put("smoke", SmokeEffect.class);

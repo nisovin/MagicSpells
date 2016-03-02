@@ -757,4 +757,10 @@ public class VolatileCodeEnabled_1_8_R3 implements VolatileCodeHandle {
 		return null;
 	}
 
+	@Override
+	public void showItemCooldown(Player player, ItemStack item, int duration) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

@@ -103,4 +103,6 @@ public interface VolatileCodeHandle {
 	
 	public ItemStack getOffhand(Player player);
 	
+	public void showItemCooldown(Player player, ItemStack item, int duration);
+	
 }

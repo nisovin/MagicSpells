@@ -135,8 +135,8 @@ public class DisguiseManager_1_9_R1 extends DisguiseManager {
 			if (flag) {
 				((EntityZombie)entity).setBaby(true);
 			}
-			if (var == 1) {
-				((EntityZombie)entity).setVillagerType(1);
+			if (var >= 1) {
+				((EntityZombie)entity).setVillagerType(var);
 			}
 			
 		} else if (entityType == EntityType.SKELETON) {
