@@ -329,6 +329,11 @@ public class Util {
 			// set meta
 			item.setItemMeta(meta);
 			
+			// hide tooltip
+			if (config.getBoolean("hide-tooltip", false)) {
+				item = MagicSpells.getVolatileCodeHandler().hideTooltipCrap(item);
+			}
+			
 			// unbreakable
 			if (config.getBoolean("unbreakable", false)) {
 				item = MagicSpells.getVolatileCodeHandler().setUnbreakable(item);
