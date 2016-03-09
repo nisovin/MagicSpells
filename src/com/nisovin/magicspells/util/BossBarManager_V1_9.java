@@ -19,11 +19,11 @@ public class BossBarManager_V1_9 implements BossBarManager {
 		BossBar bar = bars.get(player.getName());
 		if (bar == null) {
 			bar = Bukkit.createBossBar(ChatColor.translateAlternateColorCodes('&', title), BarColor.PURPLE, BarStyle.SOLID);
-			bar.addPlayer(player);
 			bars.put(player.getName(), bar);
 		}
 		bar.setTitle(ChatColor.translateAlternateColorCodes('&', title));
 		bar.setProgress(percent);
+		bar.addPlayer(player);
 	}
 
 	@Override

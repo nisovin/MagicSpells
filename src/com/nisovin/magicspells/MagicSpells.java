@@ -100,6 +100,7 @@ public class MagicSpells extends JavaPlugin {
 	boolean ignoreCastItemNameColors;
 	boolean checkWorldPvpFlag;
 	boolean checkScoreboardTeams;
+	boolean hidePredefinedItemTooltips;
 	
 	boolean enableManaBars;
 	int manaPotionCooldown;
@@ -315,6 +316,10 @@ public class MagicSpells extends JavaPlugin {
 		
 		// load predefined items
 		log("Loading predefined items...");
+		hidePredefinedItemTooltips = config.getBoolean("general.hide-predefined-items-tooltips", false);
+		if (hidePredefinedItemTooltips) {
+			log("... hiding tooltips!");
+		}
 		Util.predefinedItems.clear();
 		if (config.contains("general.predefined-items")) {
 			Set<String> predefinedItems = config.getKeys("general.predefined-items");
@@ -740,6 +745,10 @@ public class MagicSpells extends JavaPlugin {
 	
 	public static boolean showStrCostOnMissingReagents() {
 		return plugin.showStrCostOnMissingReagents;
+	}
+	
+	public static boolean hidePredefinedItemTooltips() {
+		return plugin.hidePredefinedItemTooltips;
 	}
 	
 	/**
